@@ -16,6 +16,7 @@ VROOM_HOST = os.getenv("VROOM_HOST", "osrm")
 VROOM_PORT = os.getenv("VROOM_PORT", "5001")
 VROOM_TIMEOUT_SECONDS = int(os.getenv("VROOM_TIMEOUT_SECONDS", "30"))
 OSRM_URL = os.getenv("OSRM_URL", f"http://{VROOM_HOST}:{VROOM_PORT}").rstrip("/")
+MAX_REQUEST_BYTES = 10 * 1024 * 1024
 
 
 def json_response(handler, status_code, payload):
@@ -325,8 +326,17 @@ class RoutingHandler(BaseHTTPRequestHandler):
             json_response(self, 400, {"error": "Content-Length header must be set."})
             return
 
+        request_bytes = int(content_length)
+        if request_bytes > MAX_REQUEST_BYTES:
+            json_response(
+                self,
+                413,
+                {"error": f"Request body too large. Maximum allowed size is {MAX_REQUEST_BYTES} bytes."},
+            )
+            return
+
         try:
-            body = self.rfile.read(int(content_length))
+            body = self.rfile.read(request_bytes)
             payload = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             json_response(self, 400, {"error": "Request body must be valid JSON."})
