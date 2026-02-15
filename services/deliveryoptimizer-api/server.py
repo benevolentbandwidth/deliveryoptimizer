@@ -18,6 +18,7 @@ VROOM_TIMEOUT_SECONDS = int(os.getenv("VROOM_TIMEOUT_SECONDS", "30"))
 OSRM_URL = os.getenv("OSRM_URL", f"http://{VROOM_HOST}:{VROOM_PORT}").rstrip("/")
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
 ALLOWED_OSRM_SERVICES = ("/route/", "/nearest/", "/table/", "/match/")
+ENABLE_ACCESS_LOGS = os.getenv("ENABLE_ACCESS_LOGS", "false").lower() == "true"
 
 
 def json_response(handler, status_code, payload):
@@ -233,7 +234,8 @@ def proxy_to_osrm(path_and_query):
 
 class RoutingHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
-        return
+        if ENABLE_ACCESS_LOGS:
+            super().log_message(fmt, *args)
 
     def do_GET(self):
         parsed = urlparse(self.path)
