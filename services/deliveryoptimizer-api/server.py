@@ -17,6 +17,7 @@ VROOM_PORT = os.getenv("VROOM_PORT", "5001")
 VROOM_TIMEOUT_SECONDS = int(os.getenv("VROOM_TIMEOUT_SECONDS", "30"))
 OSRM_URL = os.getenv("OSRM_URL", f"http://{VROOM_HOST}:{VROOM_PORT}").rstrip("/")
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
+ALLOWED_OSRM_SERVICES = ("/route/", "/nearest/", "/table/", "/match/")
 
 
 def json_response(handler, status_code, payload):
@@ -242,6 +243,16 @@ class RoutingHandler(BaseHTTPRequestHandler):
 
         if parsed.path.startswith("/api/v1/osrm/"):
             upstream_path = parsed.path.removeprefix("/api/v1/osrm")
+            if not any(upstream_path.startswith(service) for service in ALLOWED_OSRM_SERVICES):
+                json_response(
+                    self,
+                    403,
+                    {
+                        "error": "OSRM service not allowed.",
+                        "allowed": list(ALLOWED_OSRM_SERVICES),
+                    },
+                )
+                return
             if parsed.params:
                 upstream_path = f"{upstream_path};{parsed.params}"
             if parsed.query:
