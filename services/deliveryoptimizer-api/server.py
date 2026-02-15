@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -19,6 +20,9 @@ OSRM_URL = os.getenv("OSRM_URL", f"http://{VROOM_HOST}:{VROOM_PORT}").rstrip("/"
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
 ALLOWED_OSRM_SERVICES = ("/route/", "/nearest/", "/table/", "/match/")
 ENABLE_ACCESS_LOGS = os.getenv("ENABLE_ACCESS_LOGS", "false").lower() == "true"
+MAX_TIME_WINDOW_PAST_SECONDS = int(os.getenv("MAX_TIME_WINDOW_PAST_SECONDS", "86400"))
+OSRM_STARTUP_TIMEOUT_SECONDS = int(os.getenv("OSRM_STARTUP_TIMEOUT_SECONDS", "45"))
+OSRM_STARTUP_RETRY_SECONDS = float(os.getenv("OSRM_STARTUP_RETRY_SECONDS", "2"))
 
 
 def json_response(handler, status_code, payload):
@@ -56,6 +60,8 @@ def validate_payload(payload):
     errors = []
     if not isinstance(payload, dict):
         return ["Payload must be a JSON object."]
+    now_ts = int(time.time())
+    oldest_allowed_end = now_ts - MAX_TIME_WINDOW_PAST_SECONDS
 
     depot = payload.get("depot")
     if not isinstance(depot, dict):
@@ -88,6 +94,11 @@ def validate_payload(payload):
                 ):
                     errors.append(
                         f"`vehicles[{idx}].time_window` must be [start, end] in epoch seconds."
+                    )
+                elif tw[1] < oldest_allowed_end:
+                    errors.append(
+                        f"`vehicles[{idx}].time_window` must not end more than "
+                        f"{MAX_TIME_WINDOW_PAST_SECONDS} seconds in the past."
                     )
 
     jobs = payload.get("jobs")
@@ -124,6 +135,12 @@ def validate_payload(payload):
                         ):
                             errors.append(
                                 f"`jobs[{idx}].time_windows` entries must be [start, end] epoch seconds."
+                            )
+                            break
+                        if tw[1] < oldest_allowed_end:
+                            errors.append(
+                                f"`jobs[{idx}].time_windows` entries must not end more than "
+                                f"{MAX_TIME_WINDOW_PAST_SECONDS} seconds in the past."
                             )
                             break
 
@@ -230,6 +247,24 @@ def proxy_to_osrm(path_and_query):
     with urlopen(request, timeout=10) as response:
         body = response.read()
         return response.status, body, response.headers.get("Content-Type", "application/json")
+
+
+def wait_for_osrm_ready():
+    deadline = time.time() + OSRM_STARTUP_TIMEOUT_SECONDS
+    last_detail = "Unavailable"
+    while time.time() < deadline:
+        try:
+            ready, detail = check_osrm()
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as err:
+            ready = False
+            detail = str(err)
+        if ready:
+            return
+        last_detail = detail
+        time.sleep(OSRM_STARTUP_RETRY_SECONDS)
+    raise RuntimeError(
+        f"OSRM not reachable within {OSRM_STARTUP_TIMEOUT_SECONDS}s. Last check: {last_detail}"
+    )
 
 
 class RoutingHandler(BaseHTTPRequestHandler):
@@ -388,6 +423,11 @@ class RoutingHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    try:
+        wait_for_osrm_ready()
+    except RuntimeError as err:
+        print(f"startup validation failed: {err}")
+        raise SystemExit(1)
     server = ThreadingHTTPServer(("0.0.0.0", PORT), RoutingHandler)
     print(f"deliveryoptimizer-api listening on 0.0.0.0:{PORT}")
     server.serve_forever()

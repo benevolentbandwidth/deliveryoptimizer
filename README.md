@@ -19,6 +19,48 @@ This repository provisions a source-built routing stack for small-business deliv
 - `POST /api/v1/deliveries/optimize`: optimize multi-stop delivery routes
 - `GET /api/v1/osrm/*`: proxy OSRM API requests (e.g., `route`, `nearest`, `table`)
 
+## Optimize Example
+
+```bash
+curl -sS -X POST http://localhost:5050/api/v1/deliveries/optimize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "depot": { "location": [7.4236, 43.7384] },
+    "vehicles": [
+      { "id": "van-1", "capacity": 8 }
+    ],
+    "jobs": [
+      { "id": "order-1", "location": [7.4212, 43.7308], "demand": 2, "service": 180 },
+      { "id": "order-2", "location": [7.4261, 43.7412], "demand": 1, "service": 120 }
+    ]
+  }'
+```
+
+Example response (trimmed):
+
+```json
+{
+  "status": "ok",
+  "summary": {
+    "routes": 1,
+    "unassigned": 0
+  },
+  "routes": [
+    {
+      "vehicle": 1,
+      "vehicle_external_id": "van-1",
+      "steps": [
+        { "type": "start" },
+        { "type": "job", "job": 1, "job_external_id": "order-1" },
+        { "type": "job", "job": 2, "job_external_id": "order-2" },
+        { "type": "end" }
+      ]
+    }
+  ],
+  "unassigned": []
+}
+```
+
 ## Run (CMake)
 
 1. `cmake --preset dev`
