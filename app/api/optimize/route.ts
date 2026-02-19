@@ -14,25 +14,54 @@ export async function POST(req: Request) {
 
   try {
 
-    // 1️⃣ Parse JSON
+    // Parse JSON
     const body = await req.json()
 
-    // 2️⃣ Validate (throws automatically if invalid)
-    const validated =
-      optimizeRequestSchema.parse(body)
+    // Validate (throws automatically if invalid)
+    const validation =
+      optimizeRequestSchema.safeParse(body)
 
-    // 3️⃣ Normalize
+    // Find and Display Correct Error Message
+    if (!validation.success) {
+
+      const first = validation.error.issues[0]
+
+      const path = first.path
+      let message = first.message
+
+      if (path[0] === "deliveries") {
+        const index = Number(path[1]) + 1
+        const field = String(path[path.length - 1])
+        message = `Delivery #${index} is missing ${field}`
+      }
+
+      if (path[0] === "vehicles") {
+        const index = Number(path[1]) + 1
+        const field = String(path[path.length - 1])
+        message = `Vehicle #${index} is missing ${field}`
+      }
+
+      return NextResponse.json(
+        { error: message },
+        { status: 400 }
+      )
+    }
+
+    const validated = validation.data
+
+
+    // Normalize
     const deliveries =
       normalizeDeliveries(validated.deliveries)
 
     const vehicles =
       normalizeVehicles(validated.vehicles)
 
-    // 4️⃣ Build solver payload
+    // Build solver payload
     const payload =
       buildPayload(deliveries, vehicles)
 
-    // 5️⃣ Call solver
+    // Call solver
     const result =
       await solverClient(payload)
 
