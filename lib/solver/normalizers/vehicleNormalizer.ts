@@ -4,7 +4,7 @@ import {
 } from "@/lib/types/vehicle.types"
 
 /**
- * Converts API vehicle shape → internal domain model
+ * Converts API vehicle shape to internal domain model
  */
 export function normalizeVehicle(
   input: VehicleInput

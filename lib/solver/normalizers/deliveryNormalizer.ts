@@ -4,7 +4,7 @@ import {
 } from "@/lib/types/delivery.types"
 
 /**
- * Converts API delivery shape → internal domain model
+ * Converts API delivery shape to internal domain model
  */
 export function normalizeDelivery(
   input: DeliveryInput
@@ -12,7 +12,7 @@ export function normalizeDelivery(
   return {
     id: input.id,
 
-    // 🚨 ALWAYS [lng, lat] for routing engines
+    // Implementing [lng, lat] for routing engines
     location: [
       input.location.lng,
       input.location.lat
