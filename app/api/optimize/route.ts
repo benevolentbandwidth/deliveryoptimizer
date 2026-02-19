@@ -12,12 +12,22 @@ export const runtime = "nodejs"
 
 export async function POST(req: Request) {
 
+  let body
+
+  // Check if JSON is Valid
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON format" },
+      { status: 400 }
+    )
+  }
+
+  // If Valid JSON
   try {
 
-    // Parse JSON
-    const body = await req.json()
-
-    // Validate (throws automatically if invalid)
+    // Schema Validation 
     const validation =
       optimizeRequestSchema.safeParse(body)
 
@@ -70,7 +80,7 @@ export async function POST(req: Request) {
   } catch (error) {
 
     console.error(error)
-
+    
     return NextResponse.json(
       { error: "Optimization failed" },
       { status: 500 }
