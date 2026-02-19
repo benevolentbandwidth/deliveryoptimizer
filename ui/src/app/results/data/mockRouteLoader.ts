@@ -29,7 +29,7 @@ export function mockRouteToRoute(data: MockRouteJson): Route { // Converting the
   }));
   return {
     vehicleId: "mock-vehicle-1",
-    driverName: "Mock Route",
+    driverName: "Joe",
     stops,
   };
 }
