@@ -29,7 +29,7 @@ export function mockRouteToRoute(data: MockRouteJson): Route { // Converting the
     addresseeName: undefined, // if no name, we show "—"
   }));
   return {
-    vehicleId: "1234",
+    vehicleId: "mock-vehicle-1",
     driverName: "Joe",
     stops,
     vehicleType: "Van",

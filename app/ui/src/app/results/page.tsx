@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import { mockRouteToRoute } from "./data/mockRouteLoader";
@@ -17,7 +17,7 @@ export default function ResultsPage() {
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
 
   // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
-  function updateStopNote(routeId: string, stopId: string, note: string) {
+  const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
     setRoutes((prev) =>
       prev.map((route) => {
         if (route.vehicleId !== routeId) return route;
@@ -27,7 +27,7 @@ export default function ResultsPage() {
         };
       })
     );
-  }
+  }, [setRoutes]);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}

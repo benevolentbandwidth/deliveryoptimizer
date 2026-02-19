@@ -44,8 +44,8 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
     >
       <div className="flex shrink-0 items-center justify-between gap-2 mb-4">
         <span className="text-sm font-medium text-zinc-700">Edit mode</span>
-        <button 
-          type="button" 
+        <button
+          type="button"
           role="switch" // The button is a switch that can be toggled on and off
           aria-checked={isEditMode} // Telling whether the switch is on or off
           onClick={() => onEditModeChange(!isEditMode)} // When use clicks the button, call onEditModeChange with the opposite of the current edit mode state (true -> false or false -> true)
@@ -58,7 +58,7 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
       </div>
       <h2 className="shrink-0 text-lg font-semibold text-zinc-800">Optimized Routes</h2> {/* Added shrink-0 on the <div> that makes the row not shrink so the toggle are present at the top */}
       <p className="mt-1 shrink-0 text-xs text-zinc-500">
-        {routes.length} route{routes.length === 1 ? "" : "s"} with {totalStops} total stop 
+        {routes.length} route{routes.length === 1 ? "" : "s"} with {totalStops} total stop
         {totalStops === 1 ? "" : "s"}
       </p>
       <div className="flex-1 min-h-0 overflow-y-auto mt-3"> {/* The div takes up the remaining space below the fixed header and if route list is taller than that space, only this area scrolls */}
@@ -127,7 +127,6 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
                         {sortedStops.map((stop) => (
                           <li key={stop.id}>
                             <EditableStopItem
-                              key={stop.id}
                               stop={stop}
                               isEditMode={isEditMode}
                               onSaveNote={(note) => onUpdateStopNote(route.vehicleId, stop.id, note)}
