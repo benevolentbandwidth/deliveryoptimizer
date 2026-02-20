@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { locationSchema, loadSchema } from "./common.schema"
+import { locationSchema, loadSchema, MAX_DEMAND, MAX_BUFFER_TIME } from "./common.schema"
 
 export const deliverySchema = z.object({
   id: z.string().min(1),
@@ -12,9 +12,12 @@ export const deliverySchema = z.object({
     .number()
     .int()
     .nonnegative()
+    .max(MAX_BUFFER_TIME)
     .optional(),
 
-  demand: loadSchema,
+  demand: loadSchema.extend({
+    value: z.number().positive().max(MAX_DEMAND)
+  }),
 
   time_windows: z
     .array(
