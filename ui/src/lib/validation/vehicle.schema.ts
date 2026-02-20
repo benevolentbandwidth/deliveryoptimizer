@@ -25,11 +25,11 @@ export const vehicleSchema = z.object({
     .optional()
 }).refine(
   (data) =>
-    !data.departureTime ||
-    !data.returnTime ||
+    data.departureTime == null ||
+    data.returnTime == null ||
     data.returnTime > data.departureTime,
   {
-    message: "returnTime must be greater than departureTime"
+    message: "returnTime must be after departureTime"
   })
 
 export const vehiclesSchema = z.array(vehicleSchema)
