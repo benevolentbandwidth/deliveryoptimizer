@@ -14,6 +14,7 @@ import mockRouteJson from "./data/mock_route.json";
 export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
+  const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
 
   useEffect(() => {
     const route = mockRouteToRoute(mockRouteJson as MockRouteJson);
@@ -39,10 +40,14 @@ export default function ResultsPage() {
         <div
           className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // Before the sidebar only rendered when open, so it popped in with no transition. Now the sidebar is always in the page and placed inside a wrapper div that acts like a window. We change the width of that window so when open it is 288px wide and when closed it is 0px
         >                                                                                                                     {/* And since sidebar is always in the page (288px wide), overflow hidden helps prevent it from sticking out when the wrapper is 0px. Transition makes sure as the width changes, animate it over 300ms instead of jumping in/out abruptly */}
-          <Sidebar routes={routes} />
+          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
         </div>
-        <div className="flex-1 min-w-0 min-h-[70vh] px-4 pb-4">
-          <MapComponent routes={routes} /> {/* Render the map component and pass routes */}
+        {/* Outer div: the map area (right side + padding). Doesn't give the map a height that works for 100% */}
+        <div className="flex-1 min-w-0 min-h-[70vh] h-full px-4 pb-4 flex flex-col">
+          {/* Inner div: this one gets a real height so the map's "100%" has something to match. Map component fills this space */}
+          <div className="flex-1 min-h-0 w-full rounded-lg overflow-hidden">
+            <MapComponent routes={routes} />
+          </div>
         </div>
       </div>
     </main>

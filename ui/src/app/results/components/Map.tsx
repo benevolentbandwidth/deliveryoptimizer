@@ -34,15 +34,17 @@ export default function MapComponent({ routes }: MapComponentProps) { // Passing
     );
   }
 
-  return ( // Loading the Google Maps API, center and zoom the initial view (GoogleMap) and adjust the view once the map is ready (onLoad)
-    <LoadScriptNext googleMapsApiKey={apiKey}>
-      <GoogleMap
-        center={DAVIS_CENTER}
-        zoom={11}
-        onLoad={onMapLoad}
-        mapContainerStyle={{ width: "100%", height: "100%", minHeight: "70vh" }}
-        mapContainerClassName="w-full min-h-[70vh] rounded-lg"
-      >
+  // Page gives us the space (outer + inner div). Here we add the map and tell it how to fill that space
+  return (
+    <div className="w-full h-full min-h-[70vh] rounded-lg">
+      <LoadScriptNext googleMapsApiKey={apiKey}>
+        {/* mapContainerStyle: map fills its parent (100% width/height, min height so it has a real size). */}
+        <GoogleMap
+          center={DAVIS_CENTER}
+          zoom={11}
+          onLoad={onMapLoad}
+          mapContainerStyle={{ width: "100%", height: "100%", minHeight: "70vh" }}
+        >
         {routes.map((route) => { // Rendering each route
           const sortedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence); // Sorting the stops based on the sequence
           const path = sortedStops.map((s) => ({ lat: s.lat, lng: s.lng }));
@@ -67,7 +69,8 @@ export default function MapComponent({ routes }: MapComponentProps) { // Passing
             </div>
           );
         })}
-      </GoogleMap>
-    </LoadScriptNext>
+        </GoogleMap>
+      </LoadScriptNext>
+    </div>
   );
 }
