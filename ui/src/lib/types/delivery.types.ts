@@ -2,7 +2,7 @@ import { Location, Load } from "./common.types"
 
 export type DeliveryInput = {
   id: string
-  address?: string
+  address?: string  // Not required for VROOM
   location: Location
   bufferTime?: number
   demand: Load
