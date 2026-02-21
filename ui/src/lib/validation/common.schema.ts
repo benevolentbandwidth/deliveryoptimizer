@@ -21,8 +21,5 @@ export const locationSchema = z.object({
  */
 export const loadSchema = z.object({
   type: z.enum(["units", "weight", "volume"]),
-    value: z
-    .number()
-    .positive()
-    .max(MAX_CAPACITY)
+  value: z.number().positive().max(MAX_CAPACITY)
 })
