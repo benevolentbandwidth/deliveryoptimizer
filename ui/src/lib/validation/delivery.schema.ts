@@ -16,7 +16,7 @@ export const deliverySchema = z.object({
 
   demand: loadSchema,
 
-  time_windows: z
+  timeWindows: z
     .array(
       z.tuple([
         z.number().int(),

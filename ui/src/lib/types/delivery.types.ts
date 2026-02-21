@@ -6,7 +6,7 @@ export type DeliveryInput = {
   location: Location
   bufferTime?: number
   demand: Load
-  time_windows?: [number, number][]
+  timeWindows?: [number, number][]
 
 }
 

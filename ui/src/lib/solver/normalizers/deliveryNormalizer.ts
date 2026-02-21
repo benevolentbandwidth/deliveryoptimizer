@@ -22,7 +22,7 @@ export function normalizeDelivery(
 
     deliverySize: [input.demand.value],
     
-    timeWindows: input.time_windows
+    timeWindows: input.timeWindows
 
   }
 }
