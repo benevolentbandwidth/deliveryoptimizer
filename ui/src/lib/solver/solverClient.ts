@@ -56,5 +56,13 @@ export async function solverClient(payload: unknown) {
     )
   }
 
+  // Check content type returned by VROOM
+  const contentType = response.headers.get("content-type")
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error(
+      `Expected JSON from VROOM but received wrong type`
+    )
+  }
+  
   return response.json()
 }
