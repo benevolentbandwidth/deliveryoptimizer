@@ -19,7 +19,7 @@ export const deliverySchema = z.object({
     value: z.number().positive().max(MAX_DEMAND)
   }),
 
-  time_windows: z
+  timeWindows: z
     .array(
       z.tuple([
         z.number().int(),
