@@ -1,68 +1,17 @@
 // app/api/geocode/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import type { 
+  VehicleInput, 
+  DeliveryInput, 
+  GeocodingRequest,
+  OptimizedResponse,
+  Vehicle,
+  Delivery,
+  Location
+} from '@/app/types/geocoding';
 
-interface VehicleInput {
-  id: string;
-  vehicleType: string;
-  startAddress: string;
-  endAddress: string;
-  capacity: number;
-}
+// SINGLETON RATE LIMITER - Shared across all requests
 
-interface DeliveryInput {
-  address: string;
-  bufferTime?: number;
-  demand?: number;
-  timeWindowStart?: number;
-  timeWindowEnd?: number;
-}
-
-interface RequestInput {
-  deliveries: DeliveryInput[];
-  vehicles: VehicleInput[];
-}
-
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-interface Vehicle {
-  id: string;
-  vehicleType: string;
-  startLocation: Location;
-  endLocation: Location;
-  capacity: {
-    type: string;
-    value: number;
-  };
-}
-
-interface Delivery {
-  id: string;
-  address: string;
-  location: Location;
-  bufferTime: number;
-  demand: {
-    type: string;
-    value: number;
-  };
-  time_windows: number[][];  // NOW ALWAYS PRESENT
-}
-
-interface OptimizedResponse {
-  vehicles: Vehicle[];
-  deliveries: Delivery[];
-  metadata?: {
-    generatedAt: string;
-    totalDeliveries: number;
-    totalVehicles: number;
-    successfulGeocoding: number;
-    failedGeocoding: number;
-  };
-}
-
-// Rate limiting helper
 class RateLimiter {
   private lastRequestTime = 0;
   private delay: number;
@@ -83,7 +32,6 @@ class RateLimiter {
   }
 }
 
-// Geocoding service
 class GeocodingService {
   private rateLimiter: RateLimiter;
   private provider: 'nominatim' | 'google';
@@ -202,6 +150,13 @@ class GeocodingService {
   }
 }
 
+const globalGeocoder = new GeocodingService('nominatim', process.env.GOOGLE_MAPS_API_KEY);
+
+interface RequestInput {
+  deliveries: DeliveryInput[];
+  vehicles: VehicleInput[];
+}
+
 // Main geocoding handler
 export async function POST(request: NextRequest) {
   try {
@@ -221,11 +176,26 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const MAX_ADDRESSES = 8; // Conservative limit (deliveries + vehicles * 2)
+    const totalAddresses = deliveries.length + (vehicles.length * 2);
+    
+    if (totalAddresses > MAX_ADDRESSES) {
+      return NextResponse.json(
+        { 
+          error: `Batch size too large. Maximum ${MAX_ADDRESSES} addresses allowed (you have ${totalAddresses}). Please split into smaller batches.`,
+          details: {
+            deliveries: deliveries.length,
+            vehicles: vehicles.length,
+            totalAddresses: totalAddresses,
+            maxAllowed: MAX_ADDRESSES,
+          }
+        },
+        { status: 400 }
+      );
+    }
 
-    const geocoder = new GeocodingService(
-      'nominatim',
-      process.env.GOOGLE_MAPS_API_KEY
-    );
+    // USE THE SINGLETON GEOCODER
+    const geocoder = globalGeocoder;
 
     let successCount = 0;
     let failCount = 0;
