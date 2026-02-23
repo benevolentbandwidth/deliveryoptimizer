@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
+import type { OptimizedResponse } from '@/app/types/geocoding';
 
 interface AddressSuggestion {
   display_name: string;
@@ -11,6 +12,7 @@ interface AddressSuggestion {
 }
 
 interface VehicleForm {
+  _reactId: string;
   id: string;
   vehicleType: string;
   startAddress: string;
@@ -19,37 +21,36 @@ interface VehicleForm {
 }
 
 interface DeliveryForm {
+  _reactId: string;
   address: string;
+  bufferTime: string;
+  demandValue: string;
   timeWindowStart: string;
   timeWindowEnd: string;
-}
-
-interface OptimizedResponse {
-  vehicles: any[];
-  deliveries: any[];
-  metadata?: {
-    generatedAt: string;
-    totalDeliveries: number;
-    totalVehicles: number;
-    successfulGeocoding: number;
-    failedGeocoding: number;
-  };
 }
 
 export default function AddressGeocoder() {
   // Delivery states
   const [deliveries, setDeliveries] = useState<DeliveryForm[]>([
-    { address: '', timeWindowStart: '', timeWindowEnd: '' }
+    { 
+      _reactId: crypto.randomUUID(), 
+      address: '', 
+      bufferTime: '300',
+      demandValue: '1',
+      timeWindowStart: '', 
+      timeWindowEnd: '' 
+    }
   ]);
   
   const [deliverySuggestions, setDeliverySuggestions] = useState<AddressSuggestion[]>([]);
   const [showDeliverySuggestions, setShowDeliverySuggestions] = useState(false);
   const [selectedDeliverySuggestionIndex, setSelectedDeliverySuggestionIndex] = useState(-1);
-  const [activeDeliveryIndex, setActiveDeliveryIndex] = useState<number | null>(null);
+  const [activeDeliveryId, setActiveDeliveryId] = useState<string | null>(null);
   
   // Vehicle states
   const [vehicles, setVehicles] = useState<VehicleForm[]>([
     {
+      _reactId: crypto.randomUUID(),
       id: 'vehicle_1',
       vehicleType: 'car',
       startAddress: '',
@@ -59,7 +60,7 @@ export default function AddressGeocoder() {
   ]);
   
   const [activeAddressField, setActiveAddressField] = useState<{
-    vehicleIndex: number;
+    vehicleId: string;
     field: 'start' | 'end';
   } | null>(null);
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
@@ -77,8 +78,8 @@ export default function AddressGeocoder() {
   const addressSuggestionsRef = useRef<HTMLDivElement>(null);
   const deliveryDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const addressDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const addressInputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
-  const deliveryInputRefs = useRef<{ [key: number]: HTMLInputElement }>({});
+  const addressInputRefs = useRef<{ [reactId: string]: HTMLInputElement }>({});
+  const deliveryInputRefs = useRef<{ [reactId: string]: HTMLInputElement }>({});
 
   // Validation helpers
   const hasAtLeastOneLetter = (str: string): boolean => {
@@ -144,8 +145,12 @@ export default function AddressGeocoder() {
     };
   };
 
-  // Fetch address suggestions
-  const fetchSuggestions = async (query: string, setSuggestions: React.Dispatch<React.SetStateAction<AddressSuggestion[]>>, setShow: React.Dispatch<React.SetStateAction<boolean>>) => {
+  // Fetch address suggestions via API proxy
+  const fetchSuggestions = async (
+    query: string, 
+    setSuggestions: React.Dispatch<React.SetStateAction<AddressSuggestion[]>>, 
+    setShow: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
     if (query.length < 3) {
       setSuggestions([]);
       setShow(false);
@@ -153,24 +158,12 @@ export default function AddressGeocoder() {
     }
 
     try {
-      const params = new URLSearchParams({
-        q: query,
-        format: 'json',
-        limit: '5',
-        addressdetails: '1',
-      });
-
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?${params}`,
-        {
-          headers: {
-            'User-Agent': 'AddressGeocodingApp/1.0',
-          },
-        }
-      );
+      const params = new URLSearchParams({ q: query });
+      const response = await fetch(`/api/autocomplete?${params}`);
 
       if (response.ok) {
         const data: AddressSuggestion[] = await response.json();
+        console.log('Autocomplete suggestions:', data); // Debug log
         setSuggestions(data);
         setShow(data.length > 0);
       }
@@ -180,12 +173,13 @@ export default function AddressGeocoder() {
   };
 
   // Handle delivery address input change
-  const handleDeliveryAddressChange = (index: number, value: string) => {
-    const newDeliveries = [...deliveries];
-    newDeliveries[index].address = value;
+  const handleDeliveryAddressChange = (reactId: string, value: string) => {
+    const newDeliveries = deliveries.map(d => 
+      d._reactId === reactId ? { ...d, address: value } : d
+    );
     setDeliveries(newDeliveries);
 
-    setActiveDeliveryIndex(index);
+    setActiveDeliveryId(reactId);
 
     if (deliveryDebounceTimerRef.current) {
       clearTimeout(deliveryDebounceTimerRef.current);
@@ -202,36 +196,43 @@ export default function AddressGeocoder() {
   };
 
   // Handle delivery field change
-  const handleDeliveryFieldChange = (index: number, field: keyof DeliveryForm, value: string) => {
-    const newDeliveries = [...deliveries];
-    newDeliveries[index][field] = value;
+  const handleDeliveryFieldChange = (reactId: string, field: keyof DeliveryForm, value: string) => {
+    const newDeliveries = deliveries.map(d => 
+      d._reactId === reactId ? { ...d, [field]: value } : d
+    );
     setDeliveries(newDeliveries);
   };
 
   // Add new delivery
   const addDelivery = () => {
-    setDeliveries([...deliveries, { address: '', timeWindowStart: '', timeWindowEnd: '' }]);
+    setDeliveries([...deliveries, { 
+      _reactId: crypto.randomUUID(), 
+      address: '', 
+      bufferTime: '300',
+      demandValue: '1',
+      timeWindowStart: '', 
+      timeWindowEnd: '' 
+    }]);
   };
 
   // Remove delivery
-  const removeDelivery = (index: number) => {
+  const removeDelivery = (reactId: string) => {
     if (deliveries.length > 1) {
-      const newDeliveries = deliveries.filter((_, i) => i !== index);
+      const newDeliveries = deliveries.filter(d => d._reactId !== reactId);
       setDeliveries(newDeliveries);
     }
   };
 
   // Handle vehicle address input change
-  const handleVehicleAddressChange = (index: number, field: 'start' | 'end', value: string) => {
-    const newVehicles = [...vehicles];
-    if (field === 'start') {
-      newVehicles[index].startAddress = value;
-    } else {
-      newVehicles[index].endAddress = value;
-    }
+  const handleVehicleAddressChange = (reactId: string, field: 'start' | 'end', value: string) => {
+    const newVehicles = vehicles.map(v => 
+      v._reactId === reactId 
+        ? { ...v, [field === 'start' ? 'startAddress' : 'endAddress']: value }
+        : v
+    );
     setVehicles(newVehicles);
 
-    setActiveAddressField({ vehicleIndex: index, field });
+    setActiveAddressField({ vehicleId: reactId, field });
 
     if (addressDebounceTimerRef.current) {
       clearTimeout(addressDebounceTimerRef.current);
@@ -248,15 +249,17 @@ export default function AddressGeocoder() {
   };
 
   // Handle vehicle field change
-  const handleVehicleFieldChange = (index: number, field: keyof VehicleForm, value: string) => {
-    const newVehicles = [...vehicles];
-    newVehicles[index][field] = value;
+  const handleVehicleFieldChange = (reactId: string, field: keyof VehicleForm, value: string) => {
+    const newVehicles = vehicles.map(v => 
+      v._reactId === reactId ? { ...v, [field]: value } : v
+    );
     setVehicles(newVehicles);
   };
 
   // Add new vehicle
   const addVehicle = () => {
     setVehicles([...vehicles, {
+      _reactId: crypto.randomUUID(),
       id: `vehicle_${vehicles.length + 1}`,
       vehicleType: 'car',
       startAddress: '',
@@ -266,37 +269,42 @@ export default function AddressGeocoder() {
   };
 
   // Remove vehicle
-  const removeVehicle = (index: number) => {
+  const removeVehicle = (reactId: string) => {
     if (vehicles.length > 1) {
-      const newVehicles = vehicles.filter((_, i) => i !== index);
+      const newVehicles = vehicles.filter(v => v._reactId !== reactId);
       setVehicles(newVehicles);
     }
   };
 
   // Select delivery suggestion
   const selectDeliverySuggestion = (suggestion: AddressSuggestion) => {
-    if (activeDeliveryIndex === null) return;
+    if (activeDeliveryId === null) return;
 
-    const newDeliveries = [...deliveries];
-    newDeliveries[activeDeliveryIndex].address = suggestion.display_name;
+    const newDeliveries = deliveries.map(d => 
+      d._reactId === activeDeliveryId 
+        ? { ...d, address: suggestion.display_name }
+        : d
+    );
     setDeliveries(newDeliveries);
 
     setDeliverySuggestions([]);
     setShowDeliverySuggestions(false);
     setSelectedDeliverySuggestionIndex(-1);
-    setActiveDeliveryIndex(null);
+    setActiveDeliveryId(null);
   };
 
   // Select vehicle address suggestion
   const selectAddressSuggestion = (suggestion: AddressSuggestion) => {
     if (!activeAddressField) return;
 
-    const newVehicles = [...vehicles];
-    if (activeAddressField.field === 'start') {
-      newVehicles[activeAddressField.vehicleIndex].startAddress = suggestion.display_name;
-    } else {
-      newVehicles[activeAddressField.vehicleIndex].endAddress = suggestion.display_name;
-    }
+    const newVehicles = vehicles.map(v => 
+      v._reactId === activeAddressField.vehicleId
+        ? { 
+            ...v, 
+            [activeAddressField.field === 'start' ? 'startAddress' : 'endAddress']: suggestion.display_name 
+          }
+        : v
+    );
     setVehicles(newVehicles);
 
     setAddressSuggestions([]);
@@ -377,7 +385,7 @@ export default function AddressGeocoder() {
         if (!clickedInsideDeliveryInput) {
           setShowDeliverySuggestions(false);
           setSelectedDeliverySuggestionIndex(-1);
-          setActiveDeliveryIndex(null);
+          setActiveDeliveryId(null);
         }
       }
       
@@ -414,8 +422,6 @@ export default function AddressGeocoder() {
   }, []);
 
   // Handle CSV upload with VALIDATION
-// Handle CSV upload with VALIDATION - UPDATED TO NOT WARN ON EMPTY TIMES
-// Handle CSV upload with VALIDATION - FIXED TO PROPERLY HANDLE EMPTY TIMES
   const handleCSVUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -442,11 +448,9 @@ export default function AddressGeocoder() {
               const address = row.address?.trim() || '';
               
               if (address && hasAtLeastOneLetter(address)) {
-                // Get time values and check if they're truly non-empty
                 const rawTimeStart = row.time_window_start;
                 const rawTimeEnd = row.time_window_end;
                 
-                // Check if value is actually present (not null, undefined, empty string, or just whitespace)
                 const hasStartTime = rawTimeStart != null && 
                                     rawTimeStart !== '' && 
                                     String(rawTimeStart).trim() !== '';
@@ -457,7 +461,6 @@ export default function AddressGeocoder() {
                 let validStartTime = '';
                 let validEndTime = '';
                 
-                // ONLY VALIDATE IF THE FIELD ACTUALLY HAS A VALUE
                 if (hasStartTime) {
                   const timeStart = String(rawTimeStart).trim();
                   const startValidation = validateTimeInput(timeStart);
@@ -468,7 +471,6 @@ export default function AddressGeocoder() {
                   }
                 }
                 
-                // ONLY VALIDATE IF THE FIELD ACTUALLY HAS A VALUE
                 if (hasEndTime) {
                   const timeEnd = String(rawTimeEnd).trim();
                   const endValidation = validateTimeInput(timeEnd);
@@ -479,7 +481,6 @@ export default function AddressGeocoder() {
                   }
                 }
                 
-                // ONLY CHECK START BEFORE END IF BOTH HAVE VALUES
                 if (validStartTime && validEndTime) {
                   if (!isStartBeforeEnd(validStartTime, validEndTime)) {
                     errors.push(`Row ${rowNum}: Delivery window start time must be before end time`);
@@ -489,7 +490,10 @@ export default function AddressGeocoder() {
                 }
                 
                 deliveriesData.push({
+                  _reactId: crypto.randomUUID(),
                   address: address,
+                  bufferTime: row.buffer_time || '300',
+                  demandValue: row.demand_value || '1',
                   timeWindowStart: validStartTime,
                   timeWindowEnd: validEndTime,
                 });
@@ -511,6 +515,7 @@ export default function AddressGeocoder() {
               }
               
               vehiclesData.push({
+                _reactId: crypto.randomUUID(),
                 id: row.id || `vehicle_${vehiclesData.length + 1}`,
                 vehicleType: row.vehicle_type || 'car',
                 startAddress: validStartAddress,
@@ -548,8 +553,7 @@ export default function AddressGeocoder() {
     });
   }, []);
 
-
-// Handle geocoding with VALIDATION - UPDATED TO NOT WARN ON EMPTY TIMES
+  // Handle geocoding with VALIDATION
   const handleGeocode = async () => {
     setLoading(true);
     setError(null);
@@ -567,24 +571,19 @@ export default function AddressGeocoder() {
           errors.push(`Delivery ${index + 1}: Address must contain at least one letter`);
           return false;
         }
-        const hasStart = d.timeWindowStart && d.timeWindowStart.trim().length > 0;
-        const hasEnd   = d.timeWindowEnd   && d.timeWindowEnd.trim().length > 0;
         
-        // ONLY VALIDATE IF TIME HAS A VALUE
-        if (hasStart) {
+        if (d.timeWindowStart && d.timeWindowStart.trim().length > 0) {
           if (!isValidTime(d.timeWindowStart)) {
             errors.push(`Delivery ${index + 1}: Start time must be between 7:00 AM and 9:00 PM`);
           }
         }
         
-        // ONLY VALIDATE IF TIME HAS A VALUE
-        if (hasEnd) {
+        if (d.timeWindowEnd && d.timeWindowEnd.trim().length > 0) {
           if (!isValidTime(d.timeWindowEnd)) {
             errors.push(`Delivery ${index + 1}: End time must be between 7:00 AM and 9:00 PM`);
           }
         }
         
-        // ONLY CHECK START BEFORE END IF BOTH HAVE VALUES
         if (d.timeWindowStart && d.timeWindowStart.trim().length > 0 && 
             d.timeWindowEnd && d.timeWindowEnd.trim().length > 0) {
           if (!isStartBeforeEnd(d.timeWindowStart, d.timeWindowEnd)) {
@@ -601,9 +600,8 @@ export default function AddressGeocoder() {
         return;
       }
 
-      // Convert deliveries to API format - WITH DEFAULTS
+      // Convert deliveries to API format
       const deliveriesToGeocode = validDeliveries.map(d => {
-        // Only convert if the field has a value, otherwise undefined (will use backend default)
         const startSeconds = d.timeWindowStart && d.timeWindowStart.trim().length > 0 
           ? timeToSeconds(d.timeWindowStart) 
           : undefined;
@@ -613,8 +611,8 @@ export default function AddressGeocoder() {
 
         return {
           address: d.address,
-          bufferTime: 300,
-          demand: 1,
+          bufferTime: parseInt(d.bufferTime) || 300,
+          demand: parseInt(d.demandValue) || 1,
           timeWindowStart: startSeconds,
           timeWindowEnd: endSeconds,
         };
@@ -750,10 +748,10 @@ export default function AddressGeocoder() {
 
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                 {deliveries.map((delivery, index) => (
-                  <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50 relative">
+                  <div key={delivery._reactId} className="border border-gray-300 rounded-lg p-4 bg-gray-50 relative">
                     {deliveries.length > 1 && (
                       <button
-                        onClick={() => removeDelivery(index)}
+                        onClick={() => removeDelivery(delivery._reactId)}
                         className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xl font-bold"
                         title="Remove delivery"
                       >
@@ -763,24 +761,86 @@ export default function AddressGeocoder() {
 
                     <h3 className="font-medium text-gray-700 mb-3 text-sm">Delivery {index + 1}</h3>
 
-                    <div className="mb-3">
+                    {/* Address Field with Autocomplete */}
+                    <div className="mb-3 relative">
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Address *
                       </label>
                       <input
                         ref={(el) => {
-                          if (el) deliveryInputRefs.current[index] = el;
+                          if (el) deliveryInputRefs.current[delivery._reactId] = el;
                         }}
                         type="text"
                         value={delivery.address}
-                        onChange={(e) => handleDeliveryAddressChange(index, e.target.value)}
+                        onChange={(e) => handleDeliveryAddressChange(delivery._reactId, e.target.value)}
                         onKeyDown={handleDeliveryKeyDown}
-                        onFocus={() => setActiveDeliveryIndex(index)}
-                        className="text-black text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onFocus={() => setActiveDeliveryId(delivery._reactId)}
+                        className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="201 Pine St, San Francisco, CA"
                       />
+                      
+                      {/* DELIVERY AUTOCOMPLETE DROPDOWN */}
+                      {showDeliverySuggestions && activeDeliveryId === delivery._reactId && deliverySuggestions.length > 0 && (
+                        <div
+                          ref={deliverySuggestionsRef}
+                          className="absolute z-50 w-full mt-1 bg-white border-2 border-blue-300 rounded-md shadow-xl max-h-48 overflow-y-auto"
+                        >
+                          <div className="bg-blue-50 px-3 py-1 border-b border-blue-200">
+                            <p className="text-xs font-semibold text-blue-900">Select Address</p>
+                          </div>
+                          {deliverySuggestions.map((suggestion, idx) => (
+                            <div
+                              key={suggestion.place_id}
+                              onClick={() => selectDeliverySuggestion(suggestion)}
+                              className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm ${
+                                idx === selectedDeliverySuggestionIndex
+                                  ? 'bg-blue-100 text-blue-900'
+                                  : 'hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-start">
+                                <span className="text-gray-400 mr-2 text-xs">📍</span>
+                                <p className="flex-1 text-gray-900 leading-tight">
+                                  {suggestion.display_name}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
+                    {/* Buffer Time and Demand */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Buffer Time (seconds)
+                        </label>
+                        <input
+                          type="number"
+                          value={delivery.bufferTime}
+                          onChange={(e) => handleDeliveryFieldChange(delivery._reactId, 'bufferTime', e.target.value)}
+                          className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="300"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Demand (units)
+                        </label>
+                        <input
+                          type="number"
+                          value={delivery.demandValue}
+                          onChange={(e) => handleDeliveryFieldChange(delivery._reactId, 'demandValue', e.target.value)}
+                          className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="1"
+                          min="1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Time Windows */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -789,7 +849,7 @@ export default function AddressGeocoder() {
                         <input
                           type="text"
                           value={delivery.timeWindowStart}
-                          onChange={(e) => handleDeliveryFieldChange(index, 'timeWindowStart', e.target.value)}
+                          onChange={(e) => handleDeliveryFieldChange(delivery._reactId, 'timeWindowStart', e.target.value)}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Default: 7:00AM"
                         />
@@ -801,7 +861,7 @@ export default function AddressGeocoder() {
                         <input
                           type="text"
                           value={delivery.timeWindowEnd}
-                          onChange={(e) => handleDeliveryFieldChange(index, 'timeWindowEnd', e.target.value)}
+                          onChange={(e) => handleDeliveryFieldChange(delivery._reactId, 'timeWindowEnd', e.target.value)}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Default: 9:00PM"
                         />
@@ -812,37 +872,11 @@ export default function AddressGeocoder() {
               </div>
 
               <p className="mt-3 text-xs text-gray-500">
-                💡 Leave blank for default 7:00 AM - 9:00 PM window
+                💡 Type at least 3 characters to see address suggestions
               </p>
-
-              {showDeliverySuggestions && deliverySuggestions.length > 0 && (
-                <div
-                  ref={deliverySuggestionsRef}
-                  className="mt-2 bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto"
-                >
-                  {deliverySuggestions.map((suggestion, index) => (
-                    <div
-                      key={suggestion.place_id}
-                      onClick={() => selectDeliverySuggestion(suggestion)}
-                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm ${
-                        index === selectedDeliverySuggestionIndex
-                          ? 'bg-blue-50 text-blue-900'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-start">
-                        <span className="text-gray-400 mr-2 text-xs">📍</span>
-                        <p className="flex-1 text-gray-900">
-                          {suggestion.display_name}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Vehicles Section */}
+            {/* Vehicles */}
             <div className="flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center">
@@ -859,10 +893,10 @@ export default function AddressGeocoder() {
 
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                 {vehicles.map((vehicle, index) => (
-                  <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50 relative">
+                  <div key={vehicle._reactId} className="border border-gray-300 rounded-lg p-4 bg-gray-50 relative">
                     {vehicles.length > 1 && (
                       <button
-                        onClick={() => removeVehicle(index)}
+                        onClick={() => removeVehicle(vehicle._reactId)}
                         className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-xl font-bold"
                         title="Remove vehicle"
                       >
@@ -880,7 +914,7 @@ export default function AddressGeocoder() {
                         <input
                           type="text"
                           value={vehicle.id}
-                          onChange={(e) => handleVehicleFieldChange(index, 'id', e.target.value)}
+                          onChange={(e) => handleVehicleFieldChange(vehicle._reactId, 'id', e.target.value)}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="vehicle_1"
                         />
@@ -892,7 +926,7 @@ export default function AddressGeocoder() {
                         </label>
                         <select
                           value={vehicle.vehicleType}
-                          onChange={(e) => handleVehicleFieldChange(index, 'vehicleType', e.target.value)}
+                          onChange={(e) => handleVehicleFieldChange(vehicle._reactId, 'vehicleType', e.target.value)}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="car">Car</option>
@@ -903,40 +937,100 @@ export default function AddressGeocoder() {
                         </select>
                       </div>
 
-                      <div className="col-span-2">
+                      <div className="col-span-2 relative">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           Start Address *
                         </label>
                         <input
                           ref={(el) => {
-                            if (el) addressInputRefs.current[`start-${index}`] = el;
+                            if (el) addressInputRefs.current[`start-${vehicle._reactId}`] = el;
                           }}
                           type="text"
                           value={vehicle.startAddress}
-                          onChange={(e) => handleVehicleAddressChange(index, 'start', e.target.value)}
+                          onChange={(e) => handleVehicleAddressChange(vehicle._reactId, 'start', e.target.value)}
                           onKeyDown={handleAddressKeyDown}
-                          onFocus={() => setActiveAddressField({ vehicleIndex: index, field: 'start' })}
+                          onFocus={() => setActiveAddressField({ vehicleId: vehicle._reactId, field: 'start' })}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="123 Main St, San Francisco, CA"
                         />
+                        
+                        {/* VEHICLE START ADDRESS AUTOCOMPLETE DROPDOWN */}
+                        {showAddressSuggestions && 
+                         activeAddressField?.vehicleId === vehicle._reactId && 
+                         activeAddressField?.field === 'start' && 
+                         addressSuggestions.length > 0 && (
+                          <div
+                            ref={addressSuggestionsRef}
+                            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                          >
+                            {addressSuggestions.map((suggestion, idx) => (
+                              <div
+                                key={suggestion.place_id}
+                                onClick={() => selectAddressSuggestion(suggestion)}
+                                className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm ${
+                                  idx === selectedAddressSuggestionIndex
+                                    ? 'bg-blue-50 text-blue-900'
+                                    : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <div className="flex items-start">
+                                  <span className="text-gray-400 mr-2 text-xs">📍</span>
+                                  <p className="flex-1 text-gray-900">
+                                    {suggestion.display_name}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
-                      <div className="col-span-2">
+                      <div className="col-span-2 relative">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           End Address *
                         </label>
                         <input
                           ref={(el) => {
-                            if (el) addressInputRefs.current[`end-${index}`] = el;
+                            if (el) addressInputRefs.current[`end-${vehicle._reactId}`] = el;
                           }}
                           type="text"
                           value={vehicle.endAddress}
-                          onChange={(e) => handleVehicleAddressChange(index, 'end', e.target.value)}
+                          onChange={(e) => handleVehicleAddressChange(vehicle._reactId, 'end', e.target.value)}
                           onKeyDown={handleAddressKeyDown}
-                          onFocus={() => setActiveAddressField({ vehicleIndex: index, field: 'end' })}
+                          onFocus={() => setActiveAddressField({ vehicleId: vehicle._reactId, field: 'end' })}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="123 Main St, San Francisco, CA"
                         />
+                        
+                        {/* VEHICLE END ADDRESS AUTOCOMPLETE DROPDOWN */}
+                        {showAddressSuggestions && 
+                         activeAddressField?.vehicleId === vehicle._reactId && 
+                         activeAddressField?.field === 'end' && 
+                         addressSuggestions.length > 0 && (
+                          <div
+                            ref={addressSuggestionsRef}
+                            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                          >
+                            {addressSuggestions.map((suggestion, idx) => (
+                              <div
+                                key={suggestion.place_id}
+                                onClick={() => selectAddressSuggestion(suggestion)}
+                                className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm ${
+                                  idx === selectedAddressSuggestionIndex
+                                    ? 'bg-blue-50 text-blue-900'
+                                    : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <div className="flex items-start">
+                                  <span className="text-gray-400 mr-2 text-xs">📍</span>
+                                  <p className="flex-1 text-gray-900">
+                                    {suggestion.display_name}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       <div className="col-span-2">
@@ -946,7 +1040,7 @@ export default function AddressGeocoder() {
                         <input
                           type="number"
                           value={vehicle.capacity}
-                          onChange={(e) => handleVehicleFieldChange(index, 'capacity', e.target.value)}
+                          onChange={(e) => handleVehicleFieldChange(vehicle._reactId, 'capacity', e.target.value)}
                           className="text-black w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="200"
                           min="1"
@@ -958,45 +1052,12 @@ export default function AddressGeocoder() {
               </div>
 
               <p className="mt-3 text-xs text-gray-500">
-                💡 Add vehicles to handle deliveries
+                💡 Type at least 3 characters to see address suggestions
               </p>
             </div>
           </div>
 
-          {showAddressSuggestions && addressSuggestions.length > 0 && (
-            <div className="mt-4 grid lg:grid-cols-2 gap-12">
-              <div></div>
-              <div>
-                <div
-                  ref={addressSuggestionsRef}
-                  className="bg-white border-2 border-blue-300 rounded-md shadow-xl max-h-64 overflow-y-auto"
-                >
-                  <div className="bg-blue-50 px-3 py-2 border-b border-blue-200">
-                    <p className="text-xs font-semibold text-blue-900">Address Suggestions</p>
-                  </div>
-                  {addressSuggestions.map((suggestion, index) => (
-                    <div
-                      key={suggestion.place_id}
-                      onClick={() => selectAddressSuggestion(suggestion)}
-                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm ${
-                        index === selectedAddressSuggestionIndex
-                          ? 'bg-blue-100 text-blue-900'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-start">
-                        <span className="text-gray-400 mr-2 text-xs">📍</span>
-                        <p className="flex-1 text-gray-900">
-                          {suggestion.display_name}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
+          {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
             <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="font-semibold text-yellow-800 mb-2">⚠️ Validation Warnings:</p>
@@ -1008,12 +1069,14 @@ export default function AddressGeocoder() {
             </div>
           )}
 
+          {/* Error Display */}
           {error && (
             <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-800">{error}</p>
             </div>
           )}
 
+          {/* Geocode Button */}
           <button
             onClick={handleGeocode}
             disabled={loading || deliveries.every(d => !d.address.trim()) || vehicles.every(v => !v.startAddress.trim())}
@@ -1022,6 +1085,7 @@ export default function AddressGeocoder() {
             {loading ? 'Processing...' : '🚀 Generate Optimized Routes'}
           </button>
 
+          {/* Results */}
           {results && (
             <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
