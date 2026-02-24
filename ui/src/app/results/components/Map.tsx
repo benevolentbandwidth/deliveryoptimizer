@@ -1,7 +1,7 @@
 // Map component for the Results page that renders the Google Map, draws the routes, and shows the delivery stops as markers
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, Fragment } from "react";
 import { LoadScriptNext, GoogleMap, Marker, Polyline } from "@react-google-maps/api"; // Loading the Google Maps API
 import type { Route } from "../types";
 
@@ -47,8 +47,8 @@ export default function MapComponent({ routes }: MapComponentProps) { // Passing
           const sortedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence); // Sorting the stops based on the sequence
           const path = sortedStops.map((s) => ({ lat: s.lat, lng: s.lng }));
 
-          return (
-            <div key={route.vehicleId}>
+          return ( // Using Fragment to wrap the Polyline and markers (and holds the key for the route), so they stay attached to map, whereas with div before treated as a separate DOM element 
+            <Fragment key={route.vehicleId}>
               <Polyline // Drawing the route path connecting stops in order (blue line)
                 path={path}
                 options={{
@@ -64,7 +64,7 @@ export default function MapComponent({ routes }: MapComponentProps) { // Passing
                   title={stop.address}
                 />
               ))}
-            </div>
+            </Fragment>
           );
         })}
       </GoogleMap>
