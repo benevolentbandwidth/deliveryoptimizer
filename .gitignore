@@ -1,21 +1,93 @@
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
 
 # CMake/Ninja build artifacts
 out/
 build/
+cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
+install_manifest.txt
 build.ninja
 .ninja_log
 .ninja_deps
+CTestTestfile.cmake
+Testing/
 compile_commands.json
 CMakeUserPresets.json
 
-# Compiler cache
+# Conan generated files
+conan.lock
+conanbuild.sh
+conanrun.sh
+conanbuildenv-*
+conanrunenv-*
+conandeps_legacy.cmake
+conan_toolchain.cmake
+graph_info.json
+generators/
+
+# C/C++ objects and binaries
+*.o
+*.obj
+*.lo
+*.a
+*.la
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Coverage / profiling artifacts
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+coverage/
+lcov.info
+
+# Compiler cache and tooling
 .ccache/
+.clangd/
+.cache/
+.idea/
+.vscode/
+.direnv/
+
+# Nix outputs
+result
+result-*
+
+# Frontend artifacts
+app/ui/node_modules/
+app/ui/.next/
+app/ui/out/
+app/ui/.turbo/
+app/ui/.eslintcache
+app/ui/coverage/
+app/ui/.vercel/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Routing data artifacts
+*.osm.pbf
+*.osrm
+*.osrm.*
+services/osrm/data/
+services/vroom/data/
 
 # macOS / editor noise
 .DS_Store

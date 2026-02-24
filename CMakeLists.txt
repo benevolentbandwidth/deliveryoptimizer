@@ -1,83 +1,44 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 
-project(deliveryoptimizer_routing LANGUAGES NONE)
+project(deliveryoptimizer VERSION 0.1.0 LANGUAGES CXX)
 
-set(ENV_FILE "${CMAKE_SOURCE_DIR}/infra/env/routing.env" CACHE FILEPATH "Environment file for docker compose")
-set(COMPOSE_FILE "${CMAKE_SOURCE_DIR}/infra/compose/routing.compose.yml" CACHE FILEPATH "Compose file for routing stack")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_program(BASH_EXECUTABLE bash REQUIRED)
-find_program(DOCKER_EXECUTABLE docker REQUIRED)
-find_program(CCACHE_EXECUTABLE ccache)
+option(DELIVERYOPTIMIZER_ENABLE_WARNINGS "Enable strict compiler warnings." ON)
+option(DELIVERYOPTIMIZER_ENABLE_TESTS "Build unit tests." ON)
+option(DELIVERYOPTIMIZER_ENABLE_SANITIZERS "Enable sanitizer instrumentation for Debug builds." OFF)
+set(
+  DELIVERYOPTIMIZER_SANITIZERS
+  "address;undefined"
+  CACHE STRING
+  "Semicolon- or comma-separated sanitizer list enabled when DELIVERYOPTIMIZER_ENABLE_SANITIZERS is ON."
+)
 
-if(CCACHE_EXECUTABLE)
-  message(STATUS "ccache detected at ${CCACHE_EXECUTABLE}")
-else()
-  message(STATUS "ccache not found in PATH; Docker builds will run without compiler launcher caching.")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(CompilerWarnings)
+include(Sanitizers)
+deliveryoptimizer_enable_sanitizers()
+
+if(CMAKE_EXPORT_COMPILE_COMMANDS AND NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_SOURCE_DIR}/compile_commands.json")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E create_symlink
+            "${CMAKE_BINARY_DIR}/compile_commands.json"
+            "${CMAKE_SOURCE_DIR}/compile_commands.json"
+  )
 endif()
 
-set(COMPOSE_CMD "\"${DOCKER_EXECUTABLE}\" compose -f \"${COMPOSE_FILE}\" --env-file \"${ENV_FILE}\"")
+add_subdirectory(libs/domain)
+add_subdirectory(libs/application)
+add_subdirectory(libs/adapters)
+add_subdirectory(app/api)
 
-function(add_shell_target target_name)
-  cmake_parse_arguments(ARG "USES_ENV_FILE" "" "COMMANDS;DEPENDS" ${ARGN})
-
-  if(NOT ARG_COMMANDS)
-    message(FATAL_ERROR "Target '${target_name}' needs at least one command.")
+if(DELIVERYOPTIMIZER_ENABLE_TESTS)
+  include(CTest)
+  if(BUILD_TESTING)
+    add_subdirectory(tests)
   endif()
-
-  set(target_commands "")
-  foreach(raw_cmd IN LISTS ARG_COMMANDS)
-    if(ARG_USES_ENV_FILE)
-      list(APPEND target_commands
-        COMMAND "${BASH_EXECUTABLE}" "-lc"
-          "set -a && source \"${ENV_FILE}\" && set +a && ${raw_cmd}"
-      )
-    else()
-      list(APPEND target_commands
-        COMMAND "${BASH_EXECUTABLE}" "-lc" "${raw_cmd}"
-      )
-    endif()
-  endforeach()
-
-  add_custom_target(${target_name}
-    ${target_commands}
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    USES_TERMINAL
-    VERBATIM
-  )
-
-  if(ARG_DEPENDS)
-    add_dependencies(${target_name} ${ARG_DEPENDS})
-  endif()
-endfunction()
-
-add_shell_target(
-  build
-  COMMANDS
-    "${COMPOSE_CMD} build osrm"
-    "${COMPOSE_CMD} build deliveryoptimizer-api"
-)
-
-add_shell_target(
-  up
-  COMMANDS
-    "${COMPOSE_CMD} up -d"
-)
-
-add_shell_target(
-  down
-  COMMANDS
-    "${COMPOSE_CMD} down"
-)
-
-add_shell_target(
-  smoke
-  USES_ENV_FILE
-  COMMANDS
-    "BASE_URL=\"http://localhost:$OSRM_PUBLIC_PORT\" && curl -fsS \"$BASE_URL/health\" >/dev/null && echo \"smoke checks passed\""
-)
-
-add_shell_target(
-  logs
-  COMMANDS
-    "${COMPOSE_CMD} logs -f --tail=200"
-)
+endif()
