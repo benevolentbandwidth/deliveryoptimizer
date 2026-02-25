@@ -1,19 +1,18 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
-#include <json/json.h>
-#include <unistd.h>
-
 #include <cstdlib>
 #include <drogon/drogon.h>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <json/json.h>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -109,12 +108,11 @@ private:
   std::string path_;
 };
 
-void AddValidationIssue(Json::Value& issues,
-                        std::string field,
-                        std::string message) {
+void AddValidationIssue(Json::Value& issues, const std::string_view field,
+                        const std::string_view message) {
   Json::Value issue{Json::objectValue};
-  issue["field"] = std::move(field);
-  issue["message"] = std::move(message);
+  issue["field"] = std::string{field};
+  issue["message"] = std::string{message};
   issues.append(issue);
 }
 
@@ -150,125 +148,164 @@ void AddValidationIssue(Json::Value& issues,
   return std::nullopt;
 }
 
-[[nodiscard]] std::optional<OptimizeRequestInput> ParseAndValidateRequest(
-    const Json::Value& root,
-    Json::Value& issues) {
-  OptimizeRequestInput parsed_input{};
-  issues = Json::Value{Json::arrayValue};
+[[nodiscard]] std::optional<VehicleInput>
+ParseVehicle(const Json::Value& vehicle, const std::string_view base_field, Json::Value& issues) {
+  if (!vehicle.isObject()) {
+    AddValidationIssue(issues, base_field, "must be an object.");
+    return std::nullopt;
+  }
 
+  const Json::Value& vehicle_id = vehicle["id"];
+  const Json::Value& capacity = vehicle["capacity"];
+
+  bool valid_vehicle = true;
+  std::string external_id;
+  if (!vehicle_id.isString() || vehicle_id.asString().empty()) {
+    AddValidationIssue(issues, std::string{base_field} + ".id", "must be a non-empty string.");
+    valid_vehicle = false;
+  } else {
+    external_id = vehicle_id.asString();
+  }
+
+  const auto parsed_capacity = ParseBoundedInt(capacity, 1);
+  if (!parsed_capacity.has_value()) {
+    AddValidationIssue(issues, std::string{base_field} + ".capacity",
+                       "must be a positive integer.");
+    valid_vehicle = false;
+  }
+
+  if (!valid_vehicle) {
+    return std::nullopt;
+  }
+
+  return VehicleInput{.external_id = std::move(external_id), .capacity = parsed_capacity.value()};
+}
+
+[[nodiscard]] std::optional<JobInput>
+ParseJob(const Json::Value& job, const std::string_view base_field, Json::Value& issues) {
+  if (!job.isObject()) {
+    AddValidationIssue(issues, base_field, "must be an object.");
+    return std::nullopt;
+  }
+
+  const Json::Value& job_id = job["id"];
+  const Json::Value& location = job["location"];
+  const Json::Value& demand = job["demand"];
+  const Json::Value& service = job["service"];
+
+  bool valid_job = true;
+  std::string external_id;
+  if (!job_id.isString() || job_id.asString().empty()) {
+    AddValidationIssue(issues, std::string{base_field} + ".id", "must be a non-empty string.");
+    valid_job = false;
+  } else {
+    external_id = job_id.asString();
+  }
+
+  const auto parsed_location = ParseCoordinate(location);
+  if (!parsed_location.has_value()) {
+    AddValidationIssue(issues, std::string{base_field} + ".location",
+                       "must be an array [lon, lat] with numeric values.");
+    valid_job = false;
+  }
+
+  const auto parsed_demand = ParseBoundedInt(demand, 1);
+  if (!parsed_demand.has_value()) {
+    AddValidationIssue(issues, std::string{base_field} + ".demand", "must be a positive integer.");
+    valid_job = false;
+  }
+
+  const auto parsed_service = ParseBoundedInt(service, 0);
+  if (!parsed_service.has_value()) {
+    AddValidationIssue(issues, std::string{base_field} + ".service",
+                       "must be a non-negative integer.");
+    valid_job = false;
+  }
+
+  if (!valid_job) {
+    return std::nullopt;
+  }
+
+  return JobInput{.external_id = std::move(external_id),
+                  .lon = parsed_location->lon,
+                  .lat = parsed_location->lat,
+                  .demand = parsed_demand.value(),
+                  .service = parsed_service.value()};
+}
+
+void ParseDepot(const Json::Value& root, OptimizeRequestInput& parsed_input, Json::Value& issues) {
+  const Json::Value& depot = root["depot"];
+  if (!depot.isObject()) {
+    AddValidationIssue(issues, "depot", "is required and must be an object.");
+    return;
+  }
+
+  const auto depot_coordinate = ParseCoordinate(depot["location"]);
+  if (!depot_coordinate.has_value()) {
+    AddValidationIssue(issues, "depot.location",
+                       "must be an array [lon, lat] with numeric values.");
+    return;
+  }
+
+  parsed_input.depot_lon = depot_coordinate->lon;
+  parsed_input.depot_lat = depot_coordinate->lat;
+}
+
+void ParseVehicles(const Json::Value& root, OptimizeRequestInput& parsed_input,
+                   Json::Value& issues) {
+  const Json::Value& vehicles = root["vehicles"];
+  if (!vehicles.isArray()) {
+    AddValidationIssue(issues, "vehicles", "is required and must be a non-empty array.");
+    return;
+  }
+
+  if (vehicles.empty()) {
+    AddValidationIssue(issues, "vehicles", "must not be empty.");
+    return;
+  }
+
+  for (Json::ArrayIndex index = 0U; index < vehicles.size(); ++index) {
+    const std::string base_field = "vehicles[" + std::to_string(index) + "]";
+    const auto parsed_vehicle = ParseVehicle(vehicles[index], base_field, issues);
+    if (parsed_vehicle.has_value()) {
+      parsed_input.vehicles.push_back(parsed_vehicle.value());
+    }
+  }
+}
+
+void ParseJobs(const Json::Value& root, OptimizeRequestInput& parsed_input, Json::Value& issues) {
+  const Json::Value& jobs = root["jobs"];
+  if (!jobs.isArray()) {
+    AddValidationIssue(issues, "jobs", "is required and must be a non-empty array.");
+    return;
+  }
+
+  if (jobs.empty()) {
+    AddValidationIssue(issues, "jobs", "must not be empty.");
+    return;
+  }
+
+  for (Json::ArrayIndex index = 0U; index < jobs.size(); ++index) {
+    const std::string base_field = "jobs[" + std::to_string(index) + "]";
+    const auto parsed_job = ParseJob(jobs[index], base_field, issues);
+    if (parsed_job.has_value()) {
+      parsed_input.jobs.push_back(parsed_job.value());
+    }
+  }
+}
+
+[[nodiscard]] std::optional<OptimizeRequestInput> ParseAndValidateRequest(const Json::Value& root,
+                                                                          Json::Value& issues) {
+  issues = Json::Value{Json::arrayValue};
   if (!root.isObject()) {
     AddValidationIssue(issues, "body", "must be a JSON object.");
     return std::nullopt;
   }
 
-  const Json::Value& depot = root["depot"];
-  if (!depot.isObject()) {
-    AddValidationIssue(issues, "depot", "is required and must be an object.");
-  } else {
-    const auto depot_coordinate = ParseCoordinate(depot["location"]);
-    if (!depot_coordinate.has_value()) {
-      AddValidationIssue(issues, "depot.location", "must be an array [lon, lat] with numeric values.");
-    } else {
-      parsed_input.depot_lon = depot_coordinate->lon;
-      parsed_input.depot_lat = depot_coordinate->lat;
-    }
-  }
-
-  const Json::Value& vehicles = root["vehicles"];
-  if (!vehicles.isArray()) {
-    AddValidationIssue(issues, "vehicles", "is required and must be a non-empty array.");
-  } else if (vehicles.empty()) {
-    AddValidationIssue(issues, "vehicles", "must not be empty.");
-  } else {
-    for (Json::ArrayIndex index = 0U; index < vehicles.size(); ++index) {
-      const Json::Value& vehicle = vehicles[index];
-      const std::string base_field = "vehicles[" + std::to_string(index) + "]";
-      if (!vehicle.isObject()) {
-        AddValidationIssue(issues, base_field, "must be an object.");
-        continue;
-      }
-
-      const Json::Value& id = vehicle["id"];
-      const Json::Value& capacity = vehicle["capacity"];
-
-      bool valid_vehicle = true;
-      std::string external_id;
-      if (!id.isString() || id.asString().empty()) {
-        AddValidationIssue(issues, base_field + ".id", "must be a non-empty string.");
-        valid_vehicle = false;
-      } else {
-        external_id = id.asString();
-      }
-
-      const auto parsed_capacity = ParseBoundedInt(capacity, 1);
-      if (!parsed_capacity.has_value()) {
-        AddValidationIssue(issues, base_field + ".capacity", "must be a positive integer.");
-        valid_vehicle = false;
-      }
-
-      if (valid_vehicle) {
-        parsed_input.vehicles.push_back(
-            VehicleInput{.external_id = std::move(external_id), .capacity = parsed_capacity.value()});
-      }
-    }
-  }
-
-  const Json::Value& jobs = root["jobs"];
-  if (!jobs.isArray()) {
-    AddValidationIssue(issues, "jobs", "is required and must be a non-empty array.");
-  } else if (jobs.empty()) {
-    AddValidationIssue(issues, "jobs", "must not be empty.");
-  } else {
-    for (Json::ArrayIndex index = 0U; index < jobs.size(); ++index) {
-      const Json::Value& job = jobs[index];
-      const std::string base_field = "jobs[" + std::to_string(index) + "]";
-      if (!job.isObject()) {
-        AddValidationIssue(issues, base_field, "must be an object.");
-        continue;
-      }
-
-      const Json::Value& id = job["id"];
-      const Json::Value& location = job["location"];
-      const Json::Value& demand = job["demand"];
-      const Json::Value& service = job["service"];
-
-      bool valid_job = true;
-      std::string external_id;
-      if (!id.isString() || id.asString().empty()) {
-        AddValidationIssue(issues, base_field + ".id", "must be a non-empty string.");
-        valid_job = false;
-      } else {
-        external_id = id.asString();
-      }
-
-      const auto parsed_location = ParseCoordinate(location);
-      if (!parsed_location.has_value()) {
-        AddValidationIssue(issues, base_field + ".location",
-                           "must be an array [lon, lat] with numeric values.");
-        valid_job = false;
-      }
-
-      const auto parsed_demand = ParseBoundedInt(demand, 1);
-      if (!parsed_demand.has_value()) {
-        AddValidationIssue(issues, base_field + ".demand", "must be a positive integer.");
-        valid_job = false;
-      }
-
-      const auto parsed_service = ParseBoundedInt(service, 0);
-      if (!parsed_service.has_value()) {
-        AddValidationIssue(issues, base_field + ".service", "must be a non-negative integer.");
-        valid_job = false;
-      }
-
-      if (valid_job) {
-        parsed_input.jobs.push_back(JobInput{.external_id = std::move(external_id),
-                                             .lon = parsed_location->lon,
-                                             .lat = parsed_location->lat,
-                                             .demand = parsed_demand.value(),
-                                             .service = parsed_service.value()});
-      }
-    }
-  }
+  OptimizeRequestInput parsed_input{};
+  ParseDepot(root, parsed_input, issues);
+  ParseVehicles(root, parsed_input, issues);
+  ParseJobs(root, parsed_input, issues);
 
   if (!issues.empty()) {
     return std::nullopt;
@@ -410,9 +447,8 @@ void AddValidationIssue(Json::Value& issues,
     return std::nullopt;
   }
 
-  const std::string output_text{
-      std::istreambuf_iterator<char>{output_stream},
-      std::istreambuf_iterator<char>{}};
+  const std::string output_text{std::istreambuf_iterator<char>{output_stream},
+                                std::istreambuf_iterator<char>{}};
   if (!output_stream.good() && !output_stream.eof()) {
     return std::nullopt;
   }
