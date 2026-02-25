@@ -9,7 +9,7 @@ type SidebarProps = {
 
 export default function Sidebar({ routes }: SidebarProps) { // Defining Sidebar component receiving routes as a prop
   return (
-    <aside className="w-full border-r border-zinc-200 bg-white p-4"> {/* w-full so sidebar fills its container; the page wrapper owns the width (w-72 when open) */}
+    <aside className="w-full border-r border-zinc-200 bg-white p-4"> {/* w-full so sidebar fills its container, the page wrapper owns the width (w-72 when open) */}
       <h2 className="text-lg font-semibold text-zinc-800">Route list</h2>
       {routes.length === 0 ? ( 
         <p className="mt-2 text-sm text-zinc-500">No routes yet</p> // If no routes, show message saying "no routes yet"
