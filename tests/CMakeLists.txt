@@ -376,27 +376,27 @@ if(DOCKER_PROGRAM)
     1800
   )
 
-  deliveryoptimizer_add_docker_migration_e2e_test(
+  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.OsrmProxyNearestReturnsOk
     osrm_proxy_nearest_returns_ok_e2e_test.sh
     2400
   )
-  deliveryoptimizer_add_docker_migration_e2e_test(
+  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.OsrmProxyBlocksTileService
     osrm_proxy_blocks_tile_service_e2e_test.sh
     2400
   )
-  deliveryoptimizer_add_docker_migration_e2e_test(
+  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeValidPayloadReturnsRoutingResponse
     deliveries_optimize_valid_payload_returns_routing_response_e2e_test.sh
     2400
   )
-  deliveryoptimizer_add_docker_migration_e2e_test(
+  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeInvalidPayloadReturnsValidationError
     deliveries_optimize_invalid_payload_returns_validation_error_e2e_test.sh
     2400
   )
-  deliveryoptimizer_add_docker_migration_e2e_test(
+  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeMalformedJsonReturnsParseError
     deliveries_optimize_malformed_json_returns_parse_error_e2e_test.sh
     2400
