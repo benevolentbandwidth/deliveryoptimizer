@@ -2,7 +2,7 @@
 
 namespace deliveryoptimizer::application {
 
-std::string OptimizeService::Optimize(const domain::DeliveryProblem& problem) const {
+std::string OptimizeService::Optimize(const domain::DeliveryProblem& problem) {
   if (problem.empty()) {
     return "no-plan: deliveries=0 or vehicles=0";
   }

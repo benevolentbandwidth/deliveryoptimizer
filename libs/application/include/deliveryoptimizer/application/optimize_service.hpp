@@ -8,7 +8,7 @@ namespace deliveryoptimizer::application {
 
 class OptimizeService {
 public:
-  [[nodiscard]] std::string Optimize(const domain::DeliveryProblem& problem) const;
+  [[nodiscard]] static std::string Optimize(const domain::DeliveryProblem& problem);
 };
 
 } // namespace deliveryoptimizer::application
