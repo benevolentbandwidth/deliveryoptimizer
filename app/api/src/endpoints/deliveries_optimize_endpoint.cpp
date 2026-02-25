@@ -7,6 +7,7 @@
 #include <iterator>
 #include <json/json.h>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -145,6 +146,25 @@ void AddValidationIssue(Json::Value& issues, const std::string_view field,
     }
 
     return static_cast<int>(parsed);
+  }
+
+  return std::nullopt;
+}
+
+[[nodiscard]] std::optional<Json::UInt64> ParsePositiveId(const Json::Value& value) {
+  if (value.isUInt64()) {
+    const Json::UInt64 parsed = value.asUInt64();
+    if (parsed > 0U) {
+      return parsed;
+    }
+    return std::nullopt;
+  }
+
+  if (value.isInt64()) {
+    const Json::Int64 parsed = value.asInt64();
+    if (parsed > 0) {
+      return static_cast<Json::UInt64>(parsed);
+    }
   }
 
   return std::nullopt;
@@ -393,6 +413,92 @@ void ParseJobs(const Json::Value& root, OptimizeRequestInput& parsed_input, Json
   return payload;
 }
 
+[[nodiscard]] std::map<Json::UInt64, std::string>
+BuildVehicleExternalIdMap(const OptimizeRequestInput& input) {
+  std::map<Json::UInt64, std::string> vehicle_map;
+  for (std::size_t index = 0U; index < input.vehicles.size(); ++index) {
+    vehicle_map[static_cast<Json::UInt64>(index + 1U)] = input.vehicles[index].external_id;
+  }
+  return vehicle_map;
+}
+
+[[nodiscard]] std::map<Json::UInt64, std::string>
+BuildJobExternalIdMap(const OptimizeRequestInput& input) {
+  std::map<Json::UInt64, std::string> job_map;
+  for (std::size_t index = 0U; index < input.jobs.size(); ++index) {
+    job_map[static_cast<Json::UInt64>(index + 1U)] = input.jobs[index].external_id;
+  }
+  return job_map;
+}
+
+void ApplyExternalIdsToRoutes(Json::Value& routes,
+                              const std::map<Json::UInt64, std::string>& vehicle_map,
+                              const std::map<Json::UInt64, std::string>& job_map) {
+  if (!routes.isArray()) {
+    return;
+  }
+
+  for (Json::ArrayIndex route_index = 0U; route_index < routes.size(); ++route_index) {
+    Json::Value& route = routes[route_index];
+    if (!route.isObject()) {
+      continue;
+    }
+
+    const auto vehicle_id = ParsePositiveId(route["vehicle"]);
+    if (vehicle_id.has_value()) {
+      const auto vehicle_it = vehicle_map.find(*vehicle_id);
+      if (vehicle_it != vehicle_map.end()) {
+        route["vehicle_external_id"] = vehicle_it->second;
+      }
+    }
+
+    Json::Value& steps = route["steps"];
+    if (!steps.isArray()) {
+      continue;
+    }
+
+    for (Json::ArrayIndex step_index = 0U; step_index < steps.size(); ++step_index) {
+      Json::Value& step = steps[step_index];
+      if (!step.isObject()) {
+        continue;
+      }
+      const auto job_id = ParsePositiveId(step["job"]);
+      if (!job_id.has_value()) {
+        continue;
+      }
+
+      const auto job_it = job_map.find(*job_id);
+      if (job_it != job_map.end()) {
+        step["job_external_id"] = job_it->second;
+      }
+    }
+  }
+}
+
+void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
+                                  const std::map<Json::UInt64, std::string>& job_map) {
+  if (!unassigned.isArray()) {
+    return;
+  }
+
+  for (Json::ArrayIndex index = 0U; index < unassigned.size(); ++index) {
+    Json::Value& entry = unassigned[index];
+    if (!entry.isObject()) {
+      continue;
+    }
+
+    const auto job_id = ParsePositiveId(entry["id"]);
+    if (!job_id.has_value()) {
+      continue;
+    }
+
+    const auto job_it = job_map.find(*job_id);
+    if (job_it != job_map.end()) {
+      entry["job_external_id"] = job_it->second;
+    }
+  }
+}
+
 [[nodiscard]] std::string ResolveEnvOrDefault(const char* key,
                                               const std::string_view default_value) {
   const char* raw_value = std::getenv(key);
@@ -506,50 +612,61 @@ void ParseJobs(const Json::Value& root, OptimizeRequestInput& parsed_input, Json
 namespace deliveryoptimizer::api {
 
 void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app) {
-  app.registerHandler(
-      "/api/v1/deliveries/optimize",
-      [](const drogon::HttpRequestPtr& request,
-         std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
-        const auto& parsed_json = request->getJsonObject();
-        if (!parsed_json) {
-          std::move(callback)(
-              BuildErrorResponse(drogon::k400BadRequest, "Request body must be valid JSON."));
-          return;
-        }
+  app.registerHandler("/api/v1/deliveries/optimize",
+                      [](const drogon::HttpRequestPtr& request,
+                         std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
+                        const auto& parsed_json = request->getJsonObject();
+                        if (!parsed_json) {
+                          std::move(callback)(BuildErrorResponse(
+                              drogon::k400BadRequest, "Request body must be valid JSON."));
+                          return;
+                        }
 
-        Json::Value issues{Json::arrayValue};
-        const auto parsed_input = ParseAndValidateRequest(*parsed_json, issues);
-        if (!parsed_input.has_value()) {
-          Json::Value body{Json::objectValue};
-          body["error"] = "Validation failed.";
-          body["issues"] = issues;
-          auto response = drogon::HttpResponse::newHttpJsonResponse(body);
-          response->setStatusCode(drogon::k400BadRequest);
-          std::move(callback)(response);
-          return;
-        }
+                        Json::Value issues{Json::arrayValue};
+                        const auto parsed_input = ParseAndValidateRequest(*parsed_json, issues);
+                        if (!parsed_input.has_value()) {
+                          Json::Value body{Json::objectValue};
+                          body["error"] = "Validation failed.";
+                          body["issues"] = issues;
+                          auto response = drogon::HttpResponse::newHttpJsonResponse(body);
+                          response->setStatusCode(drogon::k400BadRequest);
+                          std::move(callback)(response);
+                          return;
+                        }
 
-        const Json::Value vroom_input = BuildVroomInput(parsed_input.value());
-        const auto vroom_output = RunVroom(vroom_input);
-        if (!vroom_output.has_value()) {
-          std::move(callback)(
-              BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed."));
-          return;
-        }
+                        const Json::Value vroom_input = BuildVroomInput(parsed_input.value());
+                        const auto vroom_output = RunVroom(vroom_input);
+                        if (!vroom_output.has_value()) {
+                          std::move(callback)(BuildErrorResponse(drogon::k502BadGateway,
+                                                                 "Routing optimization failed."));
+                          return;
+                        }
 
-        Json::Value body{Json::objectValue};
-        body["status"] = "ok";
-        const Json::Value& summary = (*vroom_output)["summary"];
-        body["summary"] = summary.isObject() ? summary : Json::Value{Json::objectValue};
-        const Json::Value& routes = (*vroom_output)["routes"];
-        body["routes"] = routes.isArray() ? routes : Json::Value{Json::arrayValue};
-        const Json::Value& unassigned = (*vroom_output)["unassigned"];
-        body["unassigned"] = unassigned.isArray() ? unassigned : Json::Value{Json::arrayValue};
-        body["raw"] = *vroom_output;
+                        Json::Value body{Json::objectValue};
+                        body["status"] = "ok";
+                        const Json::Value& summary = (*vroom_output)["summary"];
+                        body["summary"] =
+                            summary.isObject() ? summary : Json::Value{Json::objectValue};
 
-        std::move(callback)(drogon::HttpResponse::newHttpJsonResponse(body));
-      },
-      {drogon::Post});
+                        Json::Value routes = (*vroom_output)["routes"];
+                        if (!routes.isArray()) {
+                          routes = Json::Value{Json::arrayValue};
+                        }
+                        Json::Value unassigned = (*vroom_output)["unassigned"];
+                        if (!unassigned.isArray()) {
+                          unassigned = Json::Value{Json::arrayValue};
+                        }
+                        const auto vehicle_map = BuildVehicleExternalIdMap(parsed_input.value());
+                        const auto job_map = BuildJobExternalIdMap(parsed_input.value());
+                        ApplyExternalIdsToRoutes(routes, vehicle_map, job_map);
+                        ApplyExternalIdsToUnassigned(unassigned, job_map);
+                        body["routes"] = std::move(routes);
+                        body["unassigned"] = std::move(unassigned);
+                        body["raw"] = *vroom_output;
+
+                        std::move(callback)(drogon::HttpResponse::newHttpJsonResponse(body));
+                      },
+                      {drogon::Post});
 }
 
 } // namespace deliveryoptimizer::api
