@@ -1,0 +1,15 @@
+name: deliveryoptimizer
+
+services:
+  http-server:
+    platform: ${DELIVERYOPTIMIZER_PLATFORM:-linux/arm64}
+    image: ${DELIVERYOPTIMIZER_IMAGE:-deliveryoptimizer-http:arm64}
+    build:
+      context: ../..
+      dockerfile: deploy/services/http-server.Dockerfile
+      args:
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-24.04}
+        CONAN_VERSION: ${CONAN_VERSION:-2.9.2}
+    ports:
+      - "${DELIVERYOPTIMIZER_HOST_PORT:-8080}:8080"
+    restart: unless-stopped

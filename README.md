@@ -1,5 +1,9 @@
 # Delivery Optimizer Routing Stack
 
+## Contributor Docs
+
+- C++ local environment setup: `docs/cpp-local-contributor-setup.md`
+
 This repository provisions a source-built routing stack for small-business delivery optimization:
 
 - OSRM compiled from source
