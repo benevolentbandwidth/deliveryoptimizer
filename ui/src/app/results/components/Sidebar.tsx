@@ -9,7 +9,7 @@ type SidebarProps = {
 
 export default function Sidebar({ routes }: SidebarProps) { // Defining Sidebar component receiving routes as a prop
   return (
-    <aside className="w-72 shrink-0 border-r border-zinc-200 bg-white p-4"> {/* Sidebar container with width 288px, fixed width and doesn't shrink, white background, and padding */}
+    <aside className="w-full border-r border-zinc-200 bg-white p-4"> {/* w-full so sidebar fills its container; the page wrapper owns the width (w-72 when open) */}
       <h2 className="text-lg font-semibold text-zinc-800">Route list</h2>
       {routes.length === 0 ? ( 
         <p className="mt-2 text-sm text-zinc-500">No routes yet</p> // If no routes, show message saying "no routes yet"
@@ -19,7 +19,7 @@ export default function Sidebar({ routes }: SidebarProps) { // Defining Sidebar 
             <li key={route.vehicleId} className="text-sm"> 
               <span className="font-medium text-zinc-800">{route.driverName}</span> {/* Route/driver name: dark so it reads as a heading */}
               <ul className="ml-2 mt-1 space-y-1 text-zinc-600">
-                {route.stops // Using the stops of the current route
+                {[...route.stops] // Before each time Sidebar renders the array is sorted in place, mutating the original, so we make a copy leaving route.stops unchanged (similar to Map.tsx)
                   .sort((a, b) => a.sequence - b.sequence) // Sorting the stops by sequence number
                   .map((stop) => (
                     <li key={stop.id}>

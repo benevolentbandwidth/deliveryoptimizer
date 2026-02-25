@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import { mockRouteToRoute } from "./data/mockRouteLoader";
@@ -12,13 +12,8 @@ import type { MockRouteJson } from "./data/mockRouteLoader";
 import mockRouteJson from "./data/mock_route.json";
 
 export default function ResultsPage() {
-  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
-
-  useEffect(() => {
-    const route = mockRouteToRoute(mockRouteJson as MockRouteJson);
-    setRoutes([route]); // sets routes to an array containing the route
-  }, []);
 
   return (
     <main className="min-h-screen flex flex-col">
