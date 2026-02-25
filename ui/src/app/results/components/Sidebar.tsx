@@ -12,7 +12,7 @@ type SidebarProps = {
 export default function Sidebar({ routes, isEditMode, onEditModeChange }: SidebarProps) { // Sidebar component receiving routes, edit mode state, and onEditModeChange from when <Sidebar> is rendered in page.tsx
   return (
     <aside
-      className={`w-72 shrink-0 border-r-2 bg-white p-4 ${isEditMode ? "border-amber-500" : "border-zinc-200"}`} // Sidebar container with width 288px, fixed width and doesn't shrink, white background, and padding. If edit mode is true, border color is amber, otherwise it's zinc
+      className={`w-full border-r-2 bg-white p-4 ${isEditMode ? "border-amber-500" : "border-zinc-200"}`} // w-full so sidebar fills its container; the page wrapper owns the width (w-72 when open). If edit mode is true, border color is amber, otherwise zinc
     >
       {isEditMode && ( // If edit mode is true, show the message saying "Edit Mode On"
         <p className="mb-2 text-xs font-medium text-amber-700 bg-amber-50 rounded px-2 py-1">Edit Mode Active</p> 
@@ -40,7 +40,7 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange }: Sideba
             <li key={route.vehicleId} className="text-sm"> 
               <span className="font-medium text-zinc-800">{route.driverName}</span> {/* Route/driver name: dark so it reads as a heading */}
               <ul className="ml-2 mt-1 space-y-1 text-zinc-600">
-                {route.stops // Using the stops of the current route
+                {[...route.stops] // Before each time Sidebar renders the array is sorted in place, mutating the original, so we make a copy leaving route.stops unchanged (similar to Map.tsx)
                   .sort((a, b) => a.sequence - b.sequence) // Sorting the stops by sequence number
                   .map((stop) => (
                     <li key={stop.id}>
