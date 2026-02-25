@@ -145,10 +145,6 @@ set_tests_properties(
     TIMEOUT 30
     LABELS "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
 )
-deliveryoptimizer_set_local_http_test_port(
-  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsExcessiveBodySize
-  23000
-)
 
 deliveryoptimizer_add_local_http_test(
   DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService
@@ -405,6 +401,63 @@ if(DOCKER_PROGRAM)
     2400
   )
   deliveryoptimizer_add_docker_api_e2e_test(
+    DeliveryOptimizerE2ETest.DeliveriesOptimizeMalformedJsonReturnsParseError
+    deliveries_optimize_malformed_json_returns_parse_error_e2e_test.sh
+    2400
+  )
+
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.OsrmNearestReturnsOk
+    osrm_nearest_returns_ok_e2e_test.sh
+    1800
+  )
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.VroomHelpIsAvailable
+    vroom_help_is_available_e2e_test.sh
+    1800
+  )
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.HealthEndpointReturnsOk
+    health_endpoint_returns_ok_e2e_test.sh
+    1800
+  )
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.OptimizeValidQueryReturnsSummary
+    optimize_valid_query_returns_summary_e2e_test.sh
+    1800
+  )
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.OptimizeRejectsNegativeDeliveries
+    optimize_rejects_negative_deliveries_e2e_test.sh
+    1800
+  )
+  deliveryoptimizer_add_docker_e2e_test(
+    DeliveryOptimizerE2ETest.OptimizeRejectsExcessiveDeliveries
+    optimize_rejects_excessive_deliveries_e2e_test.sh
+    1800
+  )
+
+  deliveryoptimizer_add_docker_migration_e2e_test(
+    DeliveryOptimizerE2ETest.OsrmProxyNearestReturnsOk
+    osrm_proxy_nearest_returns_ok_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_migration_e2e_test(
+    DeliveryOptimizerE2ETest.OsrmProxyBlocksTileService
+    osrm_proxy_blocks_tile_service_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_migration_e2e_test(
+    DeliveryOptimizerE2ETest.DeliveriesOptimizeValidPayloadReturnsRoutingResponse
+    deliveries_optimize_valid_payload_returns_routing_response_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_migration_e2e_test(
+    DeliveryOptimizerE2ETest.DeliveriesOptimizeInvalidPayloadReturnsValidationError
+    deliveries_optimize_invalid_payload_returns_validation_error_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_migration_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeMalformedJsonReturnsParseError
     deliveries_optimize_malformed_json_returns_parse_error_e2e_test.sh
     2400
