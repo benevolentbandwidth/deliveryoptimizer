@@ -294,6 +294,38 @@ deliveryoptimizer_set_local_http_test_port(
   38000
 )
 
+add_test(
+  NAME DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeEnforcesSolverTimeout
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/deliveries_optimize_enforces_solver_timeout_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeEnforcesSolverTimeout PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerApiRegressionTest.DeliveriesOptimizePreservesVehicleTimeWindow
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/deliveries_optimize_preserves_vehicle_time_window_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiRegressionTest.DeliveriesOptimizePreservesVehicleTimeWindow PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerApiRegressionTest.DeliveriesOptimizePreservesJobTimeWindows
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/deliveries_optimize_preserves_job_time_windows_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiRegressionTest.DeliveriesOptimizePreservesJobTimeWindows PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsOutOfRangeCoordinates
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/deliveries_optimize_rejects_out_of_range_coordinates_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsOutOfRangeCoordinates PROPERTIES TIMEOUT 30)
+
 if(DOCKER_PROGRAM)
   set(DELIVERYOPTIMIZER_E2E_ENV_FILE "${CMAKE_SOURCE_DIR}/tests/integration/e2e/e2e_stack.env")
   set(DELIVERYOPTIMIZER_E2E_COMPOSE_FILE "${CMAKE_SOURCE_DIR}/deploy/compose/docker-compose.arm64.yml")
