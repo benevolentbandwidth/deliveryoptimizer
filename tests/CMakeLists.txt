@@ -2,34 +2,35 @@ find_package(GTest CONFIG REQUIRED)
 find_package(JsonCpp CONFIG REQUIRED)
 include(GoogleTest)
 
-add_executable(
-  deliveryoptimizer_tests
-  adapters/osrm_contract/builds_route_path_with_stable_query_contract_test.cpp
-  adapters/osrm_contract/builds_table_path_with_stable_query_contract_test.cpp
-  adapters/osrm_contract/route_path_requires_at_least_two_coordinates_test.cpp
-  adapters/osrm_contract/table_path_requires_at_least_two_coordinates_test.cpp
-  adapters/routing_facade/returns_no_plan_when_deliveries_missing_test.cpp
-  adapters/routing_facade/returns_no_plan_when_vehicles_missing_test.cpp
-  adapters/routing_facade/returns_optimized_plan_for_valid_inputs_test.cpp
-  adapters/vroom_contract/build_solve_payload_creates_expected_entity_counts_test.cpp
-  adapters/vroom_contract/describe_solve_summary_uses_stable_contract_test.cpp
-  adapters/vroom_contract/parse_solve_summary_reads_routes_and_unassigned_test.cpp
-  adapters/vroom_contract/parse_solve_summary_returns_nullopt_for_invalid_json_test.cpp
-  adapters/vroom_contract/parse_solve_summary_returns_nullopt_when_summary_is_missing_test.cpp
-  application/optimize_service/returns_no_plan_when_deliveries_missing_test.cpp
-  application/optimize_service/returns_no_plan_when_vehicles_missing_test.cpp
-  application/optimize_service/returns_optimized_summary_when_inputs_valid_test.cpp
-  domain/problem/describe_problem_uses_stable_contract_test.cpp
-  domain/problem/empty_when_deliveries_missing_test.cpp
-  domain/problem/empty_when_vehicles_missing_test.cpp
-  domain/problem/not_empty_when_inputs_present_test.cpp
+set(
+  DELIVERYOPTIMIZER_TEST_COMPONENT_DIRS
+  adapters
+  application
+  config
+  domain
 )
+
+set(DELIVERYOPTIMIZER_TEST_SOURCES)
+foreach(component_dir IN LISTS DELIVERYOPTIMIZER_TEST_COMPONENT_DIRS)
+  file(
+    GLOB_RECURSE component_sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/${component_dir}/*.cpp"
+  )
+  list(APPEND DELIVERYOPTIMIZER_TEST_SOURCES ${component_sources})
+endforeach()
+list(SORT DELIVERYOPTIMIZER_TEST_SOURCES)
+
+add_executable(deliveryoptimizer_tests ${DELIVERYOPTIMIZER_TEST_SOURCES})
 target_compile_features(deliveryoptimizer_tests PRIVATE cxx_std_20)
+target_compile_definitions(
+  deliveryoptimizer_tests
+  PRIVATE
+    DELIVERYOPTIMIZER_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
 target_link_libraries(
   deliveryoptimizer_tests
   PRIVATE
-    deliveryoptimizer::application
-    deliveryoptimizer::domain
     deliveryoptimizer::adapters
     GTest::gtest_main
     JsonCpp::JsonCpp
@@ -51,3 +52,19 @@ add_test(
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerApiTest.HealthAndOptimize PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerApiValidationTest.OptimizeRejectsNegativeDeliveries
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/optimize_rejects_negative_deliveries_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiValidationTest.OptimizeRejectsNegativeDeliveries PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerApiValidationTest.OptimizeRejectsExcessiveDeliveries
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/optimize_rejects_excessive_deliveries_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerApiValidationTest.OptimizeRejectsExcessiveDeliveries PROPERTIES TIMEOUT 30)
