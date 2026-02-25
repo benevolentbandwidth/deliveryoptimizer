@@ -21,11 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ninja-build
           version: 1.0
+      - run: cmake --version
       - run: cmake --preset dev
-        env:
-          CMAKE_MAKE_PROGRAM: ninja
       - run: docker compose -f infra/compose/routing.compose.yml --env-file infra/env/routing.env config
