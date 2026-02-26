@@ -1,10 +1,11 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
 #include "env_utils.hpp"
-
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <drogon/drogon.h>
 #include <filesystem>
 #include <fstream>
@@ -14,12 +15,18 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <spawn.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <thread>
 #include <unistd.h>
 #include <utility>
 #include <vector>
+
+extern char** environ;
 
 namespace {
 
@@ -66,6 +73,17 @@ struct OptimizeRequestInput {
   double depot_lat;
   std::vector<VehicleInput> vehicles;
   std::vector<JobInput> jobs;
+};
+
+enum class VroomRunStatus {
+  kSuccess,
+  kFailed,
+  kTimedOut,
+};
+
+struct VroomRunResult {
+  VroomRunStatus status{VroomRunStatus::kFailed};
+  std::optional<Json::Value> output;
 };
 
 class ScopedTempFile {
@@ -634,19 +652,17 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   }
 }
 
-[[nodiscard]] std::string ShellEscape(const std::string& value) {
-  std::string escaped;
-  escaped.reserve(value.size() + 2U);
-  escaped.push_back('\'');
-  for (const char character : value) {
-    if (character == '\'') {
-      escaped += "'\\''";
-    } else {
-      escaped.push_back(character);
-    }
+[[nodiscard]] int ParseTimeoutSeconds(const std::string& value,
+                                      const int default_timeout_seconds) {
+  errno = 0;
+  char* end = nullptr;
+  const long parsed = std::strtol(value.c_str(), &end, 10);
+  if (errno != 0 || end == value.c_str() || *end != '\0' || parsed <= 0L ||
+      parsed > static_cast<long>(std::numeric_limits<int>::max())) {
+    return default_timeout_seconds;
   }
-  escaped.push_back('\'');
-  return escaped;
+
+  return static_cast<int>(parsed);
 }
 
 [[nodiscard]] std::optional<Json::Value> ParseJson(const std::string_view input) {
@@ -666,15 +682,15 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   return root;
 }
 
-[[nodiscard]] std::optional<Json::Value> RunVroom(const Json::Value& input_payload) {
+[[nodiscard]] VroomRunResult RunVroom(const Json::Value& input_payload) {
   const auto input_file = ScopedTempFile::Create("deliveryoptimizer-vroom-input-");
   if (!input_file.has_value()) {
-    return std::nullopt;
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 
   const auto output_file = ScopedTempFile::Create("deliveryoptimizer-vroom-output-");
   if (!output_file.has_value()) {
-    return std::nullopt;
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 
   Json::StreamWriterBuilder writer_builder;
@@ -684,11 +700,11 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   {
     std::ofstream input_stream(input_file->path(), std::ios::binary | std::ios::trunc);
     if (!input_stream.is_open()) {
-      return std::nullopt;
+      return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
     }
     input_stream << payload_text;
     if (!input_stream.good()) {
-      return std::nullopt;
+      return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
     }
   }
 
@@ -702,29 +718,71 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
       deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_PORT", kDefaultVroomPort);
   const std::string vroom_timeout = deliveryoptimizer::api::ResolveEnvOrDefault(
       "VROOM_TIMEOUT_SECONDS", kDefaultVroomTimeoutSeconds);
+  const int timeout_seconds =
+      ParseTimeoutSeconds(vroom_timeout, std::stoi(std::string{kDefaultVroomTimeoutSeconds}));
 
-  const std::string command = ShellEscape(vroom_bin) + " --router " + ShellEscape(vroom_router) +
-                              " --host " + ShellEscape(vroom_host) + " --port " +
-                              ShellEscape(vroom_port) + " --limit " + ShellEscape(vroom_timeout) +
-                              " --input " + ShellEscape(input_file->path()) + " --output " +
-                              ShellEscape(output_file->path());
-  const int command_status = std::system(command.c_str());
-  if (command_status != 0) {
-    return std::nullopt;
+  std::vector<char*> args{
+      const_cast<char*>(vroom_bin.c_str()),      const_cast<char*>("--router"),
+      const_cast<char*>(vroom_router.c_str()),   const_cast<char*>("--host"),
+      const_cast<char*>(vroom_host.c_str()),     const_cast<char*>("--port"),
+      const_cast<char*>(vroom_port.c_str()),     const_cast<char*>("--limit"),
+      const_cast<char*>(vroom_timeout.c_str()),  const_cast<char*>("--input"),
+      const_cast<char*>(input_file->path().c_str()),
+      const_cast<char*>("--output"),
+      const_cast<char*>(output_file->path().c_str()),
+      nullptr,
+  };
+
+  pid_t vroom_pid = -1;
+  const int spawn_status = posix_spawn(&vroom_pid, vroom_bin.c_str(), nullptr, nullptr, args.data(),
+                                       environ);
+  if (spawn_status != 0) {
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
+  }
+
+  int command_status = 0;
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
+  while (true) {
+    const pid_t wait_result = waitpid(vroom_pid, &command_status, WNOHANG);
+    if (wait_result == vroom_pid) {
+      break;
+    }
+    if (wait_result == -1) {
+      return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
+    }
+
+    if (std::chrono::steady_clock::now() >= deadline) {
+      (void)kill(vroom_pid, SIGKILL);
+      (void)waitpid(vroom_pid, &command_status, 0);
+      return VroomRunResult{.status = VroomRunStatus::kTimedOut, .output = std::nullopt};
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  if (!WIFEXITED(command_status) || WEXITSTATUS(command_status) != 0) {
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 
   std::ifstream output_stream(output_file->path(), std::ios::binary);
   if (!output_stream.is_open()) {
-    return std::nullopt;
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 
   const std::string output_text{std::istreambuf_iterator<char>{output_stream},
                                 std::istreambuf_iterator<char>{}};
   if (!output_stream.good() && !output_stream.eof()) {
-    return std::nullopt;
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 
-  return ParseJson(output_text);
+  const auto parsed = ParseJson(output_text);
+  if (!parsed.has_value()) {
+    return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
+  }
+
+  return VroomRunResult{
+      .status = VroomRunStatus::kSuccess,
+      .output = std::move(parsed),
+  };
 }
 
 [[nodiscard]] drogon::HttpResponsePtr BuildErrorResponse(const drogon::HttpStatusCode code,
@@ -764,8 +822,13 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app) {
                         }
 
                         const Json::Value vroom_input = BuildVroomInput(parsed_input.value());
-                        const auto vroom_output = RunVroom(vroom_input);
-                        if (!vroom_output.has_value()) {
+                        const VroomRunResult vroom_result = RunVroom(vroom_input);
+                        if (vroom_result.status == VroomRunStatus::kTimedOut) {
+                          std::move(callback)(BuildErrorResponse(
+                              drogon::k504GatewayTimeout, "Routing optimization timed out."));
+                          return;
+                        }
+                        if (!vroom_result.output.has_value()) {
                           std::move(callback)(BuildErrorResponse(drogon::k502BadGateway,
                                                                  "Routing optimization failed."));
                           return;
@@ -773,15 +836,15 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app) {
 
                         Json::Value body{Json::objectValue};
                         body["status"] = "ok";
-                        const Json::Value& summary = (*vroom_output)["summary"];
+                        const Json::Value& summary = (*vroom_result.output)["summary"];
                         body["summary"] =
                             summary.isObject() ? summary : Json::Value{Json::objectValue};
 
-                        Json::Value routes = (*vroom_output)["routes"];
+                        Json::Value routes = (*vroom_result.output)["routes"];
                         if (!routes.isArray()) {
                           routes = Json::Value{Json::arrayValue};
                         }
-                        Json::Value unassigned = (*vroom_output)["unassigned"];
+                        Json::Value unassigned = (*vroom_result.output)["unassigned"];
                         if (!unassigned.isArray()) {
                           unassigned = Json::Value{Json::arrayValue};
                         }
@@ -791,7 +854,6 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app) {
                         ApplyExternalIdsToUnassigned(unassigned, job_map);
                         body["routes"] = std::move(routes);
                         body["unassigned"] = std::move(unassigned);
-
                         std::move(callback)(drogon::HttpResponse::newHttpJsonResponse(body));
                       },
                       {drogon::Post});
