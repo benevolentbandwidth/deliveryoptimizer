@@ -9,3 +9,7 @@ export const sessionSaveSchema = z.object({
 
 export type SessionSaveFile =
   z.infer<typeof sessionSaveSchema>
+
+export function parseSessionSaveFile(input: unknown): SessionSaveFile {
+  return sessionSaveSchema.parse(input)
+}
