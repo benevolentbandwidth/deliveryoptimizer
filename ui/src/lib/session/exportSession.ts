@@ -1,6 +1,11 @@
-import type { OptimizeRequest } from "@/lib/types/optimize.types"
-import type { SessionSaveFile } from "@/lib/validation/session.schema"
+import type { OptimizeRequest } from "../types/optimize.types"
+import { sessionSaveSchema, type SessionSaveFile } from "../validation/session.schema"
 
+// session state return format
+export type SessionExportResult =
+  | { ok: true; filename: string }
+  | { ok: false; error: Error }
+  
 // filename save format
 function filenameTimestamp(date: Date) {
   const yyyy = String(date.getFullYear())
@@ -14,43 +19,51 @@ function filenameTimestamp(date: Date) {
   return `date_${yyyy}-${mm}-${dd}_time_${hh}-${min}-${ss}`
 }
 
-// uses in-memory application state and puts it in a save format 
-export function buildSessionSave( state: OptimizeRequest ): SessionSaveFile {
+// uses in-memory state and puts it in a save format 
+export function buildSessionSave(state: OptimizeRequest): SessionSaveFile {
   const now = new Date()
 
-  return {
+  const saveFile = {
     version: 1,
     savedAt: now.toISOString(),
     data: state,
-  }
+  } as const
+
+  // runtime validation to catch schema change/ invalid state
+  return sessionSaveSchema.parse(saveFile)
 }
 
-export function downloadSessionSave(
-  state: OptimizeRequest
-) {
-  const saveFile = buildSessionSave(state)
 
-  const filename =
-    `routes_${filenameTimestamp(new Date(saveFile.savedAt))}.json`
+export function downloadSessionSave(state: OptimizeRequest): SessionExportResult {
+  try {
+    const now = new Date()
+    const saveFile = sessionSaveSchema.parse({
+      version: 1,
+      savedAt: now.toISOString(),
+      data: state,
+    })
 
-  const jsonString = JSON.stringify(saveFile, null, 2)
+    const filename = `routes_${filenameTimestamp(now)}.json`
+    const jsonString = JSON.stringify(saveFile, null, 2)
 
-  // Blob API creates a file object in browser memory
-  const blob = new Blob([jsonString], {
-    type: "application/json",
-  })
+    const blob = new Blob([jsonString], { type: "application/json" })
+    const objectUrl = URL.createObjectURL(blob)
 
-  const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = objectUrl
+    link.download = filename
+    link.rel = "noopener"
 
-  const link = document.createElement("a")
-  link.href = objectUrl
-  link.download = filename
-  link.rel = "noopener"
+    document.body.appendChild(link)
+    link.click()
 
-  document.body.appendChild(link)
-  link.click()
+    link.remove()
+    URL.revokeObjectURL(objectUrl)
 
-  // Clean up
-  link.remove()
-  URL.revokeObjectURL(objectUrl)
+    return { ok: true, filename }
+  } catch (e) {
+    const error = e instanceof Error ? e : new Error("export error")
+    console.error("failed to export session save", error)
+    return { ok: false, error }
+  }
 }
