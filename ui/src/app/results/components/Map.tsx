@@ -2,7 +2,7 @@
 // Uses @react-google-maps/api with Advanced Markers
 "use client";
 
-import { useCallback, useEffect, useRef, useState, Fragment } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadScriptNext, GoogleMap, Polyline } from "@react-google-maps/api";
 import type { Route } from "../types";
 
@@ -112,16 +112,15 @@ export default function MapComponent({ routes }: MapComponentProps) {
             const sorted = [...route.stops].sort((a, b) => a.sequence - b.sequence);
             const path = sorted.map((s) => ({ lat: s.lat, lng: s.lng }));
             return ( // We draw a polyline for each route, with the stops in the order they're visited
-              <Fragment key={route.vehicleId}>
-                <Polyline
-                  path={path}
-                  options={{
-                    strokeColor: POLYLINE_COLOR,
-                    strokeWeight: 5,
-                    strokeOpacity: 0.9,
-                  }}
-                />
-              </Fragment>
+              <Polyline
+                key={route.vehicleId}
+                path={path}
+                options={{
+                  strokeColor: POLYLINE_COLOR,
+                  strokeWeight: 5,
+                  strokeOpacity: 0.9,
+                }}
+              />
             );
           })}
         </GoogleMap>
