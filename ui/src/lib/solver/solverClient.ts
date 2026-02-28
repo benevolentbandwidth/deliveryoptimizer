@@ -32,13 +32,13 @@ async function fetchWithTimeout(
   }
 }
 
-/**
- * Sends optimization request to VROOM
- */
 
 // Get payload type from buildPayload in payloadBuilder.ts
 type SolverPayload = ReturnType<typeof buildPayload>
 
+/**
+ * Sends optimization request to VROOM
+ */
 export async function solverClient(payload: SolverPayload) {
 
   const response = await retry(async () => {
@@ -53,12 +53,12 @@ export async function solverClient(payload: SolverPayload) {
     // Retry only transient errors
     if (!res.ok) {
       if (res.status >= 500 || res.status === 429) {
-        throw new Error(`Retryable VROOM error ${res.status}`)
+        throw new Error(`RETRYABLE: VROOM error ${res.status}`)
       }
 
       // Non-retryable so fail immediately
       const text = await res.text()
-      throw new Error(`VROOM Error (${res.status}): ${text}`)
+      throw new Error(`NON_RETRYABLE: VROOM Error (${res.status}): ${text}`)
     }
 
     return res

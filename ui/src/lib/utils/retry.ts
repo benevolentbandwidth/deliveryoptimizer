@@ -13,6 +13,7 @@ export async function retry<T>(
 
   } catch (error) {
 
+    // Non-Retryable Abort Error
     if (
       error &&
       typeof error === "object" &&
@@ -21,7 +22,16 @@ export async function retry<T>(
     ) {
       throw error
     }
+
+    // Non-Retryable Error
+    if (
+      error instanceof Error &&
+      error.message.startsWith("NON_RETRYABLE:")
+    ) {
+      throw error
+    }
     
+    // Already Did 3 retries (including initial attempt)
     if (retries <= 1) {
       throw error
     }
