@@ -12,7 +12,7 @@ export const runtime = "nodejs"
 
 export async function POST(req: Request) {
 
-  let body
+  let body: unknown
 
   // Check if JSON is Valid
   try {
@@ -33,24 +33,34 @@ export async function POST(req: Request) {
 
     // Find and Display Correct Error Message
     if (!validation.success) {
-
-      const first = validation.error.issues[0]
+      const first = validation.error.issues[0]  // Only first error is displayed to user
 
       const path = first.path
       let message = first.message
 
-      if (path[0] === "deliveries") {
-        const index = Number(path[1]) + 1
-        const field = String(path[path.length - 1])
-        message = `Delivery #${index} is missing ${field}`
+      // Delivery missing field override
+      if (
+        path[0] === "deliveries" &&
+        path.length >= 3 &&
+        typeof path[1] === "number" &&
+        first.code === "invalid_type"
+      ) {
+        const field = String(path[2])
+        message = `Delivery #${path[1] + 1} is missing ${field}`
       }
 
-      if (path[0] === "vehicles") {
-        const index = Number(path[1]) + 1
-        const field = String(path[path.length - 1])
-        message = `Vehicle #${index} is missing ${field}`
+      // Vehicle missing field override
+      if (
+        path[0] === "vehicles" &&
+        path.length >= 3 &&
+        typeof path[1] === "number" &&
+        first.code === "invalid_type"
+      ) {
+        const field = String(path[2])
+        message = `Vehicle #${path[1] + 1} is missing ${field}`
       }
 
+      // Return Error Message
       return NextResponse.json(
         { error: message },
         { status: 400 }
@@ -78,9 +88,18 @@ export async function POST(req: Request) {
     return NextResponse.json(result)
 
   } catch (error) {
-
     console.error(error)
-    
+
+    const message =
+      error instanceof Error ? error.message : ""
+
+    if (message.includes("VROOM")) {
+      return NextResponse.json(
+        { error: "VROOM Solver service unavailable" },
+        { status: 502 }
+      )
+    }
+
     return NextResponse.json(
       { error: "Optimization failed" },
       { status: 500 }
