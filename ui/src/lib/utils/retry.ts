@@ -13,6 +13,15 @@ export async function retry<T>(
 
   } catch (error) {
 
+    if (
+      error &&
+      typeof error === "object" &&
+      "name" in error &&
+      (error as { name?: string }).name === "AbortError"
+    ) {
+      throw error
+    }
+    
     if (retries <= 1) {
       throw error
     }

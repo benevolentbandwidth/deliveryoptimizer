@@ -1,8 +1,8 @@
 import { retry } from "@/lib/utils/retry"
 
 const VROOM_URL =
-  process.env.VROOM_URL ||
-  "http://localhost:3000" // adjust if needed
+  (process.env.VROOM_URL ?? "http://localhost:3000")
+    .replace(/\/$/, "")
 
 
 const TIMEOUT_MS = 10000 // 10 seconds
@@ -17,7 +17,7 @@ async function fetchWithTimeout(
 
   const controller = new AbortController()
 
-  const timeout = setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     controller.abort()
   }, TIMEOUT_MS)
 
@@ -27,7 +27,7 @@ async function fetchWithTimeout(
       signal: controller.signal
     })
   } finally {
-    clearTimeout(timeout)
+    clearTimeout(timeoutId)
   }
 }
 
@@ -36,25 +36,28 @@ async function fetchWithTimeout(
  */
 export async function solverClient(payload: unknown) {
 
-  const response = await retry(() =>
-    fetchWithTimeout(`${VROOM_URL}/`, {
+  const response = await retry(async () => {
+    const res = await fetchWithTimeout(`${VROOM_URL}/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
     })
-  )
 
-  // Throw Error
-  if (!response.ok) {
+    // Retry only transient errors
+    if (!res.ok) {
+      if (res.status >= 500 || res.status === 429) {
+        throw new Error(`Retryable VROOM error ${res.status}`)
+      }
 
-    const text = await response.text()
+      // Non-retryable so fail immediately
+      const text = await res.text()
+      throw new Error(`VROOM Error (${res.status}): ${text}`)
+    }
 
-    throw new Error(
-      `VROOM Error (${response.status}): ${text}`
-    )
-  }
+    return res
+  })
 
   // Check content type returned by VROOM
   const contentType = response.headers.get("content-type")
