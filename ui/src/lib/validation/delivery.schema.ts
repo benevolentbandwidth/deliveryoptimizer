@@ -2,7 +2,7 @@ import { z } from "zod"
 import { locationSchema, loadSchema, MAX_DEMAND, MAX_BUFFER_TIME } from "./common.schema"
 
 export const deliverySchema = z.object({
-  id: z.string().min(1),
+  id: z.number().int().nonnegative(),
 
   address: z.string().optional(),
 

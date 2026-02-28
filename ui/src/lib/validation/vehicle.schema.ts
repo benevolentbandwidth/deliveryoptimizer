@@ -2,7 +2,7 @@ import { z } from "zod"
 import { locationSchema, loadSchema } from "./common.schema"
 
 export const vehicleSchema = z.object({
-  id: z.string().min(1),
+  id: z.number().int().nonnegative(),
 
   vehicleType: z.string().min(1),
 
