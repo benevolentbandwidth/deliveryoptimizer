@@ -1,4 +1,5 @@
 import { retry } from "@/lib/utils/retry"
+import { buildPayload } from "@/lib/solver/payloadBuilder" 
 
 const VROOM_URL =
   (process.env.VROOM_URL ?? "http://localhost:3000")
@@ -34,7 +35,11 @@ async function fetchWithTimeout(
 /**
  * Sends optimization request to VROOM
  */
-export async function solverClient(payload: unknown) {
+
+// Get payload type from buildPayload in payloadBuilder.ts
+type SolverPayload = ReturnType<typeof buildPayload>
+
+export async function solverClient(payload: SolverPayload) {
 
   const response = await retry(async () => {
     const res = await fetchWithTimeout(`${VROOM_URL}/`, {
