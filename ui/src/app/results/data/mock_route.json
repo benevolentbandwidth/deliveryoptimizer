@@ -1,0 +1,14 @@
+{
+  "stops": [
+    { "id": "stop-1", "lat": 38.552, "lng": -121.748, "address": "230 1st St, Davis", "status": "delivered", "sequence": 1 },
+    { "id": "stop-2", "lat": 38.546, "lng": -121.746, "address": "404 2nd St, Davis", "status": "delivered", "sequence": 2 },
+    { "id": "stop-3", "lat": 38.54, "lng": -121.744, "address": "615 3rd St, Davis", "status": "in_progress", "sequence": 3 },
+    { "id": "stop-4", "lat": 38.534, "lng": -121.742, "address": "820 4th St, Davis", "status": "pending", "sequence": 4 },
+    { "id": "stop-5", "lat": 38.538, "lng": -121.758, "address": "201 B St, Davis", "status": "pending", "sequence": 5 },
+    { "id": "stop-6", "lat": 38.539, "lng": -121.738, "address": "305 C St, Davis", "status": "pending", "sequence": 6 },
+    { "id": "stop-7", "lat": 38.54, "lng": -121.722, "address": "410 D St, Davis", "status": "pending", "sequence": 7 },
+    { "id": "stop-8", "lat": 38.541, "lng": -121.708, "address": "522 E St, Davis", "status": "pending", "sequence": 8 },
+    { "id": "stop-9", "lat": 38.532, "lng": -121.735, "address": "100 G St, Davis", "status": "pending", "sequence": 9 },
+    { "id": "stop-10", "lat": 38.528, "lng": -121.752, "address": "205 H St, Davis", "status": "pending", "sequence": 10 }
+  ]
+}
