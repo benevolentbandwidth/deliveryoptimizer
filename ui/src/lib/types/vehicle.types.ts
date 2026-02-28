@@ -1,7 +1,7 @@
 import { Location, Load } from "./common.types"
 
 export type VehicleInput = {
-  id: string
+  id: number
   vehicleType: string
   startLocation: Location
   endLocation?: Location
@@ -11,7 +11,7 @@ export type VehicleInput = {
 }
 
 export type Vehicle = {
-  id: string
+  id: number
   start: [number, number]
   end?: [number, number]
   capacity: number[]
