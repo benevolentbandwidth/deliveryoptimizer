@@ -5,15 +5,6 @@ type RetryTaggedError = {
   retryable?: boolean
 }
 
-function isAbortError(error: unknown): boolean {
-  return Boolean(
-    error &&
-      typeof error === "object" &&
-      "name" in error &&
-      (error as { name?: string }).name === "AbortError"
-  )
-}
-
 function isRetryable(error: unknown): boolean {
   return Boolean(
     error &&
