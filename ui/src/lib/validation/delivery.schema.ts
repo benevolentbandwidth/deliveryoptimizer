@@ -34,6 +34,22 @@ export const deliverySchema = z.object({
 })
 
 /**
- * Useful when validating arrays from requests
+ * Ensure each ID is unique
  */
-export const deliveriesSchema = z.array(deliverySchema)
+export const deliveriesSchema = z
+  .array(deliverySchema)
+  .superRefine((deliveries, ctx) => {
+    const seen = new Map<number, number>()
+
+    deliveries.forEach((delivery, index) => {
+      if (seen.has(delivery.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate delivery id: ${delivery.id}`,
+          path: [index, "id"]
+        })
+      } else {
+        seen.set(delivery.id, index)
+      }
+    })
+  })

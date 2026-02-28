@@ -38,4 +38,23 @@ export const vehicleSchema = z.object({
     message: "departureTime and returnTime must both be provided or both omitted" 
   })
 
-export const vehiclesSchema = z.array(vehicleSchema)
+/**
+ * Ensure each ID is unique
+ */
+export const vehiclesSchema = z
+  .array(vehicleSchema)
+  .superRefine((vehicles, ctx) => {
+    const seen = new Set<number>()
+
+    vehicles.forEach((vehicle, index) => {
+      if (seen.has(vehicle.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate vehicle id: ${vehicle.id}`,
+          path: [index, "id"]
+        })
+      }
+
+      seen.add(vehicle.id)
+    })
+  })
