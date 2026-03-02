@@ -8,6 +8,7 @@ This repository provisions a source-built routing stack for small-business deliv
 
 ## Structure
 
+- `app/ui`: Frontend application (Next.js)
 - `engine/osrm`: OSRM build/runtime image
 - `services/deliveryoptimizer-api`: Python HTTP router + VROOM build image
 - `infra/compose`: Docker Compose definitions
