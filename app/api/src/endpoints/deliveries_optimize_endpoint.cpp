@@ -260,6 +260,11 @@ void AddValidationIssue(Json::Value& issues, const std::string_view field,
   issues.append(issue);
 }
 
+[[nodiscard]] std::string BuildMaxItemsMessage(const Json::ArrayIndex max_items) {
+  return "must contain at most " + std::to_string(static_cast<unsigned long long>(max_items)) +
+         " items.";
+}
+
 [[nodiscard]] std::optional<Coordinate> ParseCoordinate(const Json::Value& value) {
   if (!value.isArray() || value.size() != 2U || !value[0].isNumeric() || !value[1].isNumeric()) {
     return std::nullopt;
@@ -551,7 +556,7 @@ void ParseVehicles(const Json::Value& root, OptimizeRequestInput& parsed_input,
     return;
   }
   if (vehicles.size() > kMaxOptimizeVehicles) {
-    AddValidationIssue(issues, "vehicles", "must contain at most 2000 items.");
+    AddValidationIssue(issues, "vehicles", BuildMaxItemsMessage(kMaxOptimizeVehicles));
     return;
   }
 
@@ -576,7 +581,7 @@ void ParseJobs(const Json::Value& root, OptimizeRequestInput& parsed_input, Json
     return;
   }
   if (jobs.size() > kMaxOptimizeJobs) {
-    AddValidationIssue(issues, "jobs", "must contain at most 10000 items.");
+    AddValidationIssue(issues, "jobs", BuildMaxItemsMessage(kMaxOptimizeJobs));
     return;
   }
 
@@ -924,9 +929,14 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
 }
 
 [[nodiscard]] bool KillAndReapProcess(const pid_t process_id, int& command_status) {
-  (void)kill(process_id, SIGKILL);
+  if (kill(process_id, SIGKILL) == -1 && errno != ESRCH) {
+    return false;
+  }
   while (waitpid(process_id, &command_status, 0) == -1) {
     if (errno != EINTR) {
+      if (errno == ECHILD) {
+        return true;
+      }
       return false;
     }
   }
@@ -941,7 +951,9 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   }
 
   const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
-  return static_cast<int>(std::max<std::int64_t>(remaining.count(), 1));
+  const std::int64_t clamped_ms =
+      std::clamp<std::int64_t>(remaining.count(), 1, std::numeric_limits<int>::max());
+  return static_cast<int>(clamped_ms);
 }
 
 [[nodiscard]] int PollOutputDescriptor(const ScopedFileDescriptor& output_read_end,
@@ -1061,6 +1073,8 @@ MonitorProcessOutput(const pid_t process_id, const int timeout_seconds,
     return VroomRunResult{.status = VroomRunStatus::kTimedOut, .output = std::nullopt};
   }
   if (monitor_result.status != ProcessMonitorStatus::kCompleted) {
+    int reap_status = monitor_result.command_status;
+    (void)KillAndReapProcess(vroom_pid, reap_status);
     return VroomRunResult{.status = VroomRunStatus::kFailed, .output = std::nullopt};
   }
 

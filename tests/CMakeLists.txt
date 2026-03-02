@@ -303,6 +303,18 @@ deliveryoptimizer_add_local_http_test(
   30
   "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
 )
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsExcessiveJobs
+  deliveries_optimize_rejects_excessive_jobs_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsExcessiveVroomOutput
+  deliveries_optimize_rejects_excessive_vroom_output_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
 
 if(DOCKER_PROGRAM)
   set(DELIVERYOPTIMIZER_E2E_ENV_FILE "${CMAKE_SOURCE_DIR}/tests/integration/e2e/e2e_stack.env")
