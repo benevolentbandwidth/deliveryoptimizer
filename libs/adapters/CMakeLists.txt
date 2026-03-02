@@ -1,4 +1,4 @@
-find_package(JsonCpp CONFIG REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
 
 add_library(deliveryoptimizer_adapters)
 add_library(deliveryoptimizer::adapters ALIAS deliveryoptimizer_adapters)
