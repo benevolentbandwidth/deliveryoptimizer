@@ -217,7 +217,7 @@ ParseNonNegativeEpochSeconds(const Json::Value& value) {
 }
 
 [[nodiscard]] std::optional<std::vector<TimeWindow>> ParseTimeWindows(const Json::Value& value) {
-  if (!value.isArray()) {
+  if (!value.isArray() || value.size() == 0U) {
     return std::nullopt;
   }
 
