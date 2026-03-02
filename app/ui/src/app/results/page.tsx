@@ -12,9 +12,22 @@ import type { MockRouteJson } from "./data/mockRouteLoader";
 import mockRouteJson from "./data/mock_route.json";
 
 export default function ResultsPage() {
-  const [routes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]);
+  const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
+
+  // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
+  function updateStopNote(routeId: string, stopId: string, note: string) {
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.vehicleId !== routeId) return route;
+        return {
+          ...route,
+          stops: route.stops.map((s) => (s.id === stopId ? { ...s, note } : s)),
+        };
+      })
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -35,7 +48,7 @@ export default function ResultsPage() {
         <div
           className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // Before the sidebar only rendered when open, so it popped in with no transition. Now the sidebar is always in the page and placed inside a wrapper div that acts like a window. We change the width of that window so when open it is 288px wide and when closed it is 0px
         >                                                                                                                     {/* And since sidebar is always in the page (288px wide), overflow hidden helps prevent it from sticking out when the wrapper is 0px. Transition makes sure as the width changes, animate it over 300ms instead of jumping in/out abruptly */}
-          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
+          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
         </div>
         {/* Outer div: the map area (right side + padding). Doesn't give the map a height that works for 100% */}
         <div className="flex-1 min-w-0 min-h-[70vh] h-full px-4 pb-4 flex flex-col">

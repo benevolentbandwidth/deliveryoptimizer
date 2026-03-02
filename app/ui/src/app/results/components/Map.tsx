@@ -2,6 +2,7 @@
 // Uses @react-google-maps/api with Advanced Markers
 "use client";
 
+/// <reference types="@types/google.maps" />
 import { useCallback, useEffect, useRef, useState, Fragment } from "react";
 import { LoadScriptNext, GoogleMap, Polyline } from "@react-google-maps/api";
 import type { Route } from "../types";
@@ -50,7 +51,7 @@ function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes:
 
     return () => { // Cleanup function to clean up the pins when the component unmounts
       cancelled = true;
-      markersRef.current.forEach((m) => { // For each pin, we set the map to null so it's removed from the map
+      markersRef.current.forEach((m: google.maps.marker.AdvancedMarkerElement) => {
         m.map = null;
       });
       markersRef.current = [];
