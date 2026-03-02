@@ -23,13 +23,17 @@ export function mockRouteToRoute(data: MockRouteJson): Route { // Converting the
     lat: s.lat,
     lng: s.lng,
     sequence: s.sequence,
-    capacityUsed: 0,
+    capacityUsed: 1,
     timeWindow: { kind: "by" as const, time: "12:00" },
-    deliveryNotes: "",
+    note: "",
+    addresseeName: undefined, // if no name, we show "—"
   }));
   return {
-    vehicleId: "mock-vehicle-1",
+    vehicleId: "1234",
     driverName: "Joe",
     stops,
+    vehicleType: "Van",
+    distanceMi: 89,
+    estimatedTimeMinutes: 195, // 3h 15m 
   };
 }
