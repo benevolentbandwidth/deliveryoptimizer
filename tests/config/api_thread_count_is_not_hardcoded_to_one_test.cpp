@@ -7,16 +7,18 @@
 
 namespace fs = std::filesystem;
 
-TEST(ApiConfigTest, ThreadCountIsNotHardcodedToOne) {
-  const fs::path api_src_dir = fs::path(DELIVERYOPTIMIZER_SOURCE_DIR) / "app" / "api" / "src";
-  ASSERT_TRUE(fs::exists(api_src_dir)) << "Unable to locate " << api_src_dir;
-  ASSERT_TRUE(fs::is_directory(api_src_dir)) << "Expected directory: " << api_src_dir;
+namespace {
 
-  const std::regex hardcoded_single_thread_pattern{R"(setThreadNum\s*\(\s*1\s*\))"};
+[[nodiscard]] bool IsApiSourceFile(const fs::directory_entry& entry) {
+  return entry.is_regular_file() && entry.path().extension() == ".cpp";
+}
+
+void AssertNoHardcodedThreadConfiguration(const fs::path& api_src_dir,
+                                          const std::regex& hardcoded_single_thread_pattern) {
   bool discovered_source = false;
 
   for (const auto& entry : fs::recursive_directory_iterator(api_src_dir)) {
-    if (!entry.is_regular_file() || entry.path().extension() != ".cpp") {
+    if (!IsApiSourceFile(entry)) {
       continue;
     }
 
@@ -32,4 +34,15 @@ TEST(ApiConfigTest, ThreadCountIsNotHardcodedToOne) {
   }
 
   EXPECT_TRUE(discovered_source) << "No API source files discovered in " << api_src_dir;
+}
+
+} // namespace
+
+TEST(ApiConfigTest, ThreadCountIsNotHardcodedToOne) {
+  const fs::path api_src_dir = fs::path(DELIVERYOPTIMIZER_SOURCE_DIR) / "app" / "api" / "src";
+  ASSERT_TRUE(fs::exists(api_src_dir)) << "Unable to locate " << api_src_dir;
+  ASSERT_TRUE(fs::is_directory(api_src_dir)) << "Expected directory: " << api_src_dir;
+
+  const std::regex hardcoded_single_thread_pattern{R"(setThreadNum\s*\(\s*1\s*\))"};
+  AssertNoHardcodedThreadConfiguration(api_src_dir, hardcoded_single_thread_pattern);
 }
