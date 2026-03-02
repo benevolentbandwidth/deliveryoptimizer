@@ -1,5 +1,5 @@
 find_package(GTest CONFIG REQUIRED)
-find_package(JsonCpp CONFIG REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
 include(GoogleTest)
 
 set(
