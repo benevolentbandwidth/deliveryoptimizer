@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: ninja-build libjsoncpp-dev libdrogon-dev uuid-dev libmariadb-dev libbrotli-dev libhiredis-dev libyaml-cpp-dev libgtest-dev libjsoncpp-dev libdrogon-dev uuid-dev libmariadb-dev libbrotli-dev libhiredis-dev libyaml-cpp-dev libgtest-dev
+          packages: ninja-build libjsoncpp-dev libdrogon-dev uuid-dev libmariadb-dev libbrotli-dev libhiredis-dev libyaml-cpp-dev libgtest-dev
           version: 1.0
       - run: cmake --version
       - run: cmake --preset dev
