@@ -6,7 +6,7 @@ import { normalizeDeliveries } from "@/lib/solver/normalizers/deliveryNormalizer
 import { normalizeVehicles } from "@/lib/solver/normalizers/vehicleNormalizer"
 
 import { buildPayload } from "@/lib/solver/payloadBuilder"
-import { solverClient } from "@/lib/solver/solverClient"
+import { solverClient, isSolverClientError } from "@/lib/solver/solverClient"
 
 export const runtime = "nodejs"
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     const message =
       error instanceof Error ? error.message : ""
 
-    if (message.includes("VROOM")) {
+    if (isSolverClientError(error)) {
       return NextResponse.json(
         { error: "VROOM Solver service unavailable" },
         { status: 502 }
