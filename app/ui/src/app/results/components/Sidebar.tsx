@@ -40,12 +40,9 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
 
   return (
     <aside
-      className={`w-72 shrink-0 border-r-2 bg-white p-4 ${isEditMode ? "border-amber-500" : "border-zinc-200"}`} // Sidebar container with width 288px, fixed width and doesn't shrink, white background, and padding. If edit mode is true, border color is amber, otherwise it's zinc
+      className={`w-full h-full flex flex-col overflow-hidden border-r-2 bg-white p-4 ${isEditMode ? "border-amber-500" : "border-zinc-200"}`} // h-full helps the sidebar fill up the full height of the column next to the map instead of just being as tall as its content, flex flex-col stacks the children in the column and control their height, overflow hidden makes sure scrolling only happens inside the sidebar's content area
     >
-      {isEditMode && ( // If edit mode is true, show the message saying "Edit Mode On"
-        <p className="mb-2 text-xs font-medium text-amber-700 bg-amber-50 rounded px-2 py-1">Edit Mode Active</p> 
-      )}
-      <div className="flex items-center justify-between gap-2 mb-4"> {/* Placing the text "Edit mode" and the switch on the same row, text is left and switch is right */}
+      <div className="flex shrink-0 items-center justify-between gap-2 mb-4">
         <span className="text-sm font-medium text-zinc-700">Edit mode</span>
         <button 
           type="button" 
@@ -59,44 +56,56 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
           />
         </button>
       </div>
-      <h2 className="text-lg font-semibold text-zinc-800">Optimized Routes</h2>
-      <p className="mt-1 text-xs text-zinc-500"> {/* Displaying the number of routes and stops before opening the route cards */}
+      <h2 className="shrink-0 text-lg font-semibold text-zinc-800">Optimized Routes</h2> {/* Added shrink-0 on the <div> that makes the row not shrink so the toggle are present at the top */}
+      <p className="mt-1 shrink-0 text-xs text-zinc-500">
         {routes.length} route{routes.length === 1 ? "" : "s"} with {totalStops} total stop 
         {totalStops === 1 ? "" : "s"}
       </p>
+      <div className="flex-1 min-h-0 overflow-y-auto mt-3"> {/* The div takes up the remaining space below the fixed header and if route list is taller than that space, only this area scrolls */}
       {routes.length === 0 ? ( 
-        <p className="mt-2 text-sm text-zinc-500">No routes yet</p> // If no routes, show message saying "no routes yet"
+        <p className="text-sm text-zinc-500">No routes yet</p> // If no routes, show message saying "no routes yet"
       ) : ( 
-        <ul className="mt-3 space-y-3"> {/* Building and rendering each route card, so one card per route with header and option to expand to show stops */}
+        <ul className="space-y-3 pb-2"> {/* Place some vertical space between each route card and small padding at the bottom so last card isn't stuck to the edge when scrolling */}
           {routes.map((route, idx) => { 
             const isExpanded = expandedRouteIds.has(route.vehicleId); // isExpanded is a boolean that checks if the route card is expanded (showing its stops)
             const sortedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence); // sortedStops is an array of route's stops in visit order
 
-            return ( // <li> is the card container (rounded border with white background)
+            return (
               <li
                 key={route.vehicleId}
-                className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden"
+                className="rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm overflow-hidden"
               >
-                <button // Within the card we have a button that runs toggleExpanded (function that flips route card state in expandedRouteIds set) when user clicks it
+                <button
                   type="button"
                   onClick={() => toggleExpanded(route.vehicleId)}
-                  className="w-full p-3 flex items-center justify-between gap-3 text-left hover:bg-zinc-50"
+                  className="w-full p-3 flex items-center justify-between gap-3 text-left hover:bg-zinc-100/80 transition-colors"  // Added hover:bg-zinc-100/80 transition-colors to make the card background color change when hovered over
                   aria-expanded={isExpanded}
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-zinc-800">Route {idx + 1}</span>
                       <span className="text-xs text-zinc-500">{route.vehicleType ?? "Vehicle"} {route.vehicleId}</span>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600">
-                      <span>STOPS: {sortedStops.length}</span>
-                      <span>DISTANCE: {route.distanceMi != null ? `${route.distanceMi}mi` : "—"}</span>
-                      <span>EST. TIME: {formatEstTime(route.estimatedTimeMinutes)}</span>
-                      <span>Driver: {route.driverName}</span>
+                    <div className="mt-2 grid grid-cols-3 gap-2"> {/* Here we replaced the single line of Stops, Distance, and Est. Time with a grid of three small boxes each with a white rounded box and small grey label and bold value */}
+                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">STOPS</div>
+                        <div className="text-sm font-semibold text-zinc-800">{sortedStops.length}</div>
+                      </div>
+                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">DISTANCE</div>
+                        <div className="text-sm font-semibold text-zinc-800 tabular-nums">{route.distanceMi != null ? `${route.distanceMi}mi` : "—"}</div>
+                      </div>
+                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">EST. TIME</div>
+                        <div className="text-sm font-semibold text-zinc-800 tabular-nums">{formatEstTime(route.estimatedTimeMinutes)}</div>
+                      </div>
                     </div>
+                    <p className="mt-2 text-xs text-zinc-600">
+                      <span className="font-medium text-zinc-700">Driver:</span> {route.driverName}
+                    </p>
                   </div>
 
-                  <svg // Chevron icon that toggles the route card state (expanded/collapsed)
+                  <svg
                     className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
                       isExpanded ? "rotate-90" : "rotate-0"
                     }`}
@@ -113,7 +122,7 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
                 </button>
 
                 {isExpanded && ( // Below the card header, when expanded, shows one EditableStopItem per stop; each gets onSaveNote wrapped so the page's updateStopNote is called with this route and stop id
-                  <div className="border-t border-zinc-200 bg-zinc-50 p-3">
+                  <div className="border-t border-zinc-200 bg-zinc-100/50 p-3">
                     <ul className="space-y-2">
                       {sortedStops.map((stop) => (
                         <li key={stop.id}>
@@ -132,6 +141,7 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
           })}
         </ul>
       )}
+      </div>
     </aside>
   );
 }

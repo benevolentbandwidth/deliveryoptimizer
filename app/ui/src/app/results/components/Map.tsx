@@ -22,14 +22,14 @@ export default function MapComponent({ routes }: MapComponentProps) {
 
   const onUnmount = useCallback(() => setMap(null), []);
 
-  // When the browser window is resized, tell the map to redraw so it fills the new container size
+  // When the browser window is resized, tell the map to redraw (google.maps.event.trigger(map, "resize")) so it fills the new container size
   useEffect(() => {
     if (!map || typeof google === "undefined") return;
     const handleResize = () => {
       google.maps.event.trigger(map, "resize");
     };
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize); // Cleanup function to remove the event listener when the component unmounts
   }, [map]);
 
   if (!apiKey) {
