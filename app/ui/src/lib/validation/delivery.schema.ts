@@ -42,7 +42,7 @@ export const deliverySchema = z.object({
 export const deliveriesSchema = z
   .array(deliverySchema)
   .superRefine((deliveries, ctx) => {
-    const seen = new Map<number, number>()
+    const seen = new Set<number>()
 
     deliveries.forEach((delivery, index) => {
       if (seen.has(delivery.id)) {
@@ -51,8 +51,8 @@ export const deliveriesSchema = z
           message: `Duplicate delivery id: ${delivery.id}`,
           path: [index, "id"]
         })
-      } else {
-        seen.set(delivery.id, index)
       }
+
+      seen.add(delivery.id)
     })
   })
