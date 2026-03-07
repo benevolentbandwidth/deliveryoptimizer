@@ -66,12 +66,13 @@ export function isSolverClientError(
   )
 }
 
-// Get payload type from buildPayload in payloadBuilder.ts
-type SolverPayload = ReturnType<typeof buildPayload>
-
 /**
  * Sends optimization request to VROOM
  */
+
+// Get payload type from buildPayload in payloadBuilder.ts
+type SolverPayload = ReturnType<typeof buildPayload>
+
 export async function solverClient(payload: SolverPayload) {
 
   const response = await retry(async () => {
