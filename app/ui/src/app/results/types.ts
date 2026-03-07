@@ -20,7 +20,8 @@ export interface Stop {
   sequence: number; // order in the route that comes from OSRM results
   capacityUsed: number; // how much capacity is used for the stop (e.g. 5 boxes)
   timeWindow: TimeWindow; // time type and time for the stop
-  deliveryNotes: string; // notes for the stop
+  note: string; // driver notes for the stop
+  addresseeName?: string; // name of person at address 
 }
 
 // Data that a single route contains (one driver, their stops in order, and the path to draw for the route)
@@ -29,4 +30,7 @@ export interface Route {
   driverName: string; // name of the driver (e.g. Jim)
   stops: Stop[]; // list of stops for the route
   geometry?: { lat: number; lng: number }[]; // ordered list of coordinates for the route (used for drawing the route on the map)
+  vehicleType?: string; // e.g. "Van" 
+  distanceMi?: number; // total distance for route in miles
+  estimatedTimeMinutes?: number; // total estimated time in minutes 
 }
