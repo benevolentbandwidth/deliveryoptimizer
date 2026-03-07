@@ -10,7 +10,7 @@ export function mapDeliveryToJob(delivery: Delivery) {
     location: delivery.location,
     service: delivery.serviceTime,
     delivery: delivery.deliverySize,
-    time_windows: delivery.timeWindows,
+    timeWindows: delivery.timeWindows,
   }
 }
 
@@ -23,6 +23,6 @@ export function mapVehicleToVroom(vehicle: Vehicle) {
     start: vehicle.start,
     end: vehicle.end,
     capacity: vehicle.capacity,
-    time_window: vehicle.timeWindow
+    timeWindow: vehicle.timeWindow
   }
 }
