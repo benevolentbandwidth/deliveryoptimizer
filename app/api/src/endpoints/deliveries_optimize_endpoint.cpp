@@ -465,7 +465,6 @@ ParseJob(const Json::Value& job, const std::string_view base_field, Json::Value&
 
   const Json::Value& job_id = job["id"];
   const Json::Value& location = job["location"];
-  const Json::Value& demand = job["demand"];
   const Json::Value& time_windows = job["time_windows"];
 
   bool valid_job = true;
@@ -484,10 +483,16 @@ ParseJob(const Json::Value& job, const std::string_view base_field, Json::Value&
     valid_job = false;
   }
 
-  const auto parsed_demand = ParseBoundedInt(demand, 1);
-  if (!parsed_demand.has_value()) {
-    AddValidationIssue(issues, std::string{base_field} + ".demand", "must be a positive integer.");
-    valid_job = false;
+  int parsed_demand = 1;
+  if (job.isMember("demand")) {
+    const auto parsed_demand_value = ParseBoundedInt(job["demand"], 1);
+    if (!parsed_demand_value.has_value()) {
+      AddValidationIssue(issues, std::string{base_field} + ".demand",
+                         "must be a positive integer.");
+      valid_job = false;
+    } else {
+      parsed_demand = parsed_demand_value.value();
+    }
   }
 
   int parsed_service = kDefaultJobServiceSeconds;
@@ -520,7 +525,7 @@ ParseJob(const Json::Value& job, const std::string_view base_field, Json::Value&
   return JobInput{.external_id = std::move(external_id),
                   .lon = parsed_location->lon,
                   .lat = parsed_location->lat,
-                  .demand = parsed_demand.value(),
+                  .demand = parsed_demand,
                   .service = parsed_service,
                   .time_windows = std::move(parsed_time_windows)};
 }

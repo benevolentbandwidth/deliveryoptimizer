@@ -34,6 +34,8 @@ curl -X POST http://127.0.0.1:8080/api/v1/deliveries/optimize \
   }'
 ```
 
+If `jobs[].demand` is omitted, the API defaults it to `1`. If `jobs[].service` is omitted, the API defaults it to `300` seconds.
+
 ## Build (C++)
 
 ```bash
