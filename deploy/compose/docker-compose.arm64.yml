@@ -20,7 +20,7 @@ services:
     volumes:
       - osrm-data:/data
     ports:
-      - "${DELIVERYOPTIMIZER_OSRM_HOST_PORT:-5001}:5001"
+      - "${DELIVERYOPTIMIZER_OSRM_HOST_PORT:-5001}:${OSRM_INTERNAL_PORT:-5001}"
     healthcheck:
       test:
         [

@@ -51,6 +51,7 @@ gtest_discover_tests(deliveryoptimizer_tests DISCOVERY_TIMEOUT 30)
 
 find_program(BASH_PROGRAM bash REQUIRED)
 find_program(CURL_PROGRAM curl REQUIRED)
+find_program(PYTHON3_PROGRAM python3 REQUIRED)
 find_program(DOCKER_PROGRAM docker)
 
 function(deliveryoptimizer_set_local_http_test_port test_name port)
@@ -112,6 +113,26 @@ add_test(
           "$<TARGET_FILE:deliveryoptimizer_api>"
 )
 set_tests_properties(DeliveryOptimizerApiValidationTest.InvalidListenPortFailsFast PROPERTIES TIMEOUT 15)
+
+add_test(
+  NAME DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/osrm_proxy_rejects_disallowed_service_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+)
+set_tests_properties(DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService PROPERTIES TIMEOUT 30)
+
+add_test(
+  NAME DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/osrm_proxy_forwards_allowed_service_with_query_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${PYTHON3_PROGRAM}" "${CURL_PROGRAM}"
+)
+set_tests_properties(
+  DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  PROPERTIES
+    TIMEOUT 30
+)
 
 if(DOCKER_PROGRAM)
   add_test(
