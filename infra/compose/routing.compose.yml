@@ -1,0 +1,65 @@
+name: deliveryoptimizer-routing
+
+services:
+  osrm:
+    build:
+      context: ../../
+      dockerfile: engine/osrm/Dockerfile
+      args:
+        OSRM_REF: ${OSRM_REF:-v5.27.1}
+        OSRM_BUILD_JOBS: ${OSRM_BUILD_JOBS:-2}
+    env_file:
+      - ../env/routing.env
+    environment:
+      OSRM_DATA_DIR: /data
+      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/europe/monaco-latest.osm.pbf}
+      OSRM_PORT: ${OSRM_INTERNAL_PORT:-5001}
+      OSRM_PROFILE: ${OSRM_PROFILE:-/opt/osrm-backend/profiles/car.lua}
+    volumes:
+      - osrm-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS \"http://127.0.0.1:${OSRM_INTERNAL_PORT:-5001}/nearest/v1/driving/7.4236,43.7384?number=1&generate_hints=false\" | grep -q '\"code\":\"Ok\"'",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+  deliveryoptimizer-api:
+    build:
+      context: ../../
+      dockerfile: services/deliveryoptimizer-api/Dockerfile
+      args:
+        VROOM_REF: ${VROOM_REF:-v1.14.0}
+        VROOM_BUILD_JOBS: ${VROOM_BUILD_JOBS:-2}
+    env_file:
+      - ../env/routing.env
+    environment:
+      PORT: 5000
+      OSRM_URL: http://osrm:${OSRM_INTERNAL_PORT:-5001}
+      VROOM_BIN: /usr/local/bin/vroom
+      VROOM_HOST: osrm
+      VROOM_PORT: ${OSRM_INTERNAL_PORT:-5001}
+      VROOM_ROUTER: osrm
+      VROOM_TIMEOUT_SECONDS: ${VROOM_TIMEOUT_SECONDS:-30}
+    depends_on:
+      osrm:
+        condition: service_healthy
+    ports:
+      - "${OSRM_PUBLIC_PORT:-5000}:5000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:5000/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"ok\"'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  osrm-data:
