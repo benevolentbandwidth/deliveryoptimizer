@@ -278,8 +278,8 @@ deliveryoptimizer_set_local_http_test_port(
   32000
 )
 deliveryoptimizer_add_local_http_test(
-  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsEmptyJobTimeWindows
-  deliveries_optimize_rejects_empty_job_time_windows_test.sh
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeEnforcesSolverTimeout
+  deliveries_optimize_enforces_solver_timeout_test.sh
   30
   "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
 )
