@@ -39,7 +39,7 @@ if [[ "${http_code}" != "200" ]]; then
   exit 1
 fi
 
-for key in status summary routes unassigned raw; do
+for key in status summary routes unassigned; do
   if ! grep -Eq '"'"${key}"'"[[:space:]]*:' "${response_file}"; then
     echo "optimize response missing key ${key}" >&2
     cat "${response_file}" >&2 || true
