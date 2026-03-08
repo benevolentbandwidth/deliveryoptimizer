@@ -2,7 +2,7 @@ import { z } from "zod"
 import { locationSchema, loadSchema, MAX_DEMAND, MAX_BUFFER_TIME } from "./common.schema"
 
 export const deliverySchema = z.object({
-  id: z.string().min(1),
+  id: z.number().int().nonnegative(),
 
   address: z.string().optional(),
 
@@ -37,6 +37,23 @@ export const deliverySchema = z.object({
 })
 
 /**
- * Useful when validating arrays from requests
+ * Ensure each ID is unique
  */
-export const deliveriesSchema = z.array(deliverySchema)
+export const deliveriesSchema = z
+  .array(deliverySchema)
+  .superRefine((deliveries, ctx) => {
+    const seen = new Set<number>()
+
+    deliveries.forEach((delivery, index) => {
+      if (seen.has(delivery.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate delivery id: ${delivery.id}`,
+          path: [index, "id"]
+        })
+      }
+
+      seen.add(delivery.id)
+    })
+  })
+  

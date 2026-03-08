@@ -1,10 +1,22 @@
 /**
  * Retries with exponential backoff
- * Retries include initial attempt
  */
+type RetryTaggedError = {
+  retryable?: boolean
+}
+
+function isRetryable(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "retryable" in error &&
+      (error as RetryTaggedError).retryable === true
+  )
+}
+
 export async function retry<T>(
   fn: () => Promise<T>,
-  retries = 3,
+  retries = 2,
   delayMs = 200
 ): Promise<T> {
 
@@ -13,16 +25,7 @@ export async function retry<T>(
 
   } catch (error) {
 
-    if (
-      error &&
-      typeof error === "object" &&
-      "name" in error &&
-      (error as { name?: string }).name === "AbortError"
-    ) {
-      throw error
-    }
-    
-    if (retries <= 1) {
+    if (!isRetryable(error) || retries < 1) {
       throw error
     }
 
