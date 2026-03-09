@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const MAX_ADDRESSES = 8; // Conservative limit (deliveries + vehicles * 2)
+    const MAX_ADDRESSES = 50;
     const totalAddresses = deliveries.length + (vehicles.length * 2);
     
     if (totalAddresses > MAX_ADDRESSES) {
@@ -194,15 +194,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // USE THE SINGLETON GEOCODER
     const geocoder = globalGeocoder;
 
     let successCount = 0;
     let failCount = 0;
 
     // Default time window: 7 AM to 9 PM in seconds
-    const DEFAULT_START_TIME = 7 * 3600;  // 25200 seconds (7 AM)
-    const DEFAULT_END_TIME = 21 * 3600;   // 75600 seconds (9 PM)
+    const DEFAULT_START_TIME = 7 * 3600;  
+    const DEFAULT_END_TIME = 21 * 3600;  
 
     // Process deliveries
     const processedDeliveries: Delivery[] = [];
@@ -233,7 +232,7 @@ export async function POST(request: NextRequest) {
             type: 'units',
             value: delivery.demand || 1,
           },
-          time_windows: [[timeStart, timeEnd]],  // ALWAYS PRESENT
+          time_windows: [[timeStart, timeEnd]], 
         };
 
         processedDeliveries.push(deliveryData);

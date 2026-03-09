@@ -13,7 +13,6 @@ interface DeliveryFormProps {
   onAddressChange: (reactId: string, value: string) => void;
   onFocus: (reactId: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  // Autocomplete props
   showSuggestions: boolean;
   suggestions: AddressSuggestion[];
   selectedIndex: number;
@@ -120,7 +119,8 @@ export const DeliveryFormComponent: React.FC<DeliveryFormProps> = ({
             value={delivery.timeWindowStart}
             onChange={(e) => onFieldChange(delivery._reactId, 'timeWindowStart', e.target.value)}
             className="w-full px-2 py-1.5 text-sm text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Default: 7:00AM"
+            placeholder="e.g., 9:00 AM"
+            title="Enter time in format like '9:00 AM' or '14:00'. Defaults to 7:00 AM if left blank."
           />
         </div>
         <div>
@@ -132,10 +132,16 @@ export const DeliveryFormComponent: React.FC<DeliveryFormProps> = ({
             value={delivery.timeWindowEnd}
             onChange={(e) => onFieldChange(delivery._reactId, 'timeWindowEnd', e.target.value)}
             className="w-full px-2 py-1.5 text-sm text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Default: 9:00PM"
+            placeholder="e.g., 5:00 PM"
+            title="Enter time in format like '5:00 PM' or '17:00'. Defaults to 9:00 PM if left blank."
           />
         </div>
       </div>
+      
+      {/* Helper text for time windows */}
+      <p className="text-xs text-gray-500 mt-2">
+        💡 Times: Use "9:00 AM" or "14:00" format. Defaults: 7:00 AM - 9:00 PM
+      </p>
     </div>
   );
 };
