@@ -25,8 +25,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
     "@types/papaparse": "^5.3.14",
+    "@types/node": "^20.19.35",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
