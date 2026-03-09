@@ -19,3 +19,7 @@ CMakeUserPresets.json
 
 # macOS / editor noise
 .DS_Store
+
+# macOS
+.DS_Store
+**/.DS_Store
