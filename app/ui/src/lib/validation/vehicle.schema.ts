@@ -2,7 +2,7 @@ import { z } from "zod"
 import { locationSchema, loadSchema } from "./common.schema"
 
 export const vehicleSchema = z.object({
-  id: z.string().min(1),
+  id: z.number().int().nonnegative(),
 
   vehicleType: z.string().min(1),
 
@@ -46,7 +46,7 @@ export const vehicleSchema = z.object({
 export const vehiclesSchema = z
   .array(vehicleSchema)
   .superRefine((vehicles, ctx) => {
-    const seen = new Set<string>()
+    const seen = new Set<number>()
 
     vehicles.forEach((vehicle, index) => {
       if (seen.has(vehicle.id)) {
