@@ -16,8 +16,7 @@
    const [draft, setDraft] = useState(stop.note ?? ""); // draft represents the current note text in the text area, starts as the stop's note or empty string if no note
  
   useEffect(() => {
-    const id = setTimeout(() => setDraft(stop.note ?? ""), 0); // Defer sync setState to avoid lint; when stop.note changes we update draft to match
-    return () => clearTimeout(id);
+    setDraft(stop.note ?? "");
   }, [stop.note]);
  
   return (
