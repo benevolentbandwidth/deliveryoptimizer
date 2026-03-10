@@ -15,7 +15,7 @@
  export default function EditableStopItem({ stop, isEditMode, onSaveNote }: EditableStopItemProps) {
    const [draft, setDraft] = useState(stop.note ?? ""); // draft represents the current note text in the text area, starts as the stop's note or empty string if no note
 
-  // When the stop's note changes (e.g. parent updates it after save), sync draft to match.
+  // When the stop's note changes (e.g. parent updates it after save), sync draft to match
   useEffect(() => {
     setDraft(stop.note ?? "");
   }, [stop.note]);
