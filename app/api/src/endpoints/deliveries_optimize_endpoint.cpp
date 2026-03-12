@@ -1,6 +1,7 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
 #include "env_utils.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -777,8 +778,7 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   }
 }
 
-[[nodiscard]] int ParseTimeoutSeconds(const std::string& value,
-                                      const int default_timeout_seconds) {
+[[nodiscard]] int ParseTimeoutSeconds(const std::string& value, const int default_timeout_seconds) {
   errno = 0;
   char* end = nullptr;
   const long parsed = std::strtol(value.c_str(), &end, 10);
@@ -814,14 +814,11 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
       ParseTimeoutSeconds(vroom_timeout, std::stoi(std::string{kDefaultVroomTimeoutSeconds}));
 
   return VroomRuntimeConfig{
-      .vroom_bin =
-          deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_BIN", kDefaultVroomBin),
+      .vroom_bin = deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_BIN", kDefaultVroomBin),
       .vroom_router =
           deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_ROUTER", kDefaultVroomRouter),
-      .vroom_host =
-          deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_HOST", kDefaultVroomHost),
-      .vroom_port =
-          deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_PORT", kDefaultVroomPort),
+      .vroom_host = deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_HOST", kDefaultVroomHost),
+      .vroom_port = deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_PORT", kDefaultVroomPort),
       .timeout_seconds = timeout_seconds,
   };
 }
