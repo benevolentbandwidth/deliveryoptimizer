@@ -1,6 +1,7 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
 #include "env_utils.hpp"
+
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -307,8 +308,9 @@ ParseVehicle(const Json::Value& vehicle, const std::string_view base_field, Json
   if (vehicle.isMember("time_window")) {
     vehicle_time_window = ParseTimeWindow(time_window);
     if (!vehicle_time_window.has_value()) {
-      AddValidationIssue(issues, std::string{base_field} + ".time_window",
-                         "must be an array [start, end] with non-negative integer values and end > start.");
+      AddValidationIssue(
+          issues, std::string{base_field} + ".time_window",
+          "must be an array [start, end] with non-negative integer values and end > start.");
       valid_vehicle = false;
     }
   }
@@ -375,7 +377,8 @@ ParseJob(const Json::Value& job, const std::string_view base_field, Json::Value&
     parsed_time_windows = ParseTimeWindows(time_windows);
     if (!parsed_time_windows.has_value()) {
       AddValidationIssue(issues, std::string{base_field} + ".time_windows",
-                         "must be an array of [start, end] pairs with non-negative integer values and end > start.");
+                         "must be an array of [start, end] pairs with non-negative integer values "
+                         "and end > start.");
       valid_job = false;
     }
   }
