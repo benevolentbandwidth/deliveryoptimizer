@@ -36,7 +36,7 @@ template <typename Integer>
   return parsed_value;
 }
 
-[[nodiscard]] std::optional<std::uint16_t> ResolveListenPort() {
+[[nodiscard]] std::uint16_t ResolveListenPort() {
   const char* raw_port = std::getenv(kListenPortEnv.data());
   if (raw_port == nullptr || *raw_port == '\0') {
     return kDefaultListenPort;
@@ -45,9 +45,9 @@ template <typename Integer>
   const auto parsed_port = ParsePositiveIntegerEnv<std::uint32_t>(raw_port);
   if (!parsed_port.has_value() ||
       *parsed_port > static_cast<std::uint32_t>(std::numeric_limits<std::uint16_t>::max())) {
-    std::cerr << "Invalid DELIVERYOPTIMIZER_PORT='" << raw_port
-              << "'. Expected an integer in the range 1..65535.\n";
-    return std::nullopt;
+    std::cerr << "Ignoring invalid DELIVERYOPTIMIZER_PORT='" << raw_port << "'. Using default port "
+              << kDefaultListenPort << ".\n";
+    return kDefaultListenPort;
   }
 
   return static_cast<std::uint16_t>(*parsed_port);
@@ -83,13 +83,8 @@ template <typename Integer>
 
 namespace deliveryoptimizer::api {
 
-std::optional<ServerOptions> LoadServerOptionsFromEnv() {
-  const auto listen_port = ResolveListenPort();
-  if (!listen_port.has_value()) {
-    return std::nullopt;
-  }
-
-  return ServerOptions{.listen_port = *listen_port, .worker_threads = ResolveThreadCount()};
+ServerOptions LoadServerOptionsFromEnv() {
+  return ServerOptions{.listen_port = ResolveListenPort(), .worker_threads = ResolveThreadCount()};
 }
 
 } // namespace deliveryoptimizer::api

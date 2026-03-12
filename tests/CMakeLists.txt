@@ -62,6 +62,14 @@ function(deliveryoptimizer_set_local_http_test_port test_name port)
   )
 endfunction()
 
+function(deliveryoptimizer_set_local_http_test_environment test_name environment)
+  set_tests_properties(
+    ${test_name}
+    PROPERTIES
+      ENVIRONMENT "${environment}"
+  )
+endfunction()
+
 add_test(
   NAME DeliveryOptimizerApiTest.HealthAndOptimize
   COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/health_and_optimize_test.sh"
@@ -107,20 +115,13 @@ deliveryoptimizer_set_local_http_test_port(
 )
 
 add_test(
-  NAME DeliveryOptimizerApiValidationTest.InvalidListenPortFailsFast
-  COMMAND "${BASH_PROGRAM}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/invalid_port_fails_fast_test.sh"
-          "$<TARGET_FILE:deliveryoptimizer_api>"
-)
-set_tests_properties(DeliveryOptimizerApiValidationTest.InvalidListenPortFailsFast PROPERTIES TIMEOUT 15)
-
-add_test(
   NAME DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService
   COMMAND "${BASH_PROGRAM}"
           "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/osrm_proxy_rejects_disallowed_service_test.sh"
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService PROPERTIES TIMEOUT 30)
+deliveryoptimizer_set_local_http_test_port(DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService 34000)
 
 add_test(
   NAME DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
@@ -132,6 +133,10 @@ set_tests_properties(
   DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
   PROPERTIES
     TIMEOUT 30
+)
+deliveryoptimizer_set_local_http_test_environment(
+  DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  "DELIVERYOPTIMIZER_TEST_PORT=36000;DELIVERYOPTIMIZER_OSRM_STUB_PORT=52000"
 )
 
 if(DOCKER_PROGRAM)

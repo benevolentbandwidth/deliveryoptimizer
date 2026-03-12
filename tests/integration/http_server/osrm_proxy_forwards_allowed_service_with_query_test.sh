@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/integration/http_server/http_server_helpers.sh
+source "${script_dir}/http_server_helpers.sh"
+
 if [[ $# -lt 2 ]]; then
   echo "usage: $0 <server-binary> <python-binary> [curl-binary]" >&2
   exit 2
@@ -13,16 +17,6 @@ api_default_port="$((36000 + ($$ % 14000)))"
 stub_default_port="$((52000 + ($$ % 10000)))"
 api_port="${DELIVERYOPTIMIZER_TEST_PORT:-${api_default_port}}"
 stub_port="${DELIVERYOPTIMIZER_OSRM_STUB_PORT:-${stub_default_port}}"
-
-mktemp_file() {
-  local template="${TMPDIR:-/tmp}/deliveryoptimizer-http.XXXXXX"
-  local path
-  path="$(mktemp "${template}" 2>/dev/null)" && {
-    echo "${path}"
-    return
-  }
-  mktemp -t deliveryoptimizer-http
-}
 
 response_file="$(mktemp_file)"
 request_path_file="$(mktemp_file)"

@@ -36,29 +36,31 @@ private:
 
 } // namespace
 
-TEST(ServerOptionsTest, InvalidListenPortReturnsNulloptAndLogsError) {
-  ScopedEnvVar listen_port("DELIVERYOPTIMIZER_PORT");
-  ScopedEnvVar thread_count("DELIVERYOPTIMIZER_THREADS");
-  listen_port.Set("invalid-port");
-  thread_count.Unset();
-
-  testing::internal::CaptureStderr();
-  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
-  const std::string stderr_output = testing::internal::GetCapturedStderr();
-
-  EXPECT_FALSE(options.has_value());
-  EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_PORT"), std::string::npos);
-  EXPECT_NE(stderr_output.find("invalid-port"), std::string::npos);
-}
-
-TEST(ServerOptionsTest, InvalidThreadCountFallsBackToDetectedDefaultAndLogsWarning) {
+TEST(ServerOptionsTest, InvalidListenPortFallsBackToDefaultAndLogsWarning) {
   ScopedEnvVar listen_port("DELIVERYOPTIMIZER_PORT");
   ScopedEnvVar thread_count("DELIVERYOPTIMIZER_THREADS");
   listen_port.Unset();
   thread_count.Unset();
 
   const auto baseline_options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
-  ASSERT_TRUE(baseline_options.has_value());
+
+  listen_port.Set("invalid-port");
+
+  testing::internal::CaptureStderr();
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+  const std::string stderr_output = testing::internal::GetCapturedStderr();
+
+  EXPECT_EQ(options.listen_port, baseline_options.listen_port);
+  EXPECT_EQ(options.worker_threads, baseline_options.worker_threads);
+  EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_PORT"), std::string::npos);
+  EXPECT_NE(stderr_output.find("invalid-port"), std::string::npos);
+}
+
+TEST(ServerOptionsTest, InvalidThreadCountFallsBackToDetectedDefaultAndLogsWarning) {
+  ScopedEnvVar thread_count("DELIVERYOPTIMIZER_THREADS");
+  thread_count.Unset();
+
+  const auto baseline_options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
 
   thread_count.Set("invalid-thread-count");
 
@@ -66,24 +68,20 @@ TEST(ServerOptionsTest, InvalidThreadCountFallsBackToDetectedDefaultAndLogsWarni
   const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
   const std::string stderr_output = testing::internal::GetCapturedStderr();
 
-  ASSERT_TRUE(options.has_value());
-  EXPECT_EQ(options->listen_port, baseline_options->listen_port);
-  EXPECT_EQ(options->worker_threads, baseline_options->worker_threads);
+  EXPECT_EQ(options.listen_port, baseline_options.listen_port);
+  EXPECT_EQ(options.worker_threads, baseline_options.worker_threads);
   EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_THREADS"), std::string::npos);
   EXPECT_NE(stderr_output.find("invalid-thread-count"), std::string::npos);
 }
 
 TEST(ServerOptionsTest, ExcessiveThreadCountIsCappedAndLogsWarning) {
-  ScopedEnvVar listen_port("DELIVERYOPTIMIZER_PORT");
   ScopedEnvVar thread_count("DELIVERYOPTIMIZER_THREADS");
-  listen_port.Unset();
   thread_count.Set("999");
 
   testing::internal::CaptureStderr();
   const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
   const std::string stderr_output = testing::internal::GetCapturedStderr();
 
-  ASSERT_TRUE(options.has_value());
-  EXPECT_EQ(options->worker_threads, 64U);
+  EXPECT_EQ(options.worker_threads, 64U);
   EXPECT_NE(stderr_output.find("Capping DELIVERYOPTIMIZER_THREADS"), std::string::npos);
 }

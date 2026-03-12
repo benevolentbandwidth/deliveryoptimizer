@@ -2,8 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <optional>
-
 namespace deliveryoptimizer::api {
 
 struct ServerOptions {
@@ -11,6 +9,6 @@ struct ServerOptions {
   std::size_t worker_threads;
 };
 
-[[nodiscard]] std::optional<ServerOptions> LoadServerOptionsFromEnv();
+[[nodiscard]] ServerOptions LoadServerOptionsFromEnv();
 
 } // namespace deliveryoptimizer::api

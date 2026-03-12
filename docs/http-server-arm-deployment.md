@@ -10,8 +10,8 @@ This document describes the deployment assets for the C++ Drogon HTTP server (`d
 - `deploy/env/http-server.arm64.env`: Default ARM runtime/build settings, including California map source.
 
 Port configuration defaults to `8080` for both the host mapping and the app listen port.
-Use `DELIVERYOPTIMIZER_HOST_PORT` to change the host-facing port and `DELIVERYOPTIMIZER_PORT` to
-change the port the API binds inside the container.
+Use `DELIVERYOPTIMIZER_HOST_PORT` to change the host-facing port. If you need the API to bind a
+different in-container port, update the container environment and the compose port mapping together.
 
 ## Run on ARM host
 
