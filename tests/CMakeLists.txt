@@ -22,12 +22,18 @@ endforeach()
 list(SORT DELIVERYOPTIMIZER_TEST_SOURCES)
 
 add_executable(deliveryoptimizer_tests ${DELIVERYOPTIMIZER_TEST_SOURCES})
+target_sources(
+  deliveryoptimizer_tests
+  PRIVATE
+    "${CMAKE_SOURCE_DIR}/app/api/src/server_options.cpp"
+)
 target_compile_features(deliveryoptimizer_tests PRIVATE cxx_std_20)
 target_compile_definitions(
   deliveryoptimizer_tests
   PRIVATE
     DELIVERYOPTIMIZER_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
+target_include_directories(deliveryoptimizer_tests PRIVATE "${CMAKE_SOURCE_DIR}/app/api/include")
 target_link_libraries(
   deliveryoptimizer_tests
   PRIVATE
@@ -46,12 +52,21 @@ gtest_discover_tests(deliveryoptimizer_tests DISCOVERY_TIMEOUT 30)
 find_program(BASH_PROGRAM bash REQUIRED)
 find_program(CURL_PROGRAM curl REQUIRED)
 
+function(deliveryoptimizer_set_local_http_test_port test_name port)
+  set_tests_properties(
+    ${test_name}
+    PROPERTIES
+      ENVIRONMENT "DELIVERYOPTIMIZER_TEST_PORT=${port}"
+  )
+endfunction()
+
 add_test(
   NAME DeliveryOptimizerApiTest.HealthAndOptimize
   COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/health_and_optimize_test.sh"
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerApiTest.HealthAndOptimize PROPERTIES TIMEOUT 30)
+deliveryoptimizer_set_local_http_test_port(DeliveryOptimizerApiTest.HealthAndOptimize 20000)
 
 add_test(
   NAME DeliveryOptimizerApiValidationTest.OptimizeRejectsNegativeDeliveries
@@ -60,6 +75,10 @@ add_test(
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerApiValidationTest.OptimizeRejectsNegativeDeliveries PROPERTIES TIMEOUT 30)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.OptimizeRejectsNegativeDeliveries
+  21000
+)
 
 add_test(
   NAME DeliveryOptimizerApiValidationTest.OptimizeRejectsExcessiveDeliveries
@@ -68,6 +87,10 @@ add_test(
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerApiValidationTest.OptimizeRejectsExcessiveDeliveries PROPERTIES TIMEOUT 30)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.OptimizeRejectsExcessiveDeliveries
+  22000
+)
 
 add_test(
   NAME DeliveryOptimizerApiValidationTest.OptimizeRejectsMalformedDeliveries
@@ -76,6 +99,10 @@ add_test(
           "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
 )
 set_tests_properties(DeliveryOptimizerApiValidationTest.OptimizeRejectsMalformedDeliveries PROPERTIES TIMEOUT 30)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.OptimizeRejectsMalformedDeliveries
+  23000
+)
 
 add_test(
   NAME DeliveryOptimizerApiValidationTest.InvalidListenPortFailsFast

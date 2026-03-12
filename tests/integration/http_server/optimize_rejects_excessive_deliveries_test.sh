@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/integration/http_server/http_server_helpers.sh
+source "${script_dir}/http_server_helpers.sh"
+
 if [[ $# -lt 1 ]]; then
   echo "usage: $0 <server-binary> [curl-binary]" >&2
   exit 2
@@ -10,16 +14,6 @@ server_bin="$1"
 curl_bin="${2:-curl}"
 default_port="$((22000 + ($$ % 1000)))"
 port="${DELIVERYOPTIMIZER_TEST_PORT:-${default_port}}"
-
-mktemp_file() {
-  local template="${TMPDIR:-/tmp}/deliveryoptimizer-http.XXXXXX"
-  local path
-  path="$(mktemp "${template}" 2>/dev/null)" && {
-    echo "${path}"
-    return
-  }
-  mktemp -t deliveryoptimizer-http
-}
 
 response_file="$(mktemp_file)"
 log_file="$(mktemp_file)"

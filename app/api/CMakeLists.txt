@@ -23,6 +23,7 @@ target_link_libraries(
   deliveryoptimizer_api_runtime
   PUBLIC
     deliveryoptimizer::adapters
+  PRIVATE
     Drogon::Drogon
 )
 

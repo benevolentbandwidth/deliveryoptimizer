@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/integration/http_server/http_server_helpers.sh
+source "${script_dir}/http_server_helpers.sh"
+
 if [[ $# -lt 1 ]]; then
   echo "usage: $0 <server-binary>" >&2
   exit 2
@@ -8,16 +12,6 @@ fi
 
 server_bin="$1"
 invalid_port="not-a-port"
-
-mktemp_file() {
-  local template="${TMPDIR:-/tmp}/deliveryoptimizer-http.XXXXXX"
-  local path
-  path="$(mktemp "${template}" 2>/dev/null)" && {
-    echo "${path}"
-    return
-  }
-  mktemp -t deliveryoptimizer-http
-}
 
 log_file="$(mktemp_file)"
 
