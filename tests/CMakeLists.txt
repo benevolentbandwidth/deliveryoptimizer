@@ -60,7 +60,6 @@ find_program(PYTHON3_PROGRAM python3 REQUIRED)
 find_program(DOCKER_PROGRAM docker)
 
 set(DELIVERYOPTIMIZER_LOCAL_API_LABELS "integration;api;local")
-set(DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS "integration;api;local;regression")
 
 function(deliveryoptimizer_set_local_http_test_port test_name port)
   set_tests_properties(
