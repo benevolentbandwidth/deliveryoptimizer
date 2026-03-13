@@ -118,6 +118,7 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
                       {sortedStops.map((stop) => (
                         <li key={stop.id}>
                           <EditableStopItem
+                            key={stop.id}
                             stop={stop}
                             isEditMode={isEditMode}
                             onSaveNote={(note) => onUpdateStopNote(route.vehicleId, stop.id, note)}
