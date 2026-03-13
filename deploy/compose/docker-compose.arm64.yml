@@ -1,0 +1,63 @@
+name: deliveryoptimizer
+
+services:
+  osrm:
+    platform: ${DELIVERYOPTIMIZER_PLATFORM:-linux/arm64}
+    image: ${DELIVERYOPTIMIZER_OSRM_IMAGE:-deliveryoptimizer-osrm:arm64}
+    build:
+      context: ../..
+      dockerfile: deploy/services/osrm.Dockerfile
+      args:
+        UBUNTU_VERSION: ${OSRM_UBUNTU_VERSION:-22.04}
+        OSRM_REF: ${OSRM_REF:-v5.27.1}
+        OSRM_COMMIT: ${OSRM_COMMIT:-6bff4d6d557389bcf641eaa522e30bb87a4d4fb9}
+        OSRM_BUILD_JOBS: ${OSRM_BUILD_JOBS:-2}
+    environment:
+      OSRM_DATA_DIR: /data
+      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/north-america/us/california-latest.osm.pbf}
+      OSRM_PORT: ${OSRM_INTERNAL_PORT:-5001}
+      OSRM_PROFILE: ${OSRM_PROFILE:-/opt/osrm-backend/profiles/car.lua}
+    volumes:
+      - osrm-data:/data
+    ports:
+      - "${DELIVERYOPTIMIZER_OSRM_HOST_PORT:-5001}:${OSRM_INTERNAL_PORT:-5001}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS \"http://127.0.0.1:${OSRM_INTERNAL_PORT:-5001}/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false\" | grep -q '\"code\":\"Ok\"'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+
+  http-server:
+    platform: ${DELIVERYOPTIMIZER_PLATFORM:-linux/arm64}
+    image: ${DELIVERYOPTIMIZER_IMAGE:-deliveryoptimizer-http:arm64}
+    build:
+      context: ../..
+      dockerfile: deploy/services/http-server.Dockerfile
+      args:
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-24.04}
+        CONAN_VERSION: ${CONAN_VERSION:-2.9.2}
+        VROOM_REF: ${VROOM_REF:-v1.14.0}
+        VROOM_COMMIT: ${VROOM_COMMIT:-1fd711bc8c20326dd8e9538e2c7e4cb1ebd67bdb}
+        VROOM_BUILD_JOBS: ${VROOM_BUILD_JOBS:-2}
+    environment:
+      OSRM_URL: http://osrm:${OSRM_INTERNAL_PORT:-5001}
+      VROOM_BIN: /usr/local/bin/vroom
+      VROOM_ROUTER: osrm
+      VROOM_HOST: osrm
+      VROOM_PORT: ${OSRM_INTERNAL_PORT:-5001}
+      VROOM_TIMEOUT_SECONDS: ${VROOM_TIMEOUT_SECONDS:-30}
+    depends_on:
+      osrm:
+        condition: service_healthy
+    ports:
+      - "${DELIVERYOPTIMIZER_HOST_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  osrm-data:

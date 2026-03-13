@@ -1,83 +1,104 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 
-project(deliveryoptimizer_routing LANGUAGES NONE)
+project(deliveryoptimizer VERSION 0.1.0 LANGUAGES CXX)
 
-set(ENV_FILE "${CMAKE_SOURCE_DIR}/infra/env/routing.env" CACHE FILEPATH "Environment file for docker compose")
-set(COMPOSE_FILE "${CMAKE_SOURCE_DIR}/infra/compose/routing.compose.yml" CACHE FILEPATH "Compose file for routing stack")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_program(BASH_EXECUTABLE bash REQUIRED)
-find_program(DOCKER_EXECUTABLE docker REQUIRED)
-find_program(CCACHE_EXECUTABLE ccache)
+option(DELIVERYOPTIMIZER_ENABLE_WARNINGS "Enable strict compiler warnings." ON)
+option(DELIVERYOPTIMIZER_ENABLE_TESTS "Build unit tests." ON)
+option(DELIVERYOPTIMIZER_ENABLE_SANITIZERS "Enable sanitizer instrumentation for Debug builds." OFF)
+option(
+  DELIVERYOPTIMIZER_LINK_COMPILE_COMMANDS_IN_SOURCE
+  "Create a source-tree compile_commands.json symlink for editor tooling."
+  OFF
+)
+set(
+  DELIVERYOPTIMIZER_SANITIZERS
+  "address;undefined"
+  CACHE STRING
+  "Semicolon- or comma-separated sanitizer list enabled when DELIVERYOPTIMIZER_ENABLE_SANITIZERS is ON."
+)
 
-if(CCACHE_EXECUTABLE)
-  message(STATUS "ccache detected at ${CCACHE_EXECUTABLE}")
-else()
-  message(STATUS "ccache not found in PATH; Docker builds will run without compiler launcher caching.")
-endif()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(CompilerWarnings)
+include(Sanitizers)
+deliveryoptimizer_enable_sanitizers()
 
-set(COMPOSE_CMD "\"${DOCKER_EXECUTABLE}\" compose -f \"${COMPOSE_FILE}\" --env-file \"${ENV_FILE}\"")
+if(DELIVERYOPTIMIZER_LINK_COMPILE_COMMANDS_IN_SOURCE)
+  if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+    message(
+      WARNING
+      "DELIVERYOPTIMIZER_LINK_COMPILE_COMMANDS_IN_SOURCE is ON but CMAKE_EXPORT_COMPILE_COMMANDS is OFF."
+    )
+  elseif(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(STATUS "In-source build already writes compile_commands.json in the source tree.")
+  else()
+    set(DELIVERYOPTIMIZER_SOURCE_COMPILE_COMMANDS "${CMAKE_SOURCE_DIR}/compile_commands.json")
+    set(DELIVERYOPTIMIZER_BUILD_COMPILE_COMMANDS "${CMAKE_BINARY_DIR}/compile_commands.json")
 
-function(add_shell_target target_name)
-  cmake_parse_arguments(ARG "USES_ENV_FILE" "" "COMMANDS;DEPENDS" ${ARGN})
-
-  if(NOT ARG_COMMANDS)
-    message(FATAL_ERROR "Target '${target_name}' needs at least one command.")
-  endif()
-
-  set(target_commands "")
-  foreach(raw_cmd IN LISTS ARG_COMMANDS)
-    if(ARG_USES_ENV_FILE)
-      list(APPEND target_commands
-        COMMAND "${BASH_EXECUTABLE}" "-lc"
-          "set -a && source \"${ENV_FILE}\" && set +a && ${raw_cmd}"
+    execute_process(
+      COMMAND "${CMAKE_COMMAND}" -E rm -f "${DELIVERYOPTIMIZER_SOURCE_COMPILE_COMMANDS}"
+      RESULT_VARIABLE remove_compile_commands_result
+      ERROR_VARIABLE remove_compile_commands_error
+    )
+    if(NOT remove_compile_commands_result EQUAL 0)
+      message(
+        WARNING
+        "Failed to remove ${DELIVERYOPTIMIZER_SOURCE_COMPILE_COMMANDS}: "
+        "${remove_compile_commands_error}. Skipping source-tree compile_commands.json link creation."
       )
     else()
-      list(APPEND target_commands
-        COMMAND "${BASH_EXECUTABLE}" "-lc" "${raw_cmd}"
+      execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E create_symlink
+                "${DELIVERYOPTIMIZER_BUILD_COMPILE_COMMANDS}"
+                "${DELIVERYOPTIMIZER_SOURCE_COMPILE_COMMANDS}"
+        RESULT_VARIABLE create_compile_commands_symlink_result
+        ERROR_VARIABLE create_compile_commands_symlink_error
       )
+      if(NOT create_compile_commands_symlink_result EQUAL 0)
+        message(
+          WARNING
+          "Failed to create compile_commands.json symlink in source tree: "
+          "${create_compile_commands_symlink_error}. Falling back to a build-time copy."
+        )
+        set(deliveryoptimizer_copy_compile_commands_script
+            "${CMAKE_BINARY_DIR}/copy_compile_commands.cmake")
+        file(
+          WRITE "${deliveryoptimizer_copy_compile_commands_script}"
+          "if(EXISTS \"${DELIVERYOPTIMIZER_BUILD_COMPILE_COMMANDS}\")\n"
+          "  execute_process(\n"
+          "    COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different\n"
+          "            \"${DELIVERYOPTIMIZER_BUILD_COMPILE_COMMANDS}\"\n"
+          "            \"${DELIVERYOPTIMIZER_SOURCE_COMPILE_COMMANDS}\"\n"
+          "    RESULT_VARIABLE copy_compile_commands_result\n"
+          "  )\n"
+          "  if(NOT copy_compile_commands_result EQUAL 0)\n"
+          "    message(FATAL_ERROR \"Failed to copy compile_commands.json to source directory.\")\n"
+          "  endif()\n"
+          "endif()\n"
+        )
+        add_custom_target(
+          copy_compile_commands ALL
+          COMMAND "${CMAKE_COMMAND}" -P "${deliveryoptimizer_copy_compile_commands_script}"
+          COMMENT "Copying compile_commands.json to source directory"
+          VERBATIM
+        )
+      endif()
     endif()
-  endforeach()
-
-  add_custom_target(${target_name}
-    ${target_commands}
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    USES_TERMINAL
-    VERBATIM
-  )
-
-  if(ARG_DEPENDS)
-    add_dependencies(${target_name} ${ARG_DEPENDS})
   endif()
-endfunction()
+endif()
 
-add_shell_target(
-  build
-  COMMANDS
-    "${COMPOSE_CMD} build osrm"
-    "${COMPOSE_CMD} build deliveryoptimizer-api"
-)
+add_subdirectory(libs/domain)
+add_subdirectory(libs/application)
+add_subdirectory(libs/adapters)
+add_subdirectory(app/api)
 
-add_shell_target(
-  up
-  COMMANDS
-    "${COMPOSE_CMD} up -d"
-)
-
-add_shell_target(
-  down
-  COMMANDS
-    "${COMPOSE_CMD} down"
-)
-
-add_shell_target(
-  smoke
-  USES_ENV_FILE
-  COMMANDS
-    "BASE_URL=\"http://localhost:$OSRM_PUBLIC_PORT\" && curl -fsS \"$BASE_URL/health\" >/dev/null && echo \"smoke checks passed\""
-)
-
-add_shell_target(
-  logs
-  COMMANDS
-    "${COMPOSE_CMD} logs -f --tail=200"
-)
+if(DELIVERYOPTIMIZER_ENABLE_TESTS)
+  include(CTest)
+  if(BUILD_TESTING)
+    add_subdirectory(tests)
+  endif()
+endif()

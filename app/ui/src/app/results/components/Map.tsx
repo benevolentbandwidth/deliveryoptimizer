@@ -80,6 +80,16 @@ export default function MapComponent({ routes }: MapComponentProps) {
 
   const onUnmount = useCallback(() => setMap(null), []);
 
+  // When the browser window is resized, tell the map to redraw so it fills the new container size
+  useEffect(() => {
+    if (!map || typeof google === "undefined") return;
+    const handleResize = () => {
+      google.maps.event.trigger(map, "resize");
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [map]);
+
   if (!apiKey) {
     return (
       <div className="min-h-[60vh] grid place-items-center bg-zinc-100 text-zinc-600">
@@ -95,14 +105,14 @@ export default function MapComponent({ routes }: MapComponentProps) {
   };
 
   return (
-    <div className="w-full h-full min-h-[70vh] rounded-lg">
+    <div className="w-full h-full rounded-lg">
       <LoadScriptNext // small component that loads google maps script, then renders map components inside it
         googleMapsApiKey={apiKey} // script needs api key
         mapIds={mapId ? [mapId] : undefined} // advanced markers needs map id
         loadingElement={<div className="min-h-[70vh] bg-zinc-100 animate-pulse rounded-lg" />}
       >
         <GoogleMap // component that draws the map
-          mapContainerStyle={{ width: "100%", height: "100%", minHeight: "70vh" }}
+          mapContainerStyle={{ width: "100%", height: "100%" }}
           options={mapOptions}
           onLoad={onMapLoad} // when maps finished loading, google calls this and passes the map instance
           onUnmount={onUnmount} 
