@@ -1,26 +1,30 @@
 {
-  "version": 6,
+  "version": 5,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 24,
+    "minor": 25,
     "patch": 0
   },
   "configurePresets": [
     {
       "name": "dev",
-      "displayName": "Dev (Ninja + ccache)",
-      "description": "Developer preset using Ninja generator and ccache directory defaults.",
+      "displayName": "Dev (system deps, Ninja)",
+      "description": "Configure using system packages for CI smoke validation.",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/out/build/dev",
+      "binaryDir": "${sourceDir}/build/dev",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      },
-      "environment": {
-        "CCACHE_DIR": "${sourceDir}/.ccache"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
     }
   ],
   "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    }
+  ],
+  "testPresets": [
     {
       "name": "dev",
       "configurePreset": "dev"

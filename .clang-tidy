@@ -1,0 +1,25 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  # Real-world bugs
+  bugprone-*,
+  performance-*,
+  readability-*,
+  cppcoreguidelines-*,
+  -modernize-*,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -readability-magic-numbers
+
+WarningsAsErrors: ''
+
+FormatStyle: file
+
+CheckOptions:
+  - key: modernize-use-trailing-return-type.IgnoreMain
+    value: "true"
+  - key: cppcoreguidelines-pro-type-member-init.IgnoreArrays
+    value: "true"
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: "true"

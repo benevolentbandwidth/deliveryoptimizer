@@ -30,7 +30,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
       <header className="flex items-center gap-2 p-4 shrink-0 border-b border-zinc-200 bg-white">
         <button
           type="button"
@@ -50,10 +50,9 @@ export default function ResultsPage() {
         >                                                                                                                     {/* And since sidebar is always in the page (288px wide), overflow hidden helps prevent it from sticking out when the wrapper is 0px. Transition makes sure as the width changes, animate it over 300ms instead of jumping in/out abruptly */}
           <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
         </div>
-        {/* Outer div: the map area (right side + padding). Doesn't give the map a height that works for 100% */}
-        <div className="flex-1 min-w-0 min-h-[70vh] h-full px-4 pb-4 flex flex-col">
-          {/* Inner div: this one gets a real height so the map's "100%" has something to match. Map component fills this space */}
-          <div className="flex-1 min-h-0 w-full rounded-lg overflow-hidden">
+        {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
             <MapComponent routes={routes} />
           </div>
         </div>
