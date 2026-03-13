@@ -63,4 +63,3 @@ export default function EditableStopItem({ stop, isEditMode, onSaveNote }: Edita
     </div>
   );
 }
-

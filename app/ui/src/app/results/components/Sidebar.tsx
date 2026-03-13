@@ -66,7 +66,10 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
       </p>
       <div className="flex-1 min-h-0 overflow-y-auto mt-3"> {/* The div takes up the remaining space below the fixed header and if route list is taller than that space, only this area scrolls */}
         {routes.length === 0 ? (
-          <p className="text-sm text-zinc-500">No routes yet</p> /* If no routes, show message saying "no routes yet" */
+          <>
+            {/* If no routes, show message saying "no routes yet" */}
+            <p className="text-sm text-zinc-500">No routes yet</p>
+          </>
         ) : (
           <ul className="space-y-3 pb-2"> {/* Place some vertical space between each route card and small padding at the bottom so last card isn't stuck to the edge when scrolling */}
             {routes.map((route, idx) => {
