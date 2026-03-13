@@ -69,7 +69,7 @@ export default function MapComponent({ routes }: MapComponentProps) {
     (mapInstance: google.maps.Map) => {
       setMap(mapInstance); // saving map instance in state so AdvancedMarkers can use it
       if (routes.length === 0) return;
-      const bounds = new google.maps.LatLngBounds(); // Create an empty box (LatLngBounds), then for each stop in every rote, we extend that box to include the stop's lat/lng coords
+      const bounds = new google.maps.LatLngBounds(); // Create an empty box (LatLngBounds), then for each stop in every route, we extend that box to include the stop's lat/lng coords
       routes.forEach((route) => {
         route.stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng })); 
       });
@@ -87,7 +87,7 @@ export default function MapComponent({ routes }: MapComponentProps) {
       google.maps.event.trigger(map, "resize");
     };
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize); // Cleanup function to remove the event listener when the component unmounts
   }, [map]);
 
   if (!apiKey) {
