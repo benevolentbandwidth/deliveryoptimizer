@@ -1,6 +1,7 @@
 #include "deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp"
 
-#include <cstdlib>
+#include "env_utils.hpp"
+
 #include <drogon/drogon.h>
 #include <string>
 #include <string_view>
@@ -9,24 +10,6 @@
 namespace {
 
 constexpr std::string_view kDefaultOsrmBaseUrl = "http://127.0.0.1:5001";
-
-[[nodiscard]] std::string ResolveOsrmBaseUrl() {
-  const char* raw_osrm_url = std::getenv("OSRM_URL");
-  if (raw_osrm_url == nullptr || *raw_osrm_url == '\0') {
-    return std::string{kDefaultOsrmBaseUrl};
-  }
-
-  std::string normalized_url{raw_osrm_url};
-  if (!normalized_url.empty() && normalized_url.back() == '/') {
-    normalized_url.pop_back();
-  }
-
-  if (normalized_url.empty()) {
-    return std::string{kDefaultOsrmBaseUrl};
-  }
-
-  return normalized_url;
-}
 
 [[nodiscard]] std::string_view ResolveServiceName(const std::string_view path_suffix) {
   const auto separator = path_suffix.find('/');
@@ -47,7 +30,7 @@ constexpr std::string_view kDefaultOsrmBaseUrl = "http://127.0.0.1:5001";
 namespace deliveryoptimizer::api {
 
 void RegisterOsrmProxyEndpoint(drogon::HttpAppFramework& app) {
-  const auto osrm_base_url = ResolveOsrmBaseUrl();
+  const auto osrm_base_url = ResolveNormalizedUrlEnvOrDefault("OSRM_URL", kDefaultOsrmBaseUrl);
   auto osrm_client = drogon::HttpClient::newHttpClient(osrm_base_url);
 
   app.registerHandlerViaRegex(

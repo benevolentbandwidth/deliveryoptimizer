@@ -5,7 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tests/integration/http_server/http_server_helpers.sh
 source "${script_dir}/http_server_helpers.sh"
 
-http_server_init 37000 "$@"
+http_server_init 40000 "$@"
 response_file="${work_dir}/response.json"
 payload_file="${work_dir}/payload.json"
 captured_input_file="${work_dir}/captured-input.json"
@@ -51,7 +51,13 @@ cat >"${payload_file}" <<'JSON'
     { "id": "van-1", "capacity": 8 }
   ],
   "jobs": [
-    { "id": "order-1", "location": [7.4212, 43.7308], "demand": 1 }
+    {
+      "id": "order-1",
+      "location": [7.4212, 43.7308],
+      "demand": 1,
+      "service": 180,
+      "time_windows": [[1700000000, 1700001800]]
+    }
   ]
 }
 JSON
@@ -63,13 +69,13 @@ http_code="$("${curl_bin}" -sS -o "${response_file}" -w "%{http_code}" \
   "$(http_server_url /api/v1/deliveries/optimize)")"
 
 if [[ "${http_code}" != "200" ]]; then
-  echo "expected HTTP 200 when jobs[].service is omitted, got ${http_code}" >&2
+  echo "expected HTTP 200 from deliveries optimize, got ${http_code}" >&2
   cat "${response_file}" >&2 || true
   exit 1
 fi
 
-if ! grep -Eq '"service"[[:space:]]*:[[:space:]]*300' "${captured_input_file}"; then
-  echo "expected omitted jobs[].service to default to 300 in VROOM payload" >&2
+if ! grep -Eq '"time_windows"[[:space:]]*:[[:space:]]*\[[[:space:]]*\[[[:space:]]*1700000000[[:space:]]*,[[:space:]]*1700001800[[:space:]]*\][[:space:]]*\]' "${captured_input_file}"; then
+  echo "expected optimize request to preserve jobs[].time_windows in VROOM payload" >&2
   cat "${captured_input_file}" >&2 || true
   exit 1
 fi
