@@ -70,6 +70,32 @@ The API binary will be at:
 ctest --preset conan-release --output-on-failure
 ```
 
+Run by label when you only need a test slice:
+
+```bash
+# Unit tests (gtest)
+ctest --preset conan-release -L unit --output-on-failure
+
+# Local API integration tests (binary + curl, no Docker)
+ctest --preset conan-release -L local --output-on-failure
+
+# End-to-end Docker tests
+ctest --preset conan-release -L e2e --output-on-failure
+
+# Any API-facing tests (local integration + API e2e)
+ctest --preset conan-release -L api --output-on-failure
+```
+
+Current label taxonomy:
+
+- `unit`: C++ component tests discovered by `gtest_discover_tests`.
+- `integration`: local shell-driven API tests.
+- `local`: integration tests that run the API binary directly (no Docker).
+- `e2e`: Docker Compose based tests.
+- `docker`: tests that require Docker.
+- `api`: tests that hit API endpoints.
+- `regression`: passing tests that cover previously fixed bugs (regression coverage).
+
 ## 6) Run the API locally
 
 ```bash

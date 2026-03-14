@@ -1,7 +1,8 @@
 #include "deliveryoptimizer/api/endpoints/health_endpoint.hpp"
 
+#include "env_utils.hpp"
+
 #include <chrono>
-#include <cstdlib>
 #include <drogon/drogon.h>
 #include <filesystem>
 #include <mutex>
@@ -25,29 +26,9 @@ struct OsrmProbeResult {
   std::string detail;
 };
 
-[[nodiscard]] std::string ResolveEnvOrDefault(const char* key,
-                                              const std::string_view default_value) {
-  const char* raw_value = std::getenv(key);
-  if (raw_value == nullptr || *raw_value == '\0') {
-    return std::string{default_value};
-  }
-
-  return std::string{raw_value};
-}
-
-[[nodiscard]] std::string ResolveOsrmBaseUrl() {
-  std::string osrm_base_url = ResolveEnvOrDefault("OSRM_URL", kDefaultOsrmUrl);
-  if (!osrm_base_url.empty() && osrm_base_url.back() == '/') {
-    osrm_base_url.pop_back();
-  }
-  if (osrm_base_url.empty()) {
-    return std::string{kDefaultOsrmUrl};
-  }
-  return osrm_base_url;
-}
-
 [[nodiscard]] bool IsVroomBinaryReady() {
-  const std::string vroom_bin = ResolveEnvOrDefault("VROOM_BIN", kDefaultVroomBin);
+  const std::string vroom_bin =
+      deliveryoptimizer::api::ResolveEnvOrDefault("VROOM_BIN", kDefaultVroomBin);
   std::error_code error;
   const std::filesystem::file_status status = std::filesystem::status(vroom_bin, error);
   if (error || !std::filesystem::is_regular_file(status)) {
@@ -113,7 +94,8 @@ struct OsrmProbeResult {
 }
 
 [[nodiscard]] drogon::HttpClientPtr GetOsrmHttpClient() {
-  static drogon::HttpClientPtr client = drogon::HttpClient::newHttpClient(ResolveOsrmBaseUrl());
+  static drogon::HttpClientPtr client = drogon::HttpClient::newHttpClient(
+      deliveryoptimizer::api::ResolveNormalizedUrlEnvOrDefault("OSRM_URL", kDefaultOsrmUrl));
   return client;
 }
 
