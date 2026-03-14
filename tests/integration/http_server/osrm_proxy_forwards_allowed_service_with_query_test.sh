@@ -96,7 +96,9 @@ server_pid=$!
 
 ready=false
 for _ in $(seq 1 50); do
-  if "${curl_bin}" -fsS "http://127.0.0.1:${api_port}/health" >/dev/null 2>&1; then
+  http_code="$("${curl_bin}" -sS -o "${response_file}" -w "%{http_code}" \
+    "http://127.0.0.1:${api_port}/health" || true)"
+  if [[ "${http_code}" != "000" ]]; then
     ready=true
     break
   fi

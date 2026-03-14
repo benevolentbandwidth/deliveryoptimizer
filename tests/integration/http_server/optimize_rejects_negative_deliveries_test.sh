@@ -30,16 +30,7 @@ trap cleanup EXIT
 env DELIVERYOPTIMIZER_PORT="${port}" "${server_bin}" >"${log_file}" 2>&1 &
 server_pid=$!
 
-ready=false
-for _ in $(seq 1 50); do
-  if "${curl_bin}" -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
-    ready=true
-    break
-  fi
-  sleep 0.2
-done
-
-if [[ "${ready}" != "true" ]]; then
+if ! wait_for_local_optimize_ready "${curl_bin}" "${port}"; then
   echo "server failed to start on port ${port}" >&2
   cat "${log_file}" >&2 || true
   exit 1

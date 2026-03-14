@@ -19,7 +19,20 @@ This branch introduces the C++ API runtime modules plus ARM routing stack assets
 
 - `GET /health`
 - `GET /optimize?deliveries=<n>&vehicles=<n>`
+- `POST /api/v1/deliveries/optimize`
 - `GET /api/v1/osrm/*` (allowlisted OSRM services)
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/deliveries/optimize \
+  -H 'Content-Type: application/json' \
+  --data-binary '{
+    "depot": { "location": [-122.4194, 37.7749] },
+    "vehicles": [{ "id": "van-1", "capacity": 8 }],
+    "jobs": [{ "id": "order-1", "location": [-122.4183, 37.7758], "demand": 1 }]
+  }'
+```
 
 ## Build (C++)
 

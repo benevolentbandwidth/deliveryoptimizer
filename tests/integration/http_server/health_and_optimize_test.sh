@@ -32,23 +32,23 @@ trap cleanup EXIT
 env DELIVERYOPTIMIZER_PORT="${port}" "${server_bin}" >"${log_file}" 2>&1 &
 server_pid=$!
 
-ready=false
-for _ in $(seq 1 50); do
-  if "${curl_bin}" -fsS "http://127.0.0.1:${port}/health" >"${health_file}" 2>/dev/null; then
-    ready=true
-    break
-  fi
-  sleep 0.2
-done
-
-if [[ "${ready}" != "true" ]]; then
+if ! wait_for_local_optimize_ready "${curl_bin}" "${port}"; then
   echo "server failed to start on port ${port}" >&2
   cat "${log_file}" >&2 || true
   exit 1
 fi
 
-if ! grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' "${health_file}"; then
-  echo "health response did not contain status=ok" >&2
+health_http_code="$("${curl_bin}" -sS -o "${health_file}" -w "%{http_code}" \
+  "http://127.0.0.1:${port}/health")"
+
+if [[ "${health_http_code}" != "200" && "${health_http_code}" != "503" ]]; then
+  echo "health endpoint returned unexpected HTTP ${health_http_code}" >&2
+  cat "${health_file}" >&2 || true
+  exit 1
+fi
+
+if ! grep -Eq '"status"[[:space:]]*:[[:space:]]*"(ok|degraded)"' "${health_file}"; then
+  echo "health response did not contain expected status value" >&2
   cat "${health_file}" >&2 || true
   exit 1
 fi

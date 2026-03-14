@@ -5,6 +5,7 @@ target_sources(
   deliveryoptimizer_api_runtime
   PRIVATE
     src/api_server.cpp
+    src/endpoints/deliveries_optimize_endpoint.cpp
     src/endpoints/health_endpoint.cpp
     src/endpoints/optimize_endpoint.cpp
     src/endpoints/osrm_proxy_endpoint.cpp
@@ -14,6 +15,7 @@ target_sources(
     BASE_DIRS include
     FILES
       include/deliveryoptimizer/api/api_server.hpp
+      include/deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/health_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp

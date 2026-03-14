@@ -39,7 +39,7 @@ constexpr std::string_view kDefaultOsrmBaseUrl = "http://127.0.0.1:5001";
 
 [[nodiscard]] bool IsAllowedService(const std::string_view service_name) {
   return service_name == "nearest" || service_name == "route" || service_name == "table" ||
-         service_name == "match" || service_name == "trip";
+         service_name == "match";
 }
 
 } // namespace
@@ -52,9 +52,10 @@ void RegisterOsrmProxyEndpoint(drogon::HttpAppFramework& app) {
 
   app.registerHandlerViaRegex(
       "^/api/v1/osrm/(.+)$",
-      [osrm_client = std::move(osrm_client)](const drogon::HttpRequestPtr& request,
-                                             std::function<void(const drogon::HttpResponsePtr&)>&& callback,
-                                             const std::string& path_suffix) mutable {
+      [osrm_client =
+           std::move(osrm_client)](const drogon::HttpRequestPtr& request,
+                                   std::function<void(const drogon::HttpResponsePtr&)>&& callback,
+                                   const std::string& path_suffix) mutable {
         const auto service_name = ResolveServiceName(path_suffix);
         if (!IsAllowedService(service_name)) {
           Json::Value body;
