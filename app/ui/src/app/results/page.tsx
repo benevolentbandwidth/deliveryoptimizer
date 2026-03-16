@@ -46,8 +46,8 @@ export default function ResultsPage() {
       </header>
       <div className="flex flex-1 min-h-0">
         <div
-          className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // Before the sidebar only rendered when open, so it popped in with no transition. Now the sidebar is always in the page and placed inside a wrapper div that acts like a window. We change the width of that window so when open it is 288px wide and when closed it is 0px
-        >                                                                                                                     {/* And since sidebar is always in the page (288px wide), overflow hidden helps prevent it from sticking out when the wrapper is 0px. Transition makes sure as the width changes, animate it over 300ms instead of jumping in/out abruptly */}
+          className={`shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // h-full so sidebar has a defined height for internal scrolling; overflow hidden so only the sidebar's scroll area scrolls
+        >
           <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
         </div>
         {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
