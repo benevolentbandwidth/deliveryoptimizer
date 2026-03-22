@@ -52,6 +52,14 @@
             };
 
             shellHook = ''
+              if [ "$(uname -s)" = "Darwin" ] && [ -n "''${NIX_CFLAGS_COMPILE:-}" ]; then
+                libcxx_include_root="$(
+                  printf '%s\n' "$NIX_CFLAGS_COMPILE" | tr ' ' '\n' | awk '/libcxx/ && /\/include$/ { print; exit }'
+                )"
+                if [ -n "$libcxx_include_root" ] && [ -d "$libcxx_include_root/c++/v1" ]; then
+                  export CPLUS_INCLUDE_PATH="$libcxx_include_root/c++/v1''${CPLUS_INCLUDE_PATH:+:$CPLUS_INCLUDE_PATH}"
+                fi
+              fi
               export DELIVERYOPTIMIZER_NIX_LLVM=1
               echo "Entered deliveryoptimizer backend dev shell."
               echo "Compiler: $(command -v clang++)"
