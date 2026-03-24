@@ -19,13 +19,12 @@ export default function Navbar() {
       <div className={NAVBAR_LOGO_PLACEHOLDER}>logo</div>
       <div className={NAVBAR_ACTIONS_WRAP}>
         {/* Upload icon button */}
-        <button className={NAVBAR_ICON_BUTTON}>
+        <button className={NAVBAR_ICON_BUTTON} aria-label="Upload">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M10 13V4M10 4L6 8M10 4L14 8" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M4 14v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-        </button>
-        <button className={NAVBAR_OUTLINE_PILL}>
+        </button>        <button className={NAVBAR_OUTLINE_PILL}>
           Save
         </button>
         <button className={NAVBAR_OUTLINE_PILL}>
