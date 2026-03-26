@@ -62,86 +62,86 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
         {totalStops === 1 ? "" : "s"}
       </p>
       <div className="flex-1 min-h-0 overflow-y-auto mt-3"> {/* The div takes up the remaining space below the fixed header and if route list is taller than that space, only this area scrolls */}
-      {routes.length === 0 ? ( 
-        <p className="text-sm text-zinc-500">No routes yet</p> // If no routes, show message saying "no routes yet"
-      ) : ( 
-        <ul className="space-y-3 pb-2"> {/* Place some vertical space between each route card and small padding at the bottom so last card isn't stuck to the edge when scrolling */}
-          {routes.map((route, idx) => { 
-            const isExpanded = expandedRouteIds.has(route.vehicleId); // isExpanded is a boolean that checks if the route card is expanded (showing its stops)
-            const sortedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence); // sortedStops is an array of route's stops in visit order
+        {routes.length === 0 ? (
+          <p className="text-sm text-zinc-500">No routes yet</p> /* If no routes, show message saying "no routes yet" */
+        ) : (
+          <ul className="space-y-3 pb-2"> {/* Place some vertical space between each route card and small padding at the bottom so last card isn't stuck to the edge when scrolling */}
+            {routes.map((route, idx) => {
+              const isExpanded = expandedRouteIds.has(route.vehicleId); // isExpanded is a boolean that checks if the route card is expanded (showing its stops)
+              const sortedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence); // sortedStops is an array of route's stops in visit order
 
-            return (
-              <li
-                key={route.vehicleId}
-                className="rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm overflow-hidden"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(route.vehicleId)}
-                  className="w-full p-3 flex items-center justify-between gap-3 text-left hover:bg-zinc-100/80 transition-colors"  // Added hover:bg-zinc-100/80 transition-colors to make the card background color change when hovered over
-                  aria-expanded={isExpanded}
+              return (
+                <li
+                  key={route.vehicleId}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm overflow-hidden"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-800">Route {idx + 1}</span>
-                      <span className="text-xs text-zinc-500">{route.vehicleType ?? "Vehicle"} {route.vehicleId}</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-3 gap-2"> {/* Here we replaced the single line of Stops, Distance, and Est. Time with a grid of three small boxes each with a white rounded box and small grey label and bold value */}
-                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
-                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">STOPS</div>
-                        <div className="text-sm font-semibold text-zinc-800">{sortedStops.length}</div>
-                      </div>
-                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
-                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">DISTANCE</div>
-                        <div className="text-sm font-semibold text-zinc-800 tabular-nums">{route.distanceMi != null ? `${route.distanceMi}mi` : "—"}</div>
-                      </div>
-                      <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
-                        <div className="text-[9px] uppercase tracking-wide text-zinc-500">EST. TIME</div>
-                        <div className="text-sm font-semibold text-zinc-800 tabular-nums">{formatEstTime(route.estimatedTimeMinutes)}</div>
-                      </div>
-                    </div>
-                    <p className="mt-2 text-xs text-zinc-600">
-                      <span className="font-medium text-zinc-700">Driver:</span> {route.driverName}
-                    </p>
-                  </div>
-
-                  <svg
-                    className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
-                      isExpanded ? "rotate-90" : "rotate-0"
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(route.vehicleId)}
+                    className="w-full p-3 flex items-center justify-between gap-3 text-left hover:bg-zinc-100/80 transition-colors"  // Added hover:bg-zinc-100/80 transition-colors to make the card background color change when hovered over
+                    aria-expanded={isExpanded}
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24c.3.3.3.77 0 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-zinc-800">Route {idx + 1}</span>
+                        <span className="text-xs text-zinc-500">{route.vehicleType ?? "Vehicle"} {route.vehicleId}</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-3 gap-2"> {/* Here we replaced the single line of Stops, Distance, and Est. Time with a grid of three small boxes each with a white rounded box and small grey label and bold value */}
+                        <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                          <div className="text-[9px] uppercase tracking-wide text-zinc-500">STOPS</div>
+                          <div className="text-sm font-semibold text-zinc-800">{sortedStops.length}</div>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                          <div className="text-[9px] uppercase tracking-wide text-zinc-500">DISTANCE</div>
+                          <div className="text-sm font-semibold text-zinc-800 tabular-nums">{route.distanceMi != null ? `${route.distanceMi}mi` : "—"}</div>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1.5 shadow-sm min-w-0 text-center">
+                          <div className="text-[9px] uppercase tracking-wide text-zinc-500">EST. TIME</div>
+                          <div className="text-sm font-semibold text-zinc-800 tabular-nums">{formatEstTime(route.estimatedTimeMinutes)}</div>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-zinc-600">
+                        <span className="font-medium text-zinc-700">Driver:</span> {route.driverName}
+                      </p>
+                    </div>
 
-                {isExpanded && ( // Below the card header, when expanded, shows one EditableStopItem per stop; each gets onSaveNote wrapped so the page's updateStopNote is called with this route and stop id
-                  <div className="border-t border-zinc-200 bg-zinc-100/50 p-3">
-                    <ul className="space-y-2">
-                      {sortedStops.map((stop) => (
-                        <li key={stop.id}>
-                          <EditableStopItem
-                            key={stop.id}
-                            stop={stop}
-                            isEditMode={isEditMode}
-                            onSaveNote={(note) => onUpdateStopNote(route.vehicleId, stop.id, note)}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    <svg
+                      className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+                        isExpanded ? "rotate-90" : "rotate-0"
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24c.3.3.3.77 0 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  {isExpanded && ( // Below the card header, when expanded, shows one EditableStopItem per stop; each gets onSaveNote wrapped so the page's updateStopNote is called with this route and stop id
+                    <div className="border-t border-zinc-200 bg-zinc-100/50 p-3">
+                      <ul className="space-y-2">
+                        {sortedStops.map((stop) => (
+                          <li key={stop.id}>
+                            <EditableStopItem
+                              key={stop.id}
+                              stop={stop}
+                              isEditMode={isEditMode}
+                              onSaveNote={(note) => onUpdateStopNote(route.vehicleId, stop.id, note)}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </aside>
   );
