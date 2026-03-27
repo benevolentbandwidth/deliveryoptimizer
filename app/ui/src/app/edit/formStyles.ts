@@ -7,7 +7,7 @@
 export const NAVBAR_HEADER =
   "flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-4 sm:px-6 md:px-8 py-4 border-b border-zinc-200";
 
-export const NAVBAR_LOGO_PLACEHOLDER = "bg-zinc-300 px-4 py-2 text-sm font-manrope w-fit";
+export const NAVBAR_LOGO_PLACEHOLDER = "bg-zinc-300 px-4 py-2 text-sm font-sans-manrope w-fit";
 
 export const NAVBAR_ACTIONS_WRAP = "flex flex-wrap items-center gap-2 md:justify-end";
 
