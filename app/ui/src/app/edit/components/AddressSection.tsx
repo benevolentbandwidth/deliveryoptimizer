@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 /**
  * Addresses region: toolbar (find / add) and a stacked list of delivery cards for the current page.
@@ -50,7 +50,7 @@ export default function AddressSection({
     <section>
       <h2 className={ADDRESS_SECTION_TITLE}>Addresses</h2>
 
-      {/* Mobile: Add first, then Find GÇö full-width pills */}
+      {/* Mobile: Add first, then Find Gï¿½ï¿½ full-width pills */}
       <div className={ADDRESS_TOOLBAR_MOBILE_WRAP}>
         <button
           type="button"
@@ -64,7 +64,7 @@ export default function AddressSection({
         </button>
       </div>
 
-      {/* Desktop: Find left, spacer, Add right GÇö type scales with viewport */}
+      {/* Desktop: Find left, spacer, Add right Gï¿½ï¿½ type scales with viewport */}
       <div className={ADDRESS_TOOLBAR_DESKTOP}>
         <button type="button" className={ADDRESS_FIND_PILL_DESKTOP}>
           Find address
