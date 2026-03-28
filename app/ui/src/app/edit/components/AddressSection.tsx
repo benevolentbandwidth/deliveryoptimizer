@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Addresses region: toolbar (find / add) and a stacked list of delivery cards for the current page.
