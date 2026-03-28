@@ -19,3 +19,18 @@ export type VehicleRow = {
   available: boolean;
   departureTime: string;
 };
+
+/** One stop: delivery address, timing constraints, quantity, and optional notes. */
+export type AddressCard = {
+  id: number;
+  locked: boolean;
+  editingExisting: boolean;
+  recipientAddress: string;
+  timeBuffer: string;
+  /** Which time control is shown: single "by" time or a "between" window. */
+  deliveryTimeMode: "by" | "between";
+  deliveryBy: string;
+  deliveryBetween: string;
+  deliveryQuantity: number;
+  notes: string;
+};
