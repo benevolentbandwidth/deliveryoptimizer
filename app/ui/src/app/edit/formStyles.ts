@@ -169,7 +169,7 @@ export const MOBILE_ADDRESS_INPUT_BASE =
 export const MOBILE_ADDRESS_SELECT_MODE =
   "h-9 w-full rounded-lg px-3 text-sm font-medium text-black focus:outline-none border border-zinc-200 bg-zinc-200 cursor-pointer select-chevron";
 
-/** Floor widths so time-buffer / delivery / qty columns resist clipping at mdGÇôxl. */
+/** Floor widths so time-buffer / delivery / qty columns resist clipping at mdGï¿½ï¿½xl. */
 export const ADDRESS_COL_MIN_TIME_BUFFER = "min-w-[6rem]";
 export const ADDRESS_COL_MIN_QTY = "min-w-[3.25rem]";
 
@@ -259,7 +259,7 @@ export const PAGINATION_PAGE_IDLE =
   "min-w-[2.75rem] h-11 rounded-3xl flex items-center justify-center text-base font-manrope text-black cursor-pointer transition-colors hover:bg-zinc-100 hover:underline";
 
 /**
- * Desktop-only header row for the address list GÇö rendered once in AddressSection above the
+ * Desktop-only header row for the address list Gï¿½ï¿½ rendered once in AddressSection above the
  * address cards. Horizontal padding matches ADDRESS_CARD_ROOT_BASE (md:px-2.5 lg:px-3 xl:px-5).
  */
 export const ADDRESS_DESKTOP_HDR_ROW =
