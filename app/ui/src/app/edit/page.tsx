@@ -17,7 +17,7 @@ export default function Page() {
   const addressState = useAddresses();
 
   return (
-    <div className="min-h-screen bg-white font-manrope">
+    <div className="min-h-screen bg-white font-sans-manrope">
       <Navbar />
 
       <main className="px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-8 md:space-y-10 max-w-[1480px] mx-auto">
