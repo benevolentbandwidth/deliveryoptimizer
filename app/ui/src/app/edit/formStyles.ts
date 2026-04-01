@@ -165,10 +165,10 @@ export const VEHICLE_MOBILE_EDITING_ACTIONS = "flex flex-col gap-2 pt-2";
 
 /** Address desktop: two tiers (md / xl) so dropdown columns keep room without triple minmax ladders. */
 export const DESKTOP_ADDRESS_GRID_CLASS =
-  "md:grid-cols-[2.95fr_minmax(6rem,0.52fr)_minmax(10.5rem,0.78fr)_minmax(3.25rem,0.48fr)_2.35fr_auto] xl:grid-cols-[3fr_minmax(6rem,0.55fr)_minmax(16rem,0.85fr)_minmax(3.25rem,0.55fr)_2.45fr_auto]";
+  "lg:grid-cols-[2.95fr_minmax(6rem,0.52fr)_minmax(10.5rem,0.78fr)_minmax(3.25rem,0.48fr)_2.35fr_auto] xl:grid-cols-[3fr_minmax(6rem,0.55fr)_minmax(16rem,0.85fr)_minmax(3.25rem,0.55fr)_2.45fr_auto]";
 
 export const ADDRESS_DESKTOP_GRID_GAP =
-  "gap-x-2.5 md:gap-x-3 lg:gap-x-3 xl:gap-x-4 gap-y-1 md:gap-y-1.5 xl:gap-y-2";
+  "gap-x-2.5 lg:gap-x-3 xl:gap-x-4 gap-y-1 lg:gap-y-1.5 xl:gap-y-2";
 
 export const ADDRESS_DESKTOP_HDR =
   "text-xs font-medium text-black justify-self-start leading-none lg:text-sm xl:text-base";
@@ -205,9 +205,9 @@ export const ADDRESS_NOTES_COLUMN =
 
 /** Outer card: bordered panel on small screens; padding + flush join on md+ (panel border from list). */
 export const ADDRESS_CARD_ROOT_BASE =
-  "rounded-xl border border-zinc-300 overflow-hidden bg-white md:rounded-none md:border-0 md:overflow-visible md:bg-transparent md:px-2.5 md:py-3 lg:px-3 lg:py-4 xl:p-5";
+  "rounded-xl border border-zinc-300 overflow-hidden bg-white lg:rounded-none lg:border-0 lg:overflow-visible lg:bg-transparent lg:px-3 lg:py-4 xl:p-5";
 
-export const ADDRESS_CARD_EDITING_EXTRA = "md:rounded-lg";
+export const ADDRESS_CARD_EDITING_EXTRA = "lg:rounded-lg";
 
 export const ADDRESS_LOCKED_SURFACE_MD = "h-8 min-h-[2rem] xl:h-9 self-start bg-zinc-300 rounded-lg flex items-center px-2 xl:px-3";
 
@@ -246,9 +246,9 @@ export const ACCORDION_TRIGGER =
 
 export const ADDRESS_SECTION_TITLE = "text-sm font-semibold text-black mb-3 xl:text-base xl:mb-4";
 
-export const ADDRESS_TOOLBAR_MOBILE_WRAP = "flex flex-col gap-3 mb-6 md:hidden";
+export const ADDRESS_TOOLBAR_MOBILE_WRAP = "flex flex-col gap-3 mb-6 lg:hidden";
 
-export const ADDRESS_TOOLBAR_DESKTOP = "hidden md:flex items-center gap-3 mb-5 xl:gap-4 xl:mb-6";
+export const ADDRESS_TOOLBAR_DESKTOP = "hidden lg:flex items-center gap-3 mb-5 xl:gap-4 xl:mb-6";
 
 export const ADDRESS_FIND_PILL_DESKTOP =
   "h-9 shrink-0 rounded-full bg-zinc-300 px-4 text-sm font-normal text-black hover:bg-zinc-400 transition-colors cursor-pointer xl:h-11 xl:px-6 xl:text-base";
@@ -269,7 +269,7 @@ export const ADDRESS_FIND_PILL_MOBILE =
   "w-full h-11 px-6 rounded-full bg-zinc-300 text-black text-base font-normal hover:bg-zinc-400 transition-colors cursor-pointer";
 
 export const ADDRESS_LIST_WRAP =
-  "space-y-4 md:space-y-0 md:divide-y md:divide-zinc-300 md:border md:border-zinc-300 md:rounded-xl md:overflow-hidden";
+  "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-hidden";
 
 export const PAGINATION_ROW = "flex items-center justify-center gap-2 sm:gap-4 pb-4 md:pb-8 px-2";
 
@@ -287,4 +287,4 @@ export const PAGINATION_PAGE_IDLE =
  * address cards. Horizontal padding matches ADDRESS_CARD_ROOT_BASE (md:px-2.5 lg:px-3 xl:px-5).
  */
 export const ADDRESS_DESKTOP_HDR_ROW =
-  "hidden md:grid md:px-2.5 lg:px-3 xl:px-5 mb-1 xl:mb-2";
+  "hidden lg:grid lg:px-3 xl:px-5 mb-1 xl:mb-2";

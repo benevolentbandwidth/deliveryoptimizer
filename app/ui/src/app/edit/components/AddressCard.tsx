@@ -92,7 +92,7 @@ export default function AddressCard({
       }`}
     >
       {/* Desktop layout */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <div className={`grid ${DESKTOP_ADDRESS_GRID_CLASS} ${ADDRESS_DESKTOP_GRID_GAP} items-stretch`}>
           <span className={ADDRESS_DESKTOP_HDR}>Address</span>
           <span className={ADDRESS_DESKTOP_HDR}>Time Buffer</span>
@@ -274,7 +274,7 @@ export default function AddressCard({
       </div>
 
       {/* Mobile accordion */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
