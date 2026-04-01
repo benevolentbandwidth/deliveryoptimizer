@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * Shared Tailwind class tokens for the delivery edit form. Prefer complete string literals so
  * Tailwind's scanner includes all utilities. Vehicle editing panel constants compose
  * `EDITING_EXISTING_HIGHLIGHT` at module load (still scanned in this file).
@@ -138,6 +138,30 @@ export const VEHICLE_ADD_DISABLED =
 
 /** Fixed wrapper width for the AvailableSegmented control (desktop + mobile). */
 export const VEHICLE_AVAILABLE_SEGMENT_WRAPPER = "w-[7.5rem] shrink-0";
+
+/** Text span inside a mobile locked field cell. */
+export const VEHICLE_MOBILE_LOCKED_TEXT = "text-base text-black truncate";
+
+/** Text span inside a desktop locked field cell. */
+export const VEHICLE_DESKTOP_LOCKED_TEXT = "text-sm xl:text-base text-black truncate";
+
+/** Wrapper div for the AvailableSegmented control in the desktop grid (locked + editing). */
+export const VEHICLE_DESKTOP_AVAILABLE_CELL = "flex items-center justify-center h-11 min-w-0 px-0.5";
+
+/** Action button container in the desktop grid (locked + editing). */
+export const VEHICLE_DESKTOP_ACTION_CELL = "flex items-center gap-1";
+
+/** Row wrapping the Available label and segmented control in mobile cards. */
+export const VEHICLE_MOBILE_AVAILABLE_ROW = "flex items-center justify-between gap-3 pt-1";
+
+/** "Available" label text in mobile cards. */
+export const VEHICLE_MOBILE_AVAILABLE_LABEL = "text-sm text-black";
+
+/** Button row at the bottom of a mobile locked card (Edit + Delete). */
+export const VEHICLE_MOBILE_LOCKED_ACTIONS = "flex gap-2 pt-2";
+
+/** Confirm + Delete column at the bottom of a mobile editing-existing card. */
+export const VEHICLE_MOBILE_EDITING_ACTIONS = "flex flex-col gap-2 pt-2";
 
 /** Address desktop: two tiers (md / xl) so dropdown columns keep room without triple minmax ladders. */
 export const DESKTOP_ADDRESS_GRID_CLASS =

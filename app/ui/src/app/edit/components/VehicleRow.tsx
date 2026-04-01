@@ -42,6 +42,14 @@ import {
   VEHICLE_PILL_HALF_DANGER,
   ICON_BUTTON_9,
   ICON_BUTTON_9_DANGER,
+  VEHICLE_DESKTOP_ACTION_CELL,
+  VEHICLE_DESKTOP_AVAILABLE_CELL,
+  VEHICLE_DESKTOP_LOCKED_TEXT,
+  VEHICLE_MOBILE_AVAILABLE_LABEL,
+  VEHICLE_MOBILE_AVAILABLE_ROW,
+  VEHICLE_MOBILE_EDITING_ACTIONS,
+  VEHICLE_MOBILE_LOCKED_ACTIONS,
+  VEHICLE_MOBILE_LOCKED_TEXT,
   fieldBorder,
 } from "../formStyles";
 
@@ -166,35 +174,35 @@ export default function VehicleRow({
         <div className={VEHICLE_MOBILE_CARD}>
           <MobileFieldLabel>Name</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{v.name}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.name}</span>
           </div>
           <MobileFieldLabel>Start Location</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{v.startLocation}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.startLocation}</span>
           </div>
           <MobileFieldLabel>Type</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{capitalize(v.type)}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{capitalize(v.type)}</span>
           </div>
           <MobileFieldLabel>Capacity Unit</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{capitalize(v.capacityUnit)}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
           </div>
           <MobileFieldLabel>Capacity</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{v.capacity}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.capacity}</span>
           </div>
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <span className="text-sm text-black">Available</span>
+          <div className={VEHICLE_MOBILE_AVAILABLE_ROW}>
+            <span className={VEHICLE_MOBILE_AVAILABLE_LABEL}>Available</span>
             <div className={VEHICLE_AVAILABLE_SEGMENT_WRAPPER}>
               <AvailableSegmented available={v.available} />
             </div>
           </div>
           <MobileFieldLabel>Departure Time</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className="text-base text-black truncate">{v.departureTime}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.departureTime}</span>
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className={VEHICLE_MOBILE_LOCKED_ACTIONS}>
             <button
               type="button"
               onClick={() => unlockVehicle(v.id)}
@@ -273,8 +281,8 @@ export default function VehicleRow({
           placeholder=""
           aria-label="Vehicle capacity"
         />
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <span className="text-sm text-black">Available</span>
+        <div className={VEHICLE_MOBILE_AVAILABLE_ROW}>
+          <span className={VEHICLE_MOBILE_AVAILABLE_LABEL}>Available</span>
           <div className={VEHICLE_AVAILABLE_SEGMENT_WRAPPER}>
             <AvailableSegmented
               available={v.available}
@@ -299,7 +307,7 @@ export default function VehicleRow({
           ))}
         </select>
         {v.editingExisting ? (
-          <div className="flex flex-col gap-2 pt-2">
+          <div className={VEHICLE_MOBILE_EDITING_ACTIONS}>
             <button
               type="button"
               onClick={() => confirmVehicle(v.id)}
@@ -337,27 +345,27 @@ export default function VehicleRow({
     return (
       <>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{v.name}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.name}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{v.startLocation}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.startLocation}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{capitalize(v.type)}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.type)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{capitalize(v.capacityUnit)}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{v.capacity}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.capacity}</span>
         </div>
-        <div className="flex items-center justify-center h-11 min-w-0 px-0.5">
+        <div className={VEHICLE_DESKTOP_AVAILABLE_CELL}>
           <AvailableSegmented available={v.available} />
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className="text-sm xl:text-base text-black truncate">{v.departureTime}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.departureTime}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className={VEHICLE_DESKTOP_ACTION_CELL}>
           <button
             type="button"
             onClick={() => unlockVehicle(v.id)}
@@ -386,7 +394,7 @@ export default function VehicleRow({
   // Editing (existing: full-width blue panel) or new row (inline in the grid).
   // The only structural differences are the wrapper div and the Confirm button.
   const actionCell = (
-    <div className="flex items-center gap-1">
+    <div className={VEHICLE_DESKTOP_ACTION_CELL}>
       {v.editingExisting && (
         <button
           type="button"
@@ -461,7 +469,7 @@ export default function VehicleRow({
         placeholder=""
         aria-label="Vehicle capacity"
       />
-      <div className="flex items-center justify-center h-11 min-w-0 px-0.5">
+      <div className={VEHICLE_DESKTOP_AVAILABLE_CELL}>
         <AvailableSegmented
           available={v.available}
           onChange={(next) => updateVehicle(v.id, "available", next)}
