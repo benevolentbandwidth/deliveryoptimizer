@@ -2,7 +2,7 @@
  * Vehicle list state: same lock/edit/confirm pattern as addresses, without pagination.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { VehicleRow } from "../types/delivery";
 
 function isVehicleValid(v: VehicleRow): boolean {
@@ -32,9 +32,11 @@ export function useVehicles() {
     },
   ]);
 
-  // Always reflects the latest vehicles state without creating stale closures.
+  // Latest vehicles for handlers (ref sync must not run during render — react-hooks/refs).
   const vehiclesRef = useRef(vehicles);
-  vehiclesRef.current = vehicles;
+  useEffect(() => {
+    vehiclesRef.current = vehicles;
+  }, [vehicles]);
 
   // Set of vehicle IDs whose fields should show validation errors.
   const [touchedIds, setTouchedIds] = useState<Set<number>>(new Set());
