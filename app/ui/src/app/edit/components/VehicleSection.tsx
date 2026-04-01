@@ -23,7 +23,7 @@ type VehicleSectionProps = {
   deleteVehicle: (id: number) => void;
   unlockVehicle: (id: number) => void;
   confirmVehicle: (id: number) => void;
-  vehicleTouched: boolean;
+  touchedIds: Set<number>;
   allVehiclesLocked: boolean;
   activeVehicleIsValid: boolean;
 };
@@ -35,7 +35,7 @@ export default function VehicleSection({
   deleteVehicle,
   unlockVehicle,
   confirmVehicle,
-  vehicleTouched,
+  touchedIds,
   allVehiclesLocked,
   activeVehicleIsValid,
 }: VehicleSectionProps) {
@@ -65,7 +65,7 @@ export default function VehicleSection({
             deleteVehicle={deleteVehicle}
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
-            vehicleTouched={vehicleTouched}
+            vehicleTouched={touchedIds.has(v.id)}
           />
         ))}
       </div>
@@ -82,7 +82,7 @@ export default function VehicleSection({
             deleteVehicle={deleteVehicle}
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
-            vehicleTouched={vehicleTouched}
+            vehicleTouched={touchedIds.has(v.id)}
           />
         ))}
       </div>
