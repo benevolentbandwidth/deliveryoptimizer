@@ -4,7 +4,6 @@
 
 import { useState, useCallback } from "react";
 import type { AddressCard } from "../types/delivery";
-import { deliveryTimeFilled } from "../utils/deliveryHelpers";
 
 const ADDRESSES_PER_PAGE = 7;
 
@@ -41,8 +40,6 @@ export function useAddresses() {
   const activeAddressIsValid =
     !!activeAddress &&
     activeAddress.recipientAddress.trim() !== "" &&
-    activeAddress.timeBuffer.trim() !== "" &&
-    deliveryTimeFilled(activeAddress) &&
     activeAddress.deliveryQuantity > 0;
 
   const allAddressesLocked = addresses.length > 0 && addresses.every((a) => a.locked);
@@ -68,8 +65,6 @@ export function useAddresses() {
       const isValid =
         !!active &&
         active.recipientAddress.trim() !== "" &&
-        active.timeBuffer.trim() !== "" &&
-        deliveryTimeFilled(active) &&
         active.deliveryQuantity > 0;
 
       if (!allLocked && !isValid) {
@@ -125,8 +120,6 @@ export function useAddresses() {
       if (!a) return prev;
       const valid =
         a.recipientAddress.trim() !== "" &&
-        a.timeBuffer.trim() !== "" &&
-        deliveryTimeFilled(a) &&
         a.deliveryQuantity > 0;
       if (!valid) {
         setAddressTouched(true);
