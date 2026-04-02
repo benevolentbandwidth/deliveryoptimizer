@@ -294,3 +294,25 @@ export const PAGINATION_ICON_DISABLED_COLOR = "#a1a1aa";
  */
 export const ADDRESS_DESKTOP_HDR_ROW =
   "hidden lg:grid lg:px-3 xl:px-5 mb-1 xl:mb-2";
+
+/** Error popup overlay: fixed full-screen backdrop. */
+export const ERROR_POPUP_OVERLAY =
+  "fixed inset-0 z-50 flex items-center justify-center bg-black/40";
+
+/** Error popup panel: centered white card. */
+export const ERROR_POPUP_PANEL =
+  "relative bg-white rounded-xl border border-zinc-200 shadow-lg p-6 max-w-sm w-full mx-4";
+
+/** Error popup title. */
+export const ERROR_POPUP_TITLE = "text-base font-semibold text-black mb-2";
+
+/** Error popup body text. */
+export const ERROR_POPUP_MESSAGE = "text-sm text-black mb-5";
+
+/** Error popup dismiss button (full-width outline pill). */
+export const ERROR_POPUP_DISMISS_BUTTON =
+  "h-11 w-full rounded-full border border-zinc-300 bg-white text-black text-base font-normal hover:bg-zinc-400/30 transition-colors cursor-pointer";
+
+/** Error popup top-right close icon button. */
+export const ERROR_POPUP_CLOSE_ICON =
+  "absolute top-4 right-4 w-8 h-8 rounded-md border border-zinc-300 flex items-center justify-center text-black hover:bg-zinc-100 transition-colors cursor-pointer";
