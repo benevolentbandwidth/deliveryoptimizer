@@ -20,6 +20,7 @@ export function mapDeliveryToJob(delivery: Delivery) {
 export function mapVehicleToVroom(vehicle: Vehicle) {
   return {
     id: vehicle.id,
+    profile: vehicle.profile,
     start: vehicle.start,
     end: vehicle.end,
     capacity: vehicle.capacity,

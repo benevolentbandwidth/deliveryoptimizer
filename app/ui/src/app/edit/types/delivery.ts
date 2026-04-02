@@ -2,7 +2,7 @@
 export type VehicleType = "truck" | "car" | "bicycle";
 
 /** Unit of measurement for vehicle capacity. */
-export type CapacityUnit = "units" | "lbs" | "kgs" | "volume";
+export type CapacityUnit = "units" | "lbs" | "kgs" | "cubic_feet";
 
 /** One fleet vehicle row: identity, capacity, availability, and departure time. */
 export type VehicleRow = {

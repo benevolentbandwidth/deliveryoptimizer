@@ -4,7 +4,7 @@ import { locationSchema, loadSchema } from "./common.schema"
 export const vehicleSchema = z.object({
   id: z.number().int().nonnegative(),
 
-  vehicleType: z.string().min(1),
+  vehicleType: z.enum(["truck", "car", "bicycle"]),
 
   startLocation: locationSchema,
 
