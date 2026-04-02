@@ -458,7 +458,7 @@ export default function VehicleRow({
         <option value="units">Units</option>
         <option value="lbs">Lbs</option>
         <option value="kgs">Kgs</option>
-        <option value="volume">Volume</option>
+        <option value="cubic_feet">Cubic Feet</option>
       </select>
       <input
         type="number"
