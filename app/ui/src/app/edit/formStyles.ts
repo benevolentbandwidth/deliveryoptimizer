@@ -20,6 +20,9 @@ export const NAVBAR_OUTLINE_PILL =
 export const NAVBAR_SOLID_PILL =
   "h-11 px-6 rounded-full bg-zinc-300 text-black text-base font-normal hover:bg-zinc-400 transition-colors cursor-pointer";
 
+/** Applied to a locked summary cell when its address/location failed geocoding. */
+export const GEOCODE_ERROR_LOCKED = "border border-red-500";
+
 /** Invalid vs valid focus/border G�� desktop inputs (Address desktop + all Vehicle fields). */
 export function fieldBorder(invalid: boolean, mode: "desktop" | "mobile" = "desktop"): string {
   if (mode === "mobile") {

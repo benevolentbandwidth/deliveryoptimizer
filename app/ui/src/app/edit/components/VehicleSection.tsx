@@ -26,6 +26,7 @@ type VehicleSectionProps = {
   touchedIds: Set<number>;
   allVehiclesLocked: boolean;
   activeVehicleIsValid: boolean;
+  geocodeFailedVehicleIds: number[];
 };
 
 export default function VehicleSection({
@@ -38,6 +39,7 @@ export default function VehicleSection({
   touchedIds,
   allVehiclesLocked,
   activeVehicleIsValid,
+  geocodeFailedVehicleIds,
 }: VehicleSectionProps) {
   const addEnabled = allVehiclesLocked || activeVehicleIsValid;
 
@@ -66,6 +68,7 @@ export default function VehicleSection({
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
             vehicleTouched={touchedIds.has(v.id)}
+            geocodeFailed={geocodeFailedVehicleIds.includes(v.id)}
           />
         ))}
       </div>
@@ -83,6 +86,7 @@ export default function VehicleSection({
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
             vehicleTouched={touchedIds.has(v.id)}
+            geocodeFailed={geocodeFailedVehicleIds.includes(v.id)}
           />
         ))}
       </div>

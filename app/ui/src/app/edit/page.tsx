@@ -16,10 +16,14 @@ export default function Page() {
   // Local UI state for vehicles and addresses (no persistence in this page yet).
   const vehicleState = useVehicles();
   const addressState = useAddresses();
-  const { optimize, isOptimizing, optimizeError, clearOptimizeError } = useOptimize(
-    vehicleState.vehicles,
-    addressState.addresses
-  );
+  const {
+    optimize,
+    isOptimizing,
+    optimizeError,
+    clearOptimizeError,
+    geocodeFailedAddressIds,
+    geocodeFailedVehicleIds,
+  } = useOptimize(vehicleState.vehicles, addressState.addresses);
 
   return (
     <div className="min-h-screen bg-white font-sans-manrope">
@@ -31,8 +35,8 @@ export default function Page() {
       />
 
       <main className="px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-8 md:space-y-10 max-w-[1480px] mx-auto">
-        <VehicleSection {...vehicleState} />
-        <AddressSection {...addressState} />
+        <VehicleSection {...vehicleState} geocodeFailedVehicleIds={geocodeFailedVehicleIds} />
+        <AddressSection {...addressState} geocodeFailedIds={geocodeFailedAddressIds} />
         <AddressPagination {...addressState} />
       </main>
     </div>
