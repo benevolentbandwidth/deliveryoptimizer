@@ -51,6 +51,7 @@ import {
   VEHICLE_MOBILE_LOCKED_ACTIONS,
   VEHICLE_MOBILE_LOCKED_TEXT,
   fieldBorder,
+  GEOCODE_ERROR_LOCKED,
 } from "../formStyles";
 
 type VehicleLayout = "desktop" | "mobile";
@@ -64,6 +65,7 @@ type VehicleRowProps = {
   unlockVehicle: (id: number) => void;
   confirmVehicle: (id: number) => void;
   vehicleTouched: boolean;
+  geocodeFailed: boolean;
 };
 
 function MobileFieldLabel({ children }: { children: ReactNode }) {
@@ -157,6 +159,7 @@ export default function VehicleRow({
   unlockVehicle,
   confirmVehicle,
   vehicleTouched,
+  geocodeFailed,
 }: VehicleRowProps) {
   const nameInvalid = vehicleTouched && !v.name.trim();
   const startLocationInvalid = vehicleTouched && !(v.startLocation ?? "").trim();
@@ -177,7 +180,7 @@ export default function VehicleRow({
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.name}</span>
           </div>
           <MobileFieldLabel>Start Location</MobileFieldLabel>
-          <div className={VEHICLE_LOCKED_CELL}>
+          <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.startLocation}</span>
           </div>
           <MobileFieldLabel>Type</MobileFieldLabel>
@@ -238,7 +241,7 @@ export default function VehicleRow({
         <input
           value={v.startLocation ?? ""}
           onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
-          className={`${inputClass(startLocationInvalid)} bg-white`}
+          className={`${inputClass(startLocationInvalid || geocodeFailed)} bg-white`}
           placeholder="Address"
           aria-label="Start location"
         />
@@ -347,7 +350,7 @@ export default function VehicleRow({
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.name}</span>
         </div>
-        <div className={VEHICLE_LOCKED_CELL}>
+        <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.startLocation}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
@@ -429,7 +432,7 @@ export default function VehicleRow({
       <input
         value={v.startLocation ?? ""}
         onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
-        className={`${VEHICLE_DESKTOP_WIDE_INPUT} ${fieldBorder(startLocationInvalid)}`}
+        className={`${VEHICLE_DESKTOP_WIDE_INPUT} ${fieldBorder(startLocationInvalid || geocodeFailed)}`}
         placeholder=""
         aria-label="Start location"
       />
