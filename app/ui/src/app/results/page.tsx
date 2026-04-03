@@ -29,6 +29,23 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
+  const updateStopCoordinates = useCallback( // Created a callback function updateStopCoordinates that the map can call when a pin is dragged to a new location. (New spot is this lat/lng)
+    (routeId: string, stopId: string, lat: number, lng: number) => { // Has 3 parameters: routeId, stopId, and lat/lng (new coordinates)
+      setRoutes((prev) => // Loop through all routes, if the route's id is not the one we're looking for, leave unchanged.
+        prev.map((route) => {
+          if (route.vehicleId !== routeId) return route;
+          return { // Otherwise, create a new copy of that route to avoid editing it in place, and replace stops with a new list where each stop is the same except for the one that matches our stopId. This specific stop is updated with the new lat/lng
+            ...route,
+            stops: route.stops.map((s) =>
+              s.id === stopId ? { ...s, lat, lng } : s
+            ),
+          };
+        })
+      );
+    },
+    [setRoutes]
+  );
+
   return (
     <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
       <header className="flex items-center gap-2 p-4 shrink-0 border-b border-zinc-200 bg-white">
@@ -53,7 +70,11 @@ export default function ResultsPage() {
         {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 w-full overflow-hidden">
-            <MapComponent routes={routes} />
+            <MapComponent // Passing the current list of routes, edit mode state (determine if pins can be dragged yes/no), and the callback function updateStopCoordinates to the Map component (so when user drags a pin, call this function to update stop with new lat/lng)
+              routes={routes}
+              isEditMode={isEditMode}
+              onUpdateStopCoordinates={updateStopCoordinates}
+            />
           </div>
         </div>
       </div>
