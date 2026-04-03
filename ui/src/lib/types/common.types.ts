@@ -4,6 +4,6 @@ export type Location = {
 }
 
 export type Load = {
-  type: "units" | "weight" | "volume"
+  type: "units" | "lbs" | "kgs" | "cubic_feet"
   value: number
 }
