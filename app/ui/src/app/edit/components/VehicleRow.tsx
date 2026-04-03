@@ -223,7 +223,7 @@ export default function VehicleRow({
       );
     }
 
-    // Editing (existing or new) G�� shared fields; wrapper and actions differ by editingExisting
+    // Editing (existing or new) shared fields; wrapper and actions differ by editingExisting
     return (
       <div className={v.editingExisting ? VEHICLE_MOBILE_EDITING_CARD : VEHICLE_MOBILE_CARD}>
         <MobileFieldLabel>Name</MobileFieldLabel>
