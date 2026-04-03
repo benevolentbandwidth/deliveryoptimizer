@@ -38,7 +38,12 @@ export function deliveryByToTimeWindow(time: string): [number, number] {
  * "1am - 2am" → [3600, 7200]
  */
 export function deliveryBetweenToTimeWindow(window: string): [number, number] {
-  const [start, end] = window.split(" - ").map((s) => timeToSeconds(s.toUpperCase()));
+  const parts = window.split(" - ");
+  if (parts.length !== 2) {
+    console.warn(`Invalid delivery window format: "${window}"`);
+    return [0, 86400]; // fallback to full day
+  }
+  const [start, end] = parts.map((s) => timeToSeconds(s.trim().toUpperCase()));
   return [start, end];
 }
 
