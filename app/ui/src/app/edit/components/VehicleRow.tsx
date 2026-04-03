@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * One vehicle in the grid: read-only summary, full-width edit for existing rows, or inline new row.
