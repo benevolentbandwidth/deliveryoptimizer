@@ -113,6 +113,18 @@ TEST(ServerOptionsTest, ReadsSolverAdmissionOptionsFromEnv) {
   EXPECT_EQ(options.solve_admission.max_sync_vehicles, 17U);
 }
 
+TEST(ServerOptionsTest, ClampsSolverMaxConcurrencyToSupportedCap) {
+  ScopedEnvVar solver_max_concurrency("DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY");
+  solver_max_concurrency.Set("999");
+
+  testing::internal::CaptureStderr();
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+  const std::string stderr_output = testing::internal::GetCapturedStderr();
+
+  EXPECT_EQ(options.solve_admission.max_concurrency, 64U);
+  EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY"), std::string::npos);
+}
+
 TEST(ServerOptionsTest, ClampsSolverAdmissionSyncLimitsToSupportedParserCaps) {
   ScopedEnvVar solver_max_sync_jobs("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS");
   ScopedEnvVar solver_max_sync_vehicles("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES");

@@ -169,12 +169,24 @@ template <typename Integer>
   return std::chrono::milliseconds{timeout_ms};
 }
 
-[[nodiscard]] deliveryoptimizer::api::SolveAdmissionConfig
-ResolveSolveAdmissionConfig(const std::size_t worker_threads) {
+[[nodiscard]] std::size_t ResolveSolverMaxConcurrency(const std::size_t worker_threads) {
   const std::size_t default_max_concurrency =
       std::clamp(worker_threads, static_cast<std::size_t>(1U), kDefaultSolverMaxConcurrencyCap);
   const std::size_t max_concurrency = ResolvePositiveSizeOption(
       kSolverMaxConcurrencyEnv, default_max_concurrency, "solver max concurrency");
+  if (max_concurrency <= kMaxWorkerThreads) {
+    return max_concurrency;
+  }
+
+  std::cerr << "Capping " << kSolverMaxConcurrencyEnv << "='" << max_concurrency << "' to "
+            << kMaxWorkerThreads
+            << " because the server does not support more than 64 solver worker thread(s).\n";
+  return kMaxWorkerThreads;
+}
+
+[[nodiscard]] deliveryoptimizer::api::SolveAdmissionConfig
+ResolveSolveAdmissionConfig(const std::size_t worker_threads) {
+  const std::size_t max_concurrency = ResolveSolverMaxConcurrency(worker_threads);
   const std::size_t default_max_queue_size = max_concurrency * kDefaultSolverQueueSizePerWorker;
 
   return deliveryoptimizer::api::SolveAdmissionConfig{
