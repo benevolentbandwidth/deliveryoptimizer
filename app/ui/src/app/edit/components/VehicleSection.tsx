@@ -89,7 +89,7 @@ export default function VehicleSection({
 
       {/* Add button */}
       <div className="mt-4">
-        <button
+        <button type="button"
           onClick={addVehicle}
           disabled={!addEnabled}
           className={addEnabled ? VEHICLE_ADD_ENABLED : VEHICLE_ADD_DISABLED}
