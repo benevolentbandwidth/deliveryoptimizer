@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * Shared Tailwind class tokens for the delivery edit form. Prefer complete string literals so
  * Tailwind's scanner includes all utilities. Vehicle editing panel constants compose
  * `EDITING_EXISTING_HIGHLIGHT` at module load (still scanned in this file).
