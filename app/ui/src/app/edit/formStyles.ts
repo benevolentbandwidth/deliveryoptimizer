@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared Tailwind class tokens for the delivery edit form. Prefer complete string literals so
  * Tailwind's scanner includes all utilities. Vehicle editing panel constants compose
  * `EDITING_EXISTING_HIGHLIGHT` at module load (still scanned in this file).
@@ -20,7 +20,7 @@ export const NAVBAR_OUTLINE_PILL =
 export const NAVBAR_SOLID_PILL =
   "h-11 px-6 rounded-full bg-zinc-300 text-black text-base font-normal hover:bg-zinc-400 transition-colors cursor-pointer";
 
-/** Invalid vs valid focus/border G�� desktop inputs (Address desktop + all Vehicle fields). */
+/** Invalid vs valid focus/border desktop inputs (Address desktop + all Vehicle fields). */
 export function fieldBorder(invalid: boolean, mode: "desktop" | "mobile" = "desktop"): string {
   if (mode === "mobile") {
     if (invalid) {
@@ -33,7 +33,7 @@ export function fieldBorder(invalid: boolean, mode: "desktop" | "mobile" = "desk
   }
   return "border-zinc-300 focus:border-zinc-500";
 }
-/** Editing an existing unlocked row G�� same ring, border, and fill on address + vehicle surfaces. */
+/** Editing an existing unlocked row, same ring, border, and fill on address + vehicle surfaces. */
 export const EDITING_EXISTING_HIGHLIGHT =
   "border border-blue-200 bg-blue-50 ring-2 ring-blue-200";
 
@@ -97,7 +97,7 @@ export const VEHICLE_AVAILABLE_SEGMENT_BUTTON =
 export const VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN =
   "relative z-10 flex-1 min-w-0 text-center text-xs font-medium text-black py-1.5 bg-transparent";
 
-/** Locked summary cells G�� w-full fills fixed-width grid columns and is harmless in fr columns. */
+/** Locked summary cells w-full fills fixed-width grid columns and is harmless in fr columns. */
 export const VEHICLE_LOCKED_CELL =
   "h-11 w-full bg-zinc-300 rounded-md flex items-center px-3 xl:px-4";
 
@@ -193,7 +193,7 @@ export const MOBILE_ADDRESS_INPUT_BASE =
 export const MOBILE_ADDRESS_SELECT_MODE =
   "h-9 w-full rounded-lg px-3 text-sm font-medium text-black focus:outline-none border border-zinc-200 bg-zinc-200 cursor-pointer select-chevron";
 
-/** Floor widths so time-buffer / delivery / qty columns resist clipping at mdG��xl. */
+/** Floor widths so time-buffer / delivery / qty columns resist clipping at md/xl. */
 export const ADDRESS_COL_MIN_TIME_BUFFER = "min-w-[6rem]";
 export const ADDRESS_COL_MIN_QTY = "min-w-[3.25rem]";
 
@@ -283,7 +283,7 @@ export const PAGINATION_PAGE_IDLE =
   "min-w-[2.75rem] h-11 rounded-3xl flex items-center justify-center text-base font-manrope text-black cursor-pointer transition-colors hover:bg-zinc-100 hover:underline";
 
 /**
- * Desktop-only header row for the address list G�� rendered once in AddressSection above the
+ * Desktop-only header row for the address list rendered once in AddressSection above the
  * address cards. Horizontal padding matches ADDRESS_CARD_ROOT_BASE (md:px-2.5 lg:px-3 xl:px-5).
  */
 export const ADDRESS_DESKTOP_HDR_ROW =
