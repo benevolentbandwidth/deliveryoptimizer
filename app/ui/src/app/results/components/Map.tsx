@@ -11,6 +11,13 @@ const POLYLINE_COLOR = "#2563eb"; // Blue path per route (single mock route)
 
 type MapComponentProps = {
   routes: Route[];
+  isEditMode: boolean; // defining the props that map component receives from parent (page.tsx)
+  onUpdateStopCoordinates: (
+    routeId: string,
+    stopId: string,
+    lat: number,
+    lng: number
+  ) => void;
 };
 
 // Created a helper component (AdvancedMarkers), which creates the pins and attaches them to the map (it receives two things: google map instance and list of routes)
@@ -60,7 +67,11 @@ function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes:
   return null;
 }
 
-export default function MapComponent({ routes }: MapComponentProps) {
+export default function MapComponent({ // Receiving props (routes, isEditMode, onUpdateStopCoordinates) from parent (page.tsx)
+  routes,
+  isEditMode,
+  onUpdateStopCoordinates,
+}: MapComponentProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ""; // API key for Google Maps API
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined; // mapId is the ID of the map instance, Advanced Markers needs a map id
   const [map, setMap] = useState<google.maps.Map | null>(null); // Creating a state variable to hold the map instance, initially null, but when Google calls the onMapLoad function, we'll call setMap(mapInstance) to save it
@@ -137,6 +148,17 @@ export default function MapComponent({ routes }: MapComponentProps) {
                       key={stop.id}
                       position={{ lat: stop.lat, lng: stop.lng }}
                       title={stop.address}
+                      draggable={isEditMode} // If edit mode is true, the pin is draggable, if false, the pin is not draggable
+                      onDragEnd={(e) => { // Once the user released the pin, e.latlng says where the pin ended, we call onUpdateStopCoordinates in which latlng.lat() and lng() get the new lat/lng coordinates provided by Google maps. (This will then allows page.tsx to update routes, map re-renders with new position, and polyline gets new path from data)
+                        const latLng = e.latLng;
+                        if (!latLng) return;
+                        onUpdateStopCoordinates(
+                          route.vehicleId,
+                          stop.id,
+                          latLng.lat(),
+                          latLng.lng()
+                        );
+                      }}
                     />
                   ))}
               </Fragment>
