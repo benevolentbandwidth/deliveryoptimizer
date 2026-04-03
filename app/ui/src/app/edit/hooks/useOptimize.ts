@@ -5,8 +5,12 @@
 import { useState, useCallback } from "react";
 import { geocodeAddress } from "@/app/components/AddressGeocoder/utils/nominatim";
 import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/optimizeMapper";
-import type { VehicleRow, AddressCard } from "../types/delivery";
+import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 
+// ensure that vehicleType and capacityUnit are not empty
+function isLocked(v: VehicleRow): v is LockedVehicleRow {
+  return v.locked && v.type !== "" && v.capacityUnit !== "";
+}
 export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
@@ -81,9 +85,10 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
       }
 
       // 5. Map form data to API types.
-      const vehicleInputs = availableVehicles.map((v) =>
+      const vehicleInputs = availableVehicles.filter(isLocked).map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
+      
       const deliveryInputs = addresses.map((a) =>
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!)
       );

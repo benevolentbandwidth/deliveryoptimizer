@@ -4,7 +4,7 @@
  */
 
 import { timeToSeconds } from "@/app/components/AddressGeocoder/utils/timeConversion";
-import type { VehicleRow } from "../types/delivery";
+import type { VehicleRow, LockedVehicleRow } from "../types/delivery";
 import type { AddressCard } from "../types/delivery";
 import type { VehicleInput } from "@/lib/types/vehicle.types";
 import type { DeliveryInput } from "@/lib/types/delivery.types";
@@ -53,7 +53,7 @@ export function deliveryBetweenToTimeWindow(window: string): [number, number] {
  * to satisfy the "both or neither" constraint in the vehicle schema.
  */
 export function vehicleRowToVehicleInput(
-  v: VehicleRow,
+  v: LockedVehicleRow,
   location: Location
 ): VehicleInput {
   const departureSeconds = v.departureTime
@@ -62,10 +62,10 @@ export function vehicleRowToVehicleInput(
 
   return {
     id: v.id,
-    vehicleType: v.type as VehicleInput["vehicleType"],
+    vehicleType: v.type,
     startLocation: location,
     capacity: {
-      type: v.capacityUnit as VehicleInput["capacity"]["type"],
+      type: v.capacityUnit,
       value: v.capacity,
     },
     ...(departureSeconds !== undefined && {

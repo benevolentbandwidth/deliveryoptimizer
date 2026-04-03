@@ -4,6 +4,12 @@ export type VehicleType = "truck" | "car" | "bicycle";
 /** Unit of measurement for vehicle capacity. */
 export type CapacityUnit = "units" | "lbs" | "kgs" | "cubic_feet";
 
+/** A VehicleRow that has passed validation and been locked. */
+export type LockedVehicleRow = VehicleRow & {
+  type: VehicleType;
+  capacityUnit: CapacityUnit;
+};
+
 /** One fleet vehicle row: identity, capacity, availability, and departure time. */
 export type VehicleRow = {
   id: number;
