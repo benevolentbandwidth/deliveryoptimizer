@@ -4,6 +4,7 @@ include(GoogleTest)
 
 set(
   DELIVERYOPTIMIZER_TEST_COMPONENT_DIRS
+  api
   adapters
   application
   config
@@ -25,6 +26,8 @@ add_executable(deliveryoptimizer_tests ${DELIVERYOPTIMIZER_TEST_SOURCES})
 target_sources(
   deliveryoptimizer_tests
   PRIVATE
+    "${CMAKE_SOURCE_DIR}/app/api/src/solve_admission.cpp"
+    "${CMAKE_SOURCE_DIR}/app/api/src/solve_coordinator.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/server_options.cpp"
 )
 target_compile_features(deliveryoptimizer_tests PRIVATE cxx_std_20)
@@ -346,6 +349,46 @@ deliveryoptimizer_add_local_http_test(
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsExcessiveVroomOutput
   41000
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve
+  deliveries_optimize_accepts_small_sync_solve_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve
+  46000
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsOverThresholdSyncSolve
+  deliveries_optimize_rejects_over_threshold_sync_solve_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsOverThresholdSyncSolve
+  47000
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsWhenAdmissionQueueIsFull
+  deliveries_optimize_rejects_when_admission_queue_is_full_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsWhenAdmissionQueueIsFull
+  48000
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsWhenQueueWaitExpires
+  deliveries_optimize_rejects_when_queue_wait_expires_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsWhenQueueWaitExpires
+  49000
 )
 
 if(DOCKER_PROGRAM)

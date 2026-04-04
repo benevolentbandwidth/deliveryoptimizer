@@ -102,7 +102,7 @@ struct OsrmProbeResult {
 struct OsrmProbeCache {
   std::mutex mutex;
   std::optional<OsrmProbeResult> cached_result;
-  std::chrono::steady_clock::time_point cached_at{};
+  std::chrono::steady_clock::time_point cached_at;
 };
 
 OsrmProbeCache& GetOsrmProbeCache() {
