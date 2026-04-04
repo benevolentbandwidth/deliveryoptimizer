@@ -33,6 +33,13 @@ ToCoordinatedSolveResult(const deliveryoptimizer::api::VroomRunResult& result) {
   return std::chrono::steady_clock::now() >= deadline;
 }
 
+[[nodiscard]] bool StartsImmediately(const deliveryoptimizer::api::SolveAdmissionConfig& config,
+                                     const std::size_t active_solves,
+                                     const std::size_t queued_solves) {
+  const std::size_t accepted_solves = active_solves + queued_solves;
+  return accepted_solves < config.max_concurrency;
+}
+
 [[nodiscard]] std::chrono::steady_clock::time_point ResolveDeadline(
     const std::chrono::steady_clock::time_point queued_at,
     const std::chrono::milliseconds queue_wait) {
@@ -149,7 +156,7 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
   }
 
   const auto queued_at = std::chrono::steady_clock::now();
-  const bool started_immediately = active_solves_ < config_.max_concurrency && queue_.empty();
+  const bool started_immediately = StartsImmediately(config_, active_solves_, queue_.size());
   if (lifecycle != nullptr) {
     lifecycle->accepted = true;
     lifecycle->queued_at = queued_at;
@@ -162,7 +169,8 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
       .sequence_number = next_sequence_number_++,
       .payload_factory = std::move(payload_factory),
       .callback = std::move(callback),
-      .deadline = ResolveDeadline(queued_at, config_.max_queue_wait),
+      .deadline = started_immediately ? std::chrono::steady_clock::time_point::max()
+                                      : ResolveDeadline(queued_at, config_.max_queue_wait),
       .lifecycle = std::move(lifecycle),
       .started_immediately = started_immediately,
   });

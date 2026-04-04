@@ -398,6 +398,58 @@ TEST(SolveCoordinatorTest, ExtremelyLargeQueueWaitDoesNotExpireQueuedSolveImmedi
   EXPECT_TRUE(second_payload_factory_called.load());
 }
 
+TEST(SolveCoordinatorTest, RequestsUsingFreeWorkerSlotsDoNotQueueTimeout) {
+  auto runner = std::make_shared<BlockingRunner>();
+  deliveryoptimizer::api::SolveCoordinator coordinator(
+      deliveryoptimizer::api::SolveAdmissionConfig{
+          .max_concurrency = 2U,
+          .max_queue_size = 0U,
+          .max_queue_wait = std::chrono::milliseconds{0},
+          .max_sync_jobs = 5U,
+          .max_sync_vehicles = 2U,
+      },
+      runner);
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> first_result_promise;
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> second_result_promise;
+  auto first_result_future = first_result_promise.get_future();
+  auto second_result_future = second_result_promise.get_future();
+
+  ASSERT_EQ(
+      coordinator.Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [] { return Json::Value{Json::objectValue}; },
+          [&first_result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            first_result_promise.set_value(result);
+          }),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+  ASSERT_EQ(
+      coordinator.Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [] { return Json::Value{Json::objectValue}; },
+          [&second_result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            second_result_promise.set_value(result);
+          }),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+
+  EXPECT_EQ(first_result_future.wait_for(std::chrono::milliseconds{100}),
+            std::future_status::timeout);
+  EXPECT_EQ(second_result_future.wait_for(std::chrono::milliseconds{100}),
+            std::future_status::timeout);
+
+  runner->Release();
+
+  EXPECT_EQ(first_result_future.get().status,
+            deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
+  EXPECT_EQ(second_result_future.get().status,
+            deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
+}
+
 TEST(SolveCoordinatorTest, ReleasesActiveSolveSlotBeforeRunningCompletionCallback) {
   auto runner = std::make_shared<ImmediateRunner>();
   deliveryoptimizer::api::SolveCoordinator coordinator(
