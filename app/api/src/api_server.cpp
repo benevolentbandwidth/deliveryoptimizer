@@ -57,11 +57,21 @@ int RunApiServer() {
         response->addHeader(std::string{kRequestIdHeader}, request_id);
         return response;
       });
-  app.registerSyncAdvice([](const drogon::HttpRequestPtr& request) {
+  app.registerSyncAdvice([observability](const drogon::HttpRequestPtr& request) {
     EnsureRequestContext(request);
     if (request != nullptr && request->body().size() > kMaxRequestBodyBytes) {
       auto response = drogon::HttpResponse::newHttpResponse();
       response->setStatusCode(drogon::k413RequestEntityTooLarge);
+      if (const auto context = GetRequestContext(request); context.has_value()) {
+        response->removeHeader(std::string{kRequestIdHeader});
+        response->addHeader(std::string{kRequestIdHeader}, context->request_id);
+      }
+      if (request->getMethod() == drogon::Post &&
+          request->path() == "/api/v1/deliveries/optimize") {
+        auto lifecycle = std::make_shared<SolveLifecycle>(CreateSolveLifecycle(request));
+        FinalizeSolveRequest(observability, lifecycle, SolveRequestOutcome::kRequestTooLarge,
+                             static_cast<std::uint16_t>(response->getStatusCode()));
+      }
       return response;
     }
     return drogon::HttpResponsePtr{};
