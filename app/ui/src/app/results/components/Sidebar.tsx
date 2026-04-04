@@ -42,10 +42,13 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
     <aside
       className={`w-full h-full flex flex-col overflow-hidden border-r-2 bg-white p-4 ${isEditMode ? "border-amber-500" : "border-zinc-200"}`} // h-full helps the sidebar fill up the full height of the column next to the map instead of just being as tall as its content, flex flex-col stacks the children in the column and control their height, overflow hidden makes sure scrolling only happens inside the sidebar's content area
     >
+      {isEditMode && ( // If edit mode is true, show the message saying "Edit Mode Active"
+        <p className="mb-2 text-xs font-medium text-amber-700 bg-amber-50 rounded px-2 py-1">Edit Mode Active</p>
+      )}
       <div className="flex shrink-0 items-center justify-between gap-2 mb-4">
         <span className="text-sm font-medium text-zinc-700">Edit mode</span>
-        <button 
-          type="button" 
+        <button
+          type="button"
           role="switch" // The button is a switch that can be toggled on and off
           aria-checked={isEditMode} // Telling whether the switch is on or off
           onClick={() => onEditModeChange(!isEditMode)} // When use clicks the button, call onEditModeChange with the opposite of the current edit mode state (true -> false or false -> true)
@@ -58,12 +61,15 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
       </div>
       <h2 className="shrink-0 text-lg font-semibold text-zinc-800">Optimized Routes</h2> {/* Added shrink-0 on the <div> that makes the row not shrink so the toggle are present at the top */}
       <p className="mt-1 shrink-0 text-xs text-zinc-500">
-        {routes.length} route{routes.length === 1 ? "" : "s"} with {totalStops} total stop 
+        {routes.length} route{routes.length === 1 ? "" : "s"} with {totalStops} total stop
         {totalStops === 1 ? "" : "s"}
       </p>
       <div className="flex-1 min-h-0 overflow-y-auto mt-3"> {/* The div takes up the remaining space below the fixed header and if route list is taller than that space, only this area scrolls */}
         {routes.length === 0 ? (
-          <p className="text-sm text-zinc-500">No routes yet</p> /* If no routes, show message saying "no routes yet" */
+          <>
+            {/* If no routes, show message saying "no routes yet" */}
+            <p className="text-sm text-zinc-500">No routes yet</p>
+          </>
         ) : (
           <ul className="space-y-3 pb-2"> {/* Place some vertical space between each route card and small padding at the bottom so last card isn't stuck to the edge when scrolling */}
             {routes.map((route, idx) => {
@@ -127,7 +133,6 @@ export default function Sidebar({ routes, isEditMode, onEditModeChange, onUpdate
                         {sortedStops.map((stop) => (
                           <li key={stop.id}>
                             <EditableStopItem
-                              key={stop.id}
                               stop={stop}
                               isEditMode={isEditMode}
                               onSaveNote={(note) => onUpdateStopNote(route.vehicleId, stop.id, note)}

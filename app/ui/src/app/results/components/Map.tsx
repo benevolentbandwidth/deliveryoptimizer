@@ -3,7 +3,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, Fragment } from "react";
-import { LoadScriptNext, GoogleMap, Polyline } from "@react-google-maps/api";
+import { LoadScriptNext, GoogleMap, Marker, Polyline } from "@react-google-maps/api";
 import type { Route } from "../types";
 
 const DAVIS_CENTER = { lat: 38.5449, lng: -121.7405 }; // Map center coordinates for Davis,CA (Google Maps needs as an initial center to position the initial view of the map)
@@ -17,7 +17,7 @@ type MapComponentProps = {
 function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes: Route[] }) {
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]); // markersRef is a ref that holds an array of the pin objects we'll create
 
-  useEffect(() => { 
+  useEffect(() => {
     if (!map || routes.length === 0) return;
 
     let cancelled = false;
@@ -29,7 +29,7 @@ function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes:
           "marker"
         )) as google.maps.MarkerLibrary;
 
-        if (cancelled) return; // If cancelled is true, meaning the component might've unmounted, we stop and don't create any pins 
+        if (cancelled) return; // If cancelled is true, meaning the component might've unmounted, we stop and don't create any pins
 
         routes.forEach((route) => { // For each route, we take its stops and sort them by sequence (visit order). We copy the array first so we don't mutate the original array
           const sorted = [...route.stops].sort((a, b) => a.sequence - b.sequence);
@@ -50,7 +50,7 @@ function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes:
 
     return () => { // Cleanup function to clean up the pins when the component unmounts
       cancelled = true;
-      markersRef.current.forEach((m) => { // For each pin, we set the map to null so it's removed from the map
+      markersRef.current.forEach((m: google.maps.marker.AdvancedMarkerElement) => {
         m.map = null;
       });
       markersRef.current = [];
@@ -71,7 +71,7 @@ export default function MapComponent({ routes }: MapComponentProps) {
       if (routes.length === 0) return;
       const bounds = new google.maps.LatLngBounds(); // Create an empty box (LatLngBounds), then for each stop in every route, we extend that box to include the stop's lat/lng coords
       routes.forEach((route) => {
-        route.stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng })); 
+        route.stops.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }));
       });
       mapInstance.fitBounds(bounds, 48);
     },
@@ -87,7 +87,7 @@ export default function MapComponent({ routes }: MapComponentProps) {
       google.maps.event.trigger(map, "resize");
     };
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize); // Cleanup function to remove the event listener when the component unmounts
+    return () => window.removeEventListener("resize", handleResize);
   }, [map]);
 
   if (!apiKey) {
@@ -115,7 +115,7 @@ export default function MapComponent({ routes }: MapComponentProps) {
           mapContainerStyle={{ width: "100%", height: "100%" }}
           options={mapOptions}
           onLoad={onMapLoad} // when maps finished loading, google calls this and passes the map instance
-          onUnmount={onUnmount} 
+          onUnmount={onUnmount}
         >
           {mapId && <AdvancedMarkers map={map} routes={routes} />}
           {routes.map((route) => { // For each route, we sort the stops by sequence (visit order), then map the stops to an array of lat/lng objects
@@ -131,6 +131,14 @@ export default function MapComponent({ routes }: MapComponentProps) {
                     strokeOpacity: 0.9,
                   }}
                 />
+                {!mapId && // Fallback pins when Map ID is not set (devs without NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID still see pins)
+                  sorted.map((stop) => (
+                    <Marker
+                      key={stop.id}
+                      position={{ lat: stop.lat, lng: stop.lng }}
+                      title={stop.address}
+                    />
+                  ))}
               </Fragment>
             );
           })}
