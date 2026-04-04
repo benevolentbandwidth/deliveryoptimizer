@@ -5,10 +5,13 @@ target_sources(
   deliveryoptimizer_api_runtime
   PRIVATE
     src/api_server.cpp
+    src/endpoints/metrics_endpoint.cpp
     src/endpoints/deliveries_optimize_endpoint.cpp
     src/endpoints/health_endpoint.cpp
     src/endpoints/optimize_endpoint.cpp
     src/endpoints/osrm_proxy_endpoint.cpp
+    src/observability.cpp
+    src/request_context.cpp
     src/solve_admission.cpp
     src/solve_coordinator.cpp
     src/server_options.cpp
@@ -21,8 +24,10 @@ target_sources(
       include/deliveryoptimizer/api/deliveries_optimize_limits.hpp
       include/deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/health_endpoint.hpp
+      include/deliveryoptimizer/api/endpoints/metrics_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp
+      include/deliveryoptimizer/api/observability.hpp
       include/deliveryoptimizer/api/solve_admission.hpp
       include/deliveryoptimizer/api/solve_coordinator.hpp
       include/deliveryoptimizer/api/server_options.hpp

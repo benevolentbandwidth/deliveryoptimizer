@@ -19,11 +19,9 @@ cat >"${stub_bin}" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
 
-output=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output)
-      output="$2"
       shift 2
       ;;
     *)
@@ -34,7 +32,7 @@ done
 
 echo "started" >>"${VROOM_STARTED_FILE:?}"
 sleep 2
-cat >"${output}" <<'JSON'
+cat <<'JSON'
 {"summary":{"routes":1,"unassigned":0},"routes":[],"unassigned":[]}
 JSON
 STUB

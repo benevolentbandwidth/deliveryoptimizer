@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deliveryoptimizer/api/observability.hpp"
 #include "deliveryoptimizer/api/solve_admission.hpp"
 #include "deliveryoptimizer/api/vroom_runner.hpp"
 
@@ -41,7 +42,8 @@ public:
   using PayloadFactory = std::function<Json::Value()>;
 
   SolveCoordinator(SolveAdmissionConfig config, std::shared_ptr<const VroomRunner> runner,
-                   SolveCoordinatorOptions options = {});
+                   SolveCoordinatorOptions options = {},
+                   std::shared_ptr<ObservabilityRegistry> observability = nullptr);
   ~SolveCoordinator();
 
   SolveCoordinator(const SolveCoordinator&) = delete;
@@ -51,7 +53,8 @@ public:
 
   [[nodiscard]] SolveAdmissionStatus Submit(const SolveRequestSize& request_size,
                                             PayloadFactory payload_factory,
-                                            CompletionCallback callback);
+                                            CompletionCallback callback,
+                                            std::shared_ptr<SolveLifecycle> lifecycle = nullptr);
 
 private:
   using CompletionTask = std::function<void()>;
@@ -61,6 +64,8 @@ private:
     PayloadFactory payload_factory;
     CompletionCallback callback;
     std::chrono::steady_clock::time_point deadline;
+    std::shared_ptr<SolveLifecycle> lifecycle;
+    bool started_immediately;
   };
 
   void EnqueueCompletion(CompletionTask task);
@@ -71,6 +76,7 @@ private:
   SolveAdmissionConfig config_;
   SolveCoordinatorOptions options_;
   std::shared_ptr<const VroomRunner> runner_;
+  std::shared_ptr<ObservabilityRegistry> observability_;
   std::mutex mutex_;
   std::condition_variable condition_;
   std::deque<QueuedSolveRequest> queue_;
