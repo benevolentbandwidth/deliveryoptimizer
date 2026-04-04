@@ -114,6 +114,15 @@ TEST(ServerOptionsTest, ReadsSolverAdmissionOptionsFromEnv) {
   EXPECT_EQ(options.solve_admission.max_sync_vehicles, 17U);
 }
 
+TEST(ServerOptionsTest, AllowsZeroSolverQueueWaitTimeoutFromEnv) {
+  ScopedEnvVar solver_queue_wait_ms("DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS");
+  solver_queue_wait_ms.Set("0");
+
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+
+  EXPECT_EQ(options.solve_admission.max_queue_wait, std::chrono::milliseconds{0});
+}
+
 TEST(ServerOptionsTest, ClampsSolverMaxConcurrencyToSupportedCap) {
   ScopedEnvVar solver_max_concurrency("DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY");
   solver_max_concurrency.Set("999");

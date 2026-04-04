@@ -163,7 +163,7 @@ template <typename Integer>
 }
 
 [[nodiscard]] std::chrono::milliseconds ResolveQueueWaitTimeout() {
-  const std::size_t timeout_ms = ResolvePositiveSizeOption(
+  const std::size_t timeout_ms = ResolveNonNegativeSizeOption(
       kSolverQueueWaitMsEnv, static_cast<std::size_t>(kDefaultSolverQueueWaitMs),
       "solver queue wait timeout (ms)");
   const auto max_queue_wait_timeout =
