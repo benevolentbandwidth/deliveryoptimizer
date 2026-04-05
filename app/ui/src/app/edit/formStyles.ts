@@ -272,7 +272,7 @@ export const ADDRESS_FIND_PILL_MOBILE =
   "w-full h-11 px-6 rounded-full bg-zinc-300 text-black text-base font-normal hover:bg-zinc-400 transition-colors cursor-pointer";
 
 export const ADDRESS_LIST_WRAP =
-  "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-hidden";
+  "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-visible";
 
 export const PAGINATION_ROW = "flex items-center justify-center gap-2 sm:gap-4 pb-4 md:pb-8 px-2";
 
