@@ -24,13 +24,30 @@ export function useAddresses() {
     },
   ]);
 
+  // Search: fuzzy filter across address and notes fields.
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredAddresses = searchQuery.trim() === ""
+    ? addresses
+    : addresses.filter((a) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          a.recipientAddress.toLowerCase().includes(q) ||
+          a.notes.toLowerCase().includes(q)
+        );
+      });
+
+  const isSearchActive = searchQuery.trim() !== "";
+
   // Pagination: slice the flat list so the UI only renders one page of cards.
   const [addressPage, setAddressPage] = useState(1);
   const totalAddressPages = Math.max(1, Math.ceil(addresses.length / ADDRESSES_PER_PAGE));
-  const addressesOnCurrentPage = addresses.slice(
-    (addressPage - 1) * ADDRESSES_PER_PAGE,
-    addressPage * ADDRESSES_PER_PAGE
-  );
+  const addressesOnCurrentPage = isSearchActive
+    ? filteredAddresses
+    : addresses.slice(
+        (addressPage - 1) * ADDRESSES_PER_PAGE,
+        addressPage * ADDRESSES_PER_PAGE
+      );
 
   // After submit attempts, drive inline error styling until the user fixes fields.
   const [addressTouched, setAddressTouched] = useState(false);
@@ -146,5 +163,8 @@ export function useAddresses() {
     addressesCount: addresses.length,
     activeAddressIsValid,
     allAddressesLocked,
+    searchQuery,
+    setSearchQuery,
+    isSearchActive,
   };
 }
