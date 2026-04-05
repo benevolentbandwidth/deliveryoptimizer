@@ -92,9 +92,11 @@ SolveCoordinator::SolveCoordinator(SolveAdmissionConfig config,
     completion_workers_.emplace_back([this] { CompletionLoop(); });
   }
 
-  workers_.reserve(config_.max_concurrency);
-  for (std::size_t index = 0U; index < config_.max_concurrency; ++index) {
-    workers_.emplace_back([this] { WorkerLoop(); });
+  if (options_.start_workers) {
+    workers_.reserve(config_.max_concurrency);
+    for (std::size_t index = 0U; index < config_.max_concurrency; ++index) {
+      workers_.emplace_back([this] { WorkerLoop(); });
+    }
   }
   if (options_.enable_queue_timer) {
     queue_timer_ = std::jthread([this] { QueueTimerLoop(); });
@@ -174,6 +176,7 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
       .lifecycle = std::move(lifecycle),
       .started_immediately = started_immediately,
   });
+  ++queue_version_;
   observability_->SetSolverState(queue_.size(), active_solves_);
   UpdateLifecycleState(queue_.back().lifecycle, queue_.size(), active_solves_);
   condition_.notify_all();
@@ -202,6 +205,7 @@ void SolveCoordinator::WorkerLoop() {
 
       queued_request = std::move(queue_.front());
       queue_.pop_front();
+      ++queue_version_;
       dequeued_at = std::chrono::steady_clock::now();
       queue_wait_expired = HasQueueWaitExpired(queued_request->deadline);
       if (!queue_wait_expired) {
@@ -256,6 +260,13 @@ void SolveCoordinator::WorkerLoop() {
 }
 
 void SolveCoordinator::QueueTimerLoop() {
+  const auto find_earliest_deadline = [this] {
+    return std::min_element(queue_.begin(), queue_.end(),
+                            [](const QueuedSolveRequest& left, const QueuedSolveRequest& right) {
+                              return left.deadline < right.deadline;
+                            });
+  };
+
   while (true) {
     std::optional<QueuedSolveRequest> expired_request;
     std::chrono::steady_clock::time_point expired_at;
@@ -266,12 +277,11 @@ void SolveCoordinator::QueueTimerLoop() {
         return;
       }
 
-      const std::uint64_t front_sequence_number = queue_.front().sequence_number;
-      const auto front_deadline = queue_.front().deadline;
+      const std::uint64_t watched_queue_version = queue_version_;
+      const auto earliest_deadline = find_earliest_deadline()->deadline;
       const bool queue_changed =
-          condition_.wait_until(lock, front_deadline, [this, front_sequence_number] {
-            return shutting_down_ || queue_.empty() ||
-                   queue_.front().sequence_number != front_sequence_number;
+          condition_.wait_until(lock, earliest_deadline, [this, watched_queue_version] {
+            return shutting_down_ || queue_.empty() || queue_version_ != watched_queue_version;
           });
       if (queue_changed) {
         if (shutting_down_ && queue_.empty()) {
@@ -280,12 +290,18 @@ void SolveCoordinator::QueueTimerLoop() {
         continue;
       }
 
-      if (queue_.empty() || !HasQueueWaitExpired(queue_.front().deadline)) {
+      if (queue_.empty()) {
         continue;
       }
 
-      expired_request = std::move(queue_.front());
-      queue_.pop_front();
+      auto expired_request_it = find_earliest_deadline();
+      if (expired_request_it == queue_.end() || !HasQueueWaitExpired(expired_request_it->deadline)) {
+        continue;
+      }
+
+      expired_request = std::move(*expired_request_it);
+      queue_.erase(expired_request_it);
+      ++queue_version_;
       expired_at = std::chrono::steady_clock::now();
       if (expired_request->lifecycle != nullptr) {
         expired_request->lifecycle->queue_wait_duration =

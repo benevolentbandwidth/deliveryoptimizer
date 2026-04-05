@@ -223,6 +223,86 @@ TEST(SolveCoordinatorTest, WorkerRejectsQueuedSolveThatExpiredBeforeDequeue) {
   EXPECT_FALSE(second_payload_factory_called.load());
 }
 
+TEST(SolveCoordinatorTest, QueueTimerExpiresQueuedSolveBehindReservedWorkerSlots) {
+  auto runner = std::make_shared<BlockingRunner>();
+  auto coordinator = std::make_unique<deliveryoptimizer::api::SolveCoordinator>(
+      deliveryoptimizer::api::SolveAdmissionConfig{
+          .max_concurrency = 2U,
+          .max_queue_size = 1U,
+          .max_queue_wait = std::chrono::milliseconds{50},
+          .max_sync_jobs = 5U,
+          .max_sync_vehicles = 2U,
+      },
+      runner,
+      deliveryoptimizer::api::SolveCoordinatorOptions{
+          .enable_queue_timer = true,
+          .completion_worker_count = 1U,
+          .start_workers = false,
+      });
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> first_result_promise;
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> second_result_promise;
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> third_result_promise;
+  auto first_result_future = first_result_promise.get_future();
+  auto second_result_future = second_result_promise.get_future();
+  auto third_result_future = third_result_promise.get_future();
+  std::atomic<bool> third_payload_factory_called{false};
+
+  ASSERT_EQ(
+      coordinator->Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [] { return Json::Value{Json::objectValue}; },
+          [&first_result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            first_result_promise.set_value(result);
+          }),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+  ASSERT_EQ(
+      coordinator->Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [] { return Json::Value{Json::objectValue}; },
+          [&second_result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            second_result_promise.set_value(result);
+          }),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+  ASSERT_EQ(
+      coordinator->Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [&third_payload_factory_called] {
+            third_payload_factory_called.store(true);
+            return Json::Value{Json::objectValue};
+          },
+          [&third_result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            third_result_promise.set_value(result);
+          }),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+
+  EXPECT_EQ(first_result_future.wait_for(std::chrono::milliseconds{100}),
+            std::future_status::timeout);
+  EXPECT_EQ(second_result_future.wait_for(std::chrono::milliseconds{100}),
+            std::future_status::timeout);
+  ASSERT_EQ(third_result_future.wait_for(std::chrono::seconds{1}), std::future_status::ready);
+  EXPECT_EQ(third_result_future.get().status,
+            deliveryoptimizer::api::CoordinatedSolveStatus::kQueueWaitTimedOut);
+  EXPECT_FALSE(third_payload_factory_called.load());
+
+  coordinator.reset();
+
+  ASSERT_EQ(first_result_future.wait_for(std::chrono::seconds{1}), std::future_status::ready);
+  ASSERT_EQ(second_result_future.wait_for(std::chrono::seconds{1}), std::future_status::ready);
+  EXPECT_EQ(first_result_future.get().status,
+            deliveryoptimizer::api::CoordinatedSolveStatus::kFailed);
+  EXPECT_EQ(second_result_future.get().status,
+            deliveryoptimizer::api::CoordinatedSolveStatus::kFailed);
+}
+
 TEST(SolveCoordinatorTest, DestructorFailsQueuedSolveBeforeActiveWorkerFinishes) {
   auto runner = std::make_shared<BlockingRunner>();
   auto coordinator = std::make_unique<deliveryoptimizer::api::SolveCoordinator>(

@@ -33,6 +33,7 @@ struct CoordinatedSolveResult {
 struct SolveCoordinatorOptions {
   bool enable_queue_timer{true};
   std::optional<std::size_t> completion_worker_count;
+  bool start_workers{true};
 };
 
 class SolveCoordinator {
@@ -88,6 +89,7 @@ private:
   std::vector<std::jthread> completion_workers_;
   std::size_t active_solves_{0U};
   std::uint64_t next_sequence_number_{1U};
+  std::uint64_t queue_version_{0U};
   bool shutting_down_{false};
   bool completion_shutting_down_{false};
 };
