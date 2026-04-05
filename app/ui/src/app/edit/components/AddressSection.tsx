@@ -69,6 +69,7 @@ export default function AddressSection({
         <input
           type="search"
           value={searchQuery}
+          aria-label="Search addresses"
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Find address"
           className={ADDRESS_SEARCH_INPUT_MOBILE}
@@ -96,21 +97,27 @@ export default function AddressSection({
       </div>
 
       {/* Mobile: spaced cards; desktop: single divided panel */}
-      <div className={ADDRESS_LIST_WRAP}>
-        {addressesOnCurrentPage.map((a) => (
-          <AddressCard
-            key={`address-${a.id}`}
-            address={a}
-            addressesCount={addressesCount}
-            updateAddress={updateAddress}
-            deleteAddress={deleteAddress}
-            unlockAddress={unlockAddress}
-            confirmAddress={confirmAddress}
-            addressTouched={addressTouched}
-            geocodeFailed={geocodeFailedIds.includes(a.id)}
-          />
-        ))}
-      </div>
+      {searchQuery.trim() !== "" && addressesOnCurrentPage.length === 0 ? (
+        <div className="flex items-center justify-center py-16 text-sm text-zinc-400 xl:text-base">
+          No Addresses Found
+        </div>
+      ) : (
+        <div className={ADDRESS_LIST_WRAP}>
+          {addressesOnCurrentPage.map((a) => (
+            <AddressCard
+              key={`address-${a.id}`}
+              address={a}
+              addressesCount={addressesCount}
+              updateAddress={updateAddress}
+              deleteAddress={deleteAddress}
+              unlockAddress={unlockAddress}
+              confirmAddress={confirmAddress}
+              addressTouched={addressTouched}
+              geocodeFailed={geocodeFailedIds.includes(a.id)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
