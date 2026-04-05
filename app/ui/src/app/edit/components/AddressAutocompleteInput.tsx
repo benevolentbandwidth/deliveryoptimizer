@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef} from "react";
 import { useAddressAutocomplete } from "../../components/AddressGeocoder/utils/useAddressAutocomplete";
 import { AutocompleteDropdown } from "../../components/AddressGeocoder/AutocompleteDropdown";
 import type { AddressSuggestion } from "../../components/AddressGeocoder/types";
@@ -19,8 +20,21 @@ export default function AddressAutocompleteInput({
   placeholder,
   ariaLabel,
 }: Props) {
+  
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const { suggestions, showSuggestions, selectedIndex, debouncedFetch, clearSuggestions, handleKeyDown } =
     useAddressAutocomplete();
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    };
+  }, []);
+
+  function handleBlur() {
+    blurTimeoutRef.current = setTimeout(clearSuggestions, 150);
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     onChange(e.target.value);
@@ -38,7 +52,7 @@ export default function AddressAutocompleteInput({
         value={value}
         onChange={handleChange}
         onKeyDown={(e) => handleKeyDown(e, handleSelect)}
-        onBlur={() => setTimeout(clearSuggestions, 150)}
+        onBlur={handleBlur}
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={className}
