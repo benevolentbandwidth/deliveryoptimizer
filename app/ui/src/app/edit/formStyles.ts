@@ -102,7 +102,7 @@ export const VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN =
 
 /** Locked summary cells w-full fills fixed-width grid columns and is harmless in fr columns. */
 export const VEHICLE_LOCKED_CELL =
-  "h-11 w-full bg-zinc-300 rounded-md flex items-center px-3 xl:px-4";
+  "h-11 w-full bg-zinc-300 rounded-md flex items-center px-3 xl:px-4 overflow-hidden";
 
 export const VEHICLE_CONFIRM_DESKTOP =
   "h-9 px-3 rounded-md border border-blue-300 bg-blue-100 text-blue-800 text-sm font-medium hover:bg-blue-200 transition-colors cursor-pointer";
@@ -212,7 +212,7 @@ export const ADDRESS_CARD_ROOT_BASE =
 
 export const ADDRESS_CARD_EDITING_EXTRA = "lg:rounded-lg";
 
-export const ADDRESS_LOCKED_SURFACE_MD = "h-8 min-h-[2rem] xl:h-9 self-start bg-zinc-300 rounded-lg flex items-center px-2 xl:px-3";
+export const ADDRESS_LOCKED_SURFACE_MD = "h-8 min-h-[2rem] xl:h-9 self-start bg-zinc-300 rounded-lg flex items-center px-2 xl:px-3 overflow-hidden";
 
 export const ADDRESS_NOTES_LOCKED_BOX =
   "min-h-0 flex-1 overflow-hidden rounded-lg bg-zinc-300 px-2 py-1.5 xl:px-3 xl:py-2";
@@ -223,12 +223,12 @@ export const ADDRESS_TEXTAREA_EDIT =
 export const ADDRESS_INPUT_DESKTOP_BASE =
   "w-full min-w-0 self-start rounded-lg border h-8 min-h-[2rem] xl:h-9 px-2 xl:px-3 text-xs text-black lg:text-sm focus:outline-none bg-white";
 
-export const MOBILE_ADDRESS_LOCKED_ROW = "h-9 bg-zinc-300 rounded-lg flex items-center px-3";
+export const MOBILE_ADDRESS_LOCKED_ROW = "h-9 bg-zinc-300 rounded-lg flex items-center px-3 overflow-hidden";
 
-export const MOBILE_ADDRESS_NOTES_AREA = "min-h-[6rem] bg-zinc-300 rounded-lg flex items-start px-3 py-2";
+export const MOBILE_ADDRESS_NOTES_AREA = "min-h-[6rem] bg-zinc-300 rounded-lg flex items-start px-3 py-2 overflow-hidden";
 
 export const MOBILE_ADDRESS_NOTES_TEXTAREA =
-  "w-full min-h-[6.5rem] rounded-lg px-3 py-2 text-sm text-black focus:outline-none border border-zinc-200 bg-zinc-200 focus:border-zinc-400 resize-none leading-6";
+  "w-full min-h-[6.5rem] rounded-lg px-3 py-2 text-sm text-black focus:outline-none border border-zinc-300 bg-zinc-200 focus:border-zinc-400 resize-none leading-6";
 
 export const PILL_ROW_HALF_NEUTRAL = "flex-1 h-10 rounded-full border border-zinc-300 text-black text-sm font-medium hover:bg-zinc-50 cursor-pointer";
 
