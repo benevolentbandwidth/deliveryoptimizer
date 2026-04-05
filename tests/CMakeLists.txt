@@ -179,7 +179,7 @@ deliveryoptimizer_add_local_http_test(
 )
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsMalformedJsonWithRequestId
-  29000
+  29100
 )
 
 deliveryoptimizer_add_local_http_test(
