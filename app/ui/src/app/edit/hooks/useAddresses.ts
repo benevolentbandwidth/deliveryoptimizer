@@ -2,8 +2,9 @@
  * Address list state: paged stops, lock/edit workflow, and validation for "add next".
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { AddressCard } from "../types/delivery";
+import Fuse from "fuse.js";
 
 const ADDRESSES_PER_PAGE = 7;
 
@@ -27,15 +28,16 @@ export function useAddresses() {
   // Search: fuzzy filter across address and notes fields.
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Fuse.js is a fuzzy search library that allows us to search for addresses and notes.
+  const fuse = useMemo(() => new Fuse(addresses, {
+    keys: ["recipientAddress", "notes"],
+    threshold: 0.3,         // 0.0 = exact, 1.0 = match anything
+    ignoreLocation: true,   // don't penalize matches far from string start
+  }), [addresses]);
+  
   const filteredAddresses = searchQuery.trim() === ""
     ? addresses
-    : addresses.filter((a) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          a.recipientAddress.toLowerCase().includes(q) ||
-          a.notes.toLowerCase().includes(q)
-        );
-      });
+    : fuse.search(searchQuery).map((result) => result.item);
 
   const isSearchActive = searchQuery.trim() !== "";
 
