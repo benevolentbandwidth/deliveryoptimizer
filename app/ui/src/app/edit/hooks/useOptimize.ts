@@ -7,6 +7,19 @@ import { geocodeAddress } from "@/app/components/AddressGeocoder/utils/nominatim
 import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/optimizeMapper";
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 
+// Rough bounding boxes for the three supported states.
+const SUPPORTED_REGIONS = [
+  { name: "CA", latMin: 32.5,  latMax: 42.0,  lngMin: -124.5, lngMax: -114.1 },
+  { name: "TX", latMin: 25.8,  latMax: 36.5,  lngMin: -106.7, lngMax:  -93.5 },
+  { name: "FL", latMin: 24.4,  latMax: 31.0,  lngMin:  -87.6, lngMax:  -80.0 },
+] as const;
+
+function isInSupportedRegion(lat: number, lng: number): boolean {
+  return SUPPORTED_REGIONS.some(
+    (r) => lat >= r.latMin && lat <= r.latMax && lng >= r.lngMin && lng <= r.lngMax
+  );
+}
+
 // ensure that vehicleType and capacityUnit are not empty
 function isLocked(v: VehicleRow): v is LockedVehicleRow {
   return v.locked && v.type !== "" && v.capacityUnit !== "";
@@ -84,7 +97,18 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 5. Map form data to API types.
+      // 5. Reject any coordinate that falls outside CA, TX, or FL.
+      const outOfRegion = [
+        ...[...vehicleLocations.values()],
+        ...[...addressLocations.values()],
+      ].some(({ lat, lng }) => !isInSupportedRegion(lat, lng));
+
+      if (outOfRegion) {
+        setOptimizeError("Unsupported Region. We currently only support CA, TX, and FL.");
+        return;
+      }
+
+      // 6. Map form data to API types.
       const vehicleInputs = availableVehicles.filter(isLocked).map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -93,7 +117,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!)
       );
 
-      // 6. POST to /api/optimize.
+      // 7. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,7 +141,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 7. Store result for the caller to consume.
+      // 8. Store result for the caller to consume.
       setResult(data);
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
