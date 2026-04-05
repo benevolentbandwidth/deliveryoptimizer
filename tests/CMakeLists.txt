@@ -151,7 +151,7 @@ set_tests_properties(
 )
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsExcessiveBodySize
-  23000
+  23200
 )
 
 add_test(
