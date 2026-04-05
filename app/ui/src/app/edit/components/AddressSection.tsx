@@ -11,8 +11,8 @@ import {
   ADDRESS_ADD_PILL_DESKTOP_ENABLED,
   ADDRESS_ADD_PILL_MOBILE_DISABLED,
   ADDRESS_ADD_PILL_MOBILE_ENABLED,
-  ADDRESS_FIND_PILL_DESKTOP,
-  ADDRESS_FIND_PILL_MOBILE,
+  ADDRESS_SEARCH_INPUT_DESKTOP,
+  ADDRESS_SEARCH_INPUT_MOBILE,
   ADDRESS_LIST_WRAP,
   ADDRESS_SECTION_TITLE,
   ADDRESS_TOOLBAR_DESKTOP,
@@ -31,6 +31,8 @@ type AddressSectionProps = {
   allAddressesLocked: boolean;
   activeAddressIsValid: boolean;
   geocodeFailedIds: number[];
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
 };
 
 export default function AddressSection({
@@ -45,6 +47,8 @@ export default function AddressSection({
   allAddressesLocked,
   activeAddressIsValid,
   geocodeFailedIds,
+  searchQuery,
+  setSearchQuery,
 }: AddressSectionProps) {
   const addEnabled = allAddressesLocked || activeAddressIsValid;
 
@@ -52,7 +56,7 @@ export default function AddressSection({
     <section>
       <h2 className={ADDRESS_SECTION_TITLE}>Addresses</h2>
 
-      {/* Mobile: Add first, then find full-width pills */}
+      {/* Mobile: Add first, then search full-width */}
       <div className={ADDRESS_TOOLBAR_MOBILE_WRAP}>
         <button
           type="button"
@@ -62,16 +66,24 @@ export default function AddressSection({
         >
           Add new address
         </button>
-        <button type="button" className={ADDRESS_FIND_PILL_MOBILE} disabled = {true}>
-          Find address
-        </button>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Find address"
+          className={ADDRESS_SEARCH_INPUT_MOBILE}
+        />
       </div>
 
-      {/* Desktop: Find left, spacer, Add right type scales with viewport */}
+      {/* Desktop: Search left, spacer, Add right */}
       <div className={ADDRESS_TOOLBAR_DESKTOP}>
-        <button type="button" className={ADDRESS_FIND_PILL_DESKTOP} disabled = {true}>
-          Find address
-        </button>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Find address"
+          className={ADDRESS_SEARCH_INPUT_DESKTOP}
+        />
         <div className="flex-1 min-w-0" />
         <button
           type="button"
