@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import {
   TIME_OPTIONS,
   TIME_BUFFER_OPTIONS,
@@ -158,11 +159,11 @@ export default function AddressCard({
             </>
           ) : (
             <>
-              <input
+              <AddressAutocompleteInput
                 value={a.recipientAddress}
-                onChange={(e) => updateAddress(a.id, "recipientAddress", e.target.value)}
+                onChange={(val) => updateAddress(a.id, "recipientAddress", val)}
                 placeholder="Address"
-                aria-label="Recipient address"
+                ariaLabel="Recipient address"
                 className={`${ADDRESS_INPUT_DESKTOP_BASE} ${fieldBorder(addrInvalid)}`}
               />
               <select
@@ -362,11 +363,11 @@ export default function AddressCard({
               <>
                 <div>
                   <span className={MOBILE_FIELD_LABEL}>Address</span>
-                  <input
+                  <AddressAutocompleteInput
                     value={a.recipientAddress}
-                    onChange={(e) => updateAddress(a.id, "recipientAddress", e.target.value)}
+                    onChange={(val) => updateAddress(a.id, "recipientAddress", val)}
                     placeholder="Address"
-                    aria-label="Recipient address"
+                    ariaLabel="Recipient address"
                     className={mobileInputClass(addrInvalid)}
                   />
                 </div>
