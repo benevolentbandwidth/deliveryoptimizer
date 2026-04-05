@@ -8,6 +8,19 @@ import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/o
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 import type { CapacityUnit } from "../types/delivery";
 
+// Rough bounding boxes for the three supported states.
+const SUPPORTED_REGIONS = [
+  { name: "CA", latMin: 32.5,  latMax: 42.0,  lngMin: -124.5, lngMax: -114.1 },
+  { name: "TX", latMin: 25.8,  latMax: 36.5,  lngMin: -106.7, lngMax:  -93.5 },
+  { name: "FL", latMin: 24.4,  latMax: 31.0,  lngMin:  -87.6, lngMax:  -80.0 },
+] as const;
+
+function isInSupportedRegion(lat: number, lng: number): boolean {
+  return SUPPORTED_REGIONS.some(
+    (r) => lat >= r.latMin && lat <= r.latMax && lng >= r.lngMin && lng <= r.lngMax
+  );
+}
+
 // ensure that vehicleType and capacityUnit are not empty
 function isLocked(v: VehicleRow): v is LockedVehicleRow {
   return v.locked && v.type !== "" && v.capacityUnit !== "";
@@ -102,8 +115,27 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         setOptimizeError(`Could not geocode: ${list}${suffix}. Try more specific addresses.`);
         return;
       }
+      
+      // 7. Reject any coordinate that falls outside CA, TX, or FL.
+      const outOfRegion = [
+        ...[...vehicleLocations.values()],
+        ...[...addressLocations.values()],
+      ].some(({ lat, lng }) => !isInSupportedRegion(lat, lng));
 
-      // 7. Map form data to API types.
+      if (outOfRegion) {
+        setOptimizeError("Unsupported Region. We currently only support CA, TX, and FL.");
+        return;
+      }
+
+      // 8. Check that all vehicles are locked and have a type and capacity unit.
+      const lockedVehicles = availableVehicles.filter(isLocked);
+
+      if (lockedVehicles.length !== availableVehicles.length) {
+        setOptimizeError("One or more vehicles are missing type or capacity unit.");
+        return;
+      }
+
+      // 9. Map form data to API types.
       const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -112,7 +144,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
       ).filter((d) => d !== undefined);
 
-      // 8. POST to /api/optimize.
+      // 10. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,7 +168,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 9. Store result for the caller to consume.
+      // 11. Store result for the caller to consume.
       setResult(data);
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
