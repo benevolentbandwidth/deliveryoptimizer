@@ -1,0 +1,56 @@
+"use client";
+
+import { useAddressAutocomplete } from "../../components/AddressGeocoder/utils/useAddressAutocomplete";
+import { AutocompleteDropdown } from "../../components/AddressGeocoder/AutocompleteDropdown";
+import type { AddressSuggestion } from "../../components/AddressGeocoder/types";
+
+type Props = {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+};
+
+export default function AddressAutocompleteInput({
+  value,
+  onChange,
+  className,
+  placeholder,
+  ariaLabel,
+}: Props) {
+  const { suggestions, showSuggestions, selectedIndex, debouncedFetch, clearSuggestions, handleKeyDown } =
+    useAddressAutocomplete();
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    onChange(e.target.value);
+    debouncedFetch(e.target.value);
+  }
+
+  function handleSelect(suggestion: AddressSuggestion) {
+    onChange(suggestion.display_name);
+    clearSuggestions();
+  }
+
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={handleChange}
+        onKeyDown={(e) => handleKeyDown(e, handleSelect)}
+        onBlur={() => setTimeout(clearSuggestions, 150)}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        className={className}
+        autoComplete="off"
+      />
+      {showSuggestions && (
+        <AutocompleteDropdown
+          suggestions={suggestions}
+          selectedIndex={selectedIndex}
+          onSelect={handleSelect}
+        />
+      )}
+    </div>
+  );
+}

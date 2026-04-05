@@ -9,6 +9,7 @@
  */
 
 import { useRef, type ReactNode } from "react";
+import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { TIME_OPTIONS } from "../constants/timeOptions";
 import type { VehicleRow as VehicleRowType, VehicleType, CapacityUnit } from "../types/delivery";
 import { capitalize } from "../utils/deliveryHelpers";
@@ -238,12 +239,12 @@ export default function VehicleRow({
           aria-label="Vehicle name"
         />
         <MobileFieldLabel>Start Location</MobileFieldLabel>
-        <input
+        <AddressAutocompleteInput
           value={v.startLocation ?? ""}
-          onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
+          onChange={(val) => updateVehicle(v.id, "startLocation", val)}
           className={`${inputClass(startLocationInvalid || geocodeFailed)} bg-white`}
           placeholder="Address"
-          aria-label="Start location"
+          ariaLabel="Start location"
         />
         <MobileFieldLabel>Type</MobileFieldLabel>
         <select
@@ -429,12 +430,12 @@ export default function VehicleRow({
         placeholder=""
         aria-label="Vehicle name"
       />
-      <input
+      <AddressAutocompleteInput
         value={v.startLocation ?? ""}
-        onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
+        onChange={(val) => updateVehicle(v.id, "startLocation", val)}
         className={`${VEHICLE_DESKTOP_WIDE_INPUT} ${fieldBorder(startLocationInvalid || geocodeFailed)}`}
         placeholder=""
-        aria-label="Start location"
+        ariaLabel="Start location"
       />
       <select
         value={v.type}
