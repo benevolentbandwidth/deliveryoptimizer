@@ -2,13 +2,16 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 
 namespace drogon {
 class HttpRequest;
@@ -93,6 +96,7 @@ public:
 
 private:
   struct Histogram;
+  void LogWriterLoop();
 
   std::atomic<std::uint64_t> accepted_requests_{0U};
   std::atomic<std::uint64_t> rejected_requests_{0U};
@@ -105,6 +109,10 @@ private:
   std::unique_ptr<Histogram> solve_duration_histogram_;
   std::unique_ptr<Histogram> request_duration_histogram_;
   mutable std::mutex log_mutex_;
+  mutable std::condition_variable log_condition_;
+  mutable std::deque<std::string> pending_log_lines_;
+  bool log_shutdown_{false};
+  std::thread log_writer_;
 };
 
 } // namespace deliveryoptimizer::api

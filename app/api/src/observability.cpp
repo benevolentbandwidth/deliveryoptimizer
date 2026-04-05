@@ -162,9 +162,19 @@ std::string_view ToOutcomeString(const SolveRequestOutcome outcome) {
 ObservabilityRegistry::ObservabilityRegistry()
     : queue_wait_histogram_(std::make_unique<Histogram>()),
       solve_duration_histogram_(std::make_unique<Histogram>()),
-      request_duration_histogram_(std::make_unique<Histogram>()) {}
+      request_duration_histogram_(std::make_unique<Histogram>()),
+      log_writer_([this] { LogWriterLoop(); }) {}
 
-ObservabilityRegistry::~ObservabilityRegistry() = default;
+ObservabilityRegistry::~ObservabilityRegistry() {
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_shutdown_ = true;
+  }
+  log_condition_.notify_one();
+  if (log_writer_.joinable()) {
+    log_writer_.join();
+  }
+}
 
 void ObservabilityRegistry::RecordAccepted() {
   accepted_requests_.fetch_add(1U, std::memory_order_relaxed);
@@ -366,8 +376,30 @@ void ObservabilityRegistry::LogSolveRequest(const SolveLifecycle& lifecycle,
 
   const std::string rendered_line = Json::writeString(writer_builder, log_line);
 
-  std::lock_guard<std::mutex> lock(log_mutex_);
-  std::cout << rendered_line << '\n' << std::flush;
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    pending_log_lines_.push_back(rendered_line);
+  }
+  log_condition_.notify_one();
+}
+
+void ObservabilityRegistry::LogWriterLoop() {
+  std::unique_lock<std::mutex> lock(log_mutex_);
+  while (true) {
+    log_condition_.wait(lock, [this] { return log_shutdown_ || !pending_log_lines_.empty(); });
+    if (pending_log_lines_.empty()) {
+      if (log_shutdown_) {
+        return;
+      }
+      continue;
+    }
+
+    std::string rendered_line = std::move(pending_log_lines_.front());
+    pending_log_lines_.pop_front();
+    lock.unlock();
+    std::cout << rendered_line << '\n' << std::flush;
+    lock.lock();
+  }
 }
 
 } // namespace deliveryoptimizer::api
