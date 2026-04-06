@@ -26,7 +26,7 @@ export function useAddresses() {
   ]);
 
   // Search: fuzzy filter across address and notes fields.
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, _setSearchQuery] = useState("");
 
   // Fuse.js is a fuzzy search library that allows us to search for addresses and notes.
   const fuse = useMemo(() => new Fuse(addresses, {
@@ -34,7 +34,7 @@ export function useAddresses() {
     threshold: 0.3,         // 0.0 = exact, 1.0 = match anything
     ignoreLocation: true,   // don't penalize matches far from string start
   }), [addresses]);
-  
+
   const filteredAddresses = searchQuery.trim() === ""
     ? addresses
     : fuse.search(searchQuery).map((result) => result.item);
@@ -43,13 +43,16 @@ export function useAddresses() {
 
   // Pagination: slice the flat list so the UI only renders one page of cards.
   const [addressPage, setAddressPage] = useState(1);
-  const totalAddressPages = Math.max(1, Math.ceil(addresses.length / ADDRESSES_PER_PAGE));
-  const addressesOnCurrentPage = isSearchActive
-    ? filteredAddresses
-    : addresses.slice(
-        (addressPage - 1) * ADDRESSES_PER_PAGE,
-        addressPage * ADDRESSES_PER_PAGE
-      );
+  const totalAddressPages = Math.max(1, Math.ceil(filteredAddresses.length / ADDRESSES_PER_PAGE));
+  const addressesOnCurrentPage = filteredAddresses.slice(
+    (addressPage - 1) * ADDRESSES_PER_PAGE,
+    addressPage * ADDRESSES_PER_PAGE
+  );
+
+  const setSearchQuery = useCallback((q: string) => {
+    _setSearchQuery(q);
+    setAddressPage(1);
+  }, []);
 
   // After submit attempts, drive inline error styling until the user fixes fields.
   const [addressTouched, setAddressTouched] = useState(false);
