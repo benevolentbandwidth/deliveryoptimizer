@@ -35,7 +35,7 @@ export default function ErrorPopup({ message, onClose }: ErrorPopupProps) {
             <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
-        <p id="error-popup-title" className={ERROR_POPUP_TITLE}>Something went wrong</p>
+        <h2 id="error-popup-title" className={ERROR_POPUP_TITLE}>Something went wrong</h2>
         <p className={ERROR_POPUP_MESSAGE}>{message}</p>
         <button type="button" onClick={onClose} className={ERROR_POPUP_DISMISS_BUTTON}>
           Dismiss
