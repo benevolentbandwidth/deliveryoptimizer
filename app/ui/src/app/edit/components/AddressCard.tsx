@@ -66,11 +66,12 @@ export default function AddressCard({
   addressTouched,
 }: AddressCardProps) {
   
+  const { locked } = a;
   const [manualExpanded, setManualExpanded] = useState(false);
   const expanded = !a.locked || manualExpanded;
   useEffect(() => {
-    if (!a.locked) setManualExpanded(false);
-  }, [a.locked]);
+    if (!locked) setManualExpanded(false);
+  }, [locked]);
   
   const addrInvalid = addressTouched && !a.recipientAddress.trim();
   const bufferInvalid = addressTouched && !a.timeBuffer;
