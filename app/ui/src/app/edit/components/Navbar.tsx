@@ -35,10 +35,10 @@ export default function Navbar({ onOptimize, isOptimizing, optimizeError, onClea
               <path d="M4 14v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </button>
-          <button className={NAVBAR_OUTLINE_PILL}>
+          <button className={NAVBAR_OUTLINE_PILL} disabled={true}>
             Save
           </button>
-          <button className={NAVBAR_OUTLINE_PILL}>
+          <button className={NAVBAR_OUTLINE_PILL} disabled={true}>
             Export
           </button>
           <button
