@@ -99,15 +99,15 @@ function AvailableSegmented({
   const thumbClass = `${VEHICLE_AVAILABLE_SEGMENT_THUMB} ${available ? VEHICLE_AVAILABLE_SEGMENT_THUMB_YES : VEHICLE_AVAILABLE_SEGMENT_THUMB_NO}`;
 
   return (
-    <div role="radiogroup" aria-label="Available" className={trackClass}>
+    <div role="radiogroup" aria-readonly={readOnly} aria-label="Available" className={trackClass}>
       <div className={thumbClass} aria-hidden />
       <div className={VEHICLE_AVAILABLE_SEGMENT_ROW}>
         {readOnly ? (
           <>
-            <span role="radio" aria-checked={!available} className={VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN}>
+            <span className={VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN}>
               No
             </span>
-            <span role="radio" aria-checked={available} className={VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN}>
+            <span className={VEHICLE_AVAILABLE_SEGMENT_READ_ONLY_SPAN}>
               Yes
             </span>
           </>
