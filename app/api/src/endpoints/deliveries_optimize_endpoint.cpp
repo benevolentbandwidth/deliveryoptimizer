@@ -28,6 +28,7 @@ constexpr double kMinLatitude = -90.0;
 constexpr double kMaxLatitude = 90.0;
 constexpr std::string_view kCoordinateValidationMessage =
     "must be an array [lon, lat] with longitude in [-180, 180] and latitude in [-90, 90].";
+constexpr auto k422UnprocessableEntity = static_cast<drogon::HttpStatusCode>(422);
 constexpr Json::ArrayIndex kMaxOptimizeVehicles =
     static_cast<Json::ArrayIndex>(deliveryoptimizer::api::kMaxDeliveriesOptimizeVehicles);
 constexpr Json::ArrayIndex kMaxOptimizeJobs =
@@ -637,9 +638,13 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
 BuildAdmissionRejectionResponse(const deliveryoptimizer::api::SolveAdmissionStatus status) {
   switch (status) {
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs:
+    return BuildErrorResponse(
+        k422UnprocessableEntity,
+        "Request exceeds the maximum supported job count for synchronous routing optimization.");
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyVehicles:
-    return BuildErrorResponse(drogon::k503ServiceUnavailable,
-                              "Routing optimization is unavailable for requests of this size.");
+    return BuildErrorResponse(
+        k422UnprocessableEntity,
+        "Request exceeds the maximum supported vehicle count for synchronous routing optimization.");
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedQueueFull:
     return BuildErrorResponse(drogon::k503ServiceUnavailable,
                               "Routing optimization is temporarily overloaded.");
