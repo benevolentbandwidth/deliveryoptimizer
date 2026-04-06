@@ -16,6 +16,8 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [geocodeFailedAddressIds, setGeocodeFailedAddressIds] = useState<number[]>([]);
   const [geocodeFailedVehicleIds, setGeocodeFailedVehicleIds] = useState<number[]>([]);
+
+  // TODO: Result will be updated to store the result of the optimize request
   const [result, setResult] = useState<unknown>(null);
 
   const optimize = useCallback(async () => {

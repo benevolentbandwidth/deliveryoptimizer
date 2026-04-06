@@ -62,14 +62,14 @@ export default function AddressSection({
         >
           Add new address
         </button>
-        <button type="button" className={ADDRESS_FIND_PILL_MOBILE}>
+        <button type="button" className={ADDRESS_FIND_PILL_MOBILE} disabled = {true}>
           Find address
         </button>
       </div>
 
       {/* Desktop: Find left, spacer, Add right type scales with viewport */}
       <div className={ADDRESS_TOOLBAR_DESKTOP}>
-        <button type="button" className={ADDRESS_FIND_PILL_DESKTOP}>
+        <button type="button" className={ADDRESS_FIND_PILL_DESKTOP} disabled = {true}>
           Find address
         </button>
         <div className="flex-1 min-w-0" />
