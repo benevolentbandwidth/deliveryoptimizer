@@ -95,6 +95,7 @@ export function useAddresses() {
       }
 
       setAddressTouched(false);
+      _setSearchQuery("");
       const newId = prev.reduce((max, a) => Math.max(max, a.id), 0) + 1;
       setAddressPage(Math.ceil((prev.length + 1) / ADDRESSES_PER_PAGE));
 
