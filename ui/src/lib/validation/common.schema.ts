@@ -20,6 +20,6 @@ export const locationSchema = z.object({
  * Load schema supports future expansion
  */
 export const loadSchema = z.object({
-  type: z.enum(["units", "lbs", "kgs", "cubic_feet"]),
+  type: z.enum(["units", "weight", "volume"]),
   value: z.number().positive().max(MAX_LOAD)
 })
