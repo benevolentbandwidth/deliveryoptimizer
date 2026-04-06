@@ -16,7 +16,7 @@ async function throttle(): Promise<void> {
   lastRequestAt = Date.now();
 }
 
-const USER_AGENT = 'DeliveryOptimizer/1.0 (contact@yourcompany.com)'; // TODO: Replace
+const USER_AGENT = 'DeliveryOptimizer/1.0 (${process.env.NOMINATIM_CONTACT_EMAIL})'; 
 
 export interface NominatimResult {
   lat: string;
