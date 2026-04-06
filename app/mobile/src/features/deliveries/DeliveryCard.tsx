@@ -84,9 +84,11 @@ export default function DeliveryCard({
                 <Text style={styles.actionText}>Complete</Text>
               </Pressable>
 
-              <Pressable style={styles.actionButton} onPress={onNavigate}>
-                <Text style={styles.actionText}>Navigate</Text>
-              </Pressable>
+              {onNavigate && (
+                <Pressable style={styles.actionButton} onPress={onNavigate}>
+                  <Text style={styles.actionText}>Navigate</Text>
+                </Pressable>
+              )}
 
               <Pressable style={styles.actionButton} onPress={onReport}>
                 <Text style={styles.actionText}>Report</Text>

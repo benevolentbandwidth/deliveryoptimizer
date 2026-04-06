@@ -24,10 +24,14 @@ export function transformSessionToDriverRoute(input: OptimizeRequestLike): Drive
   return {
     driverName: firstVehicle?.driverName || 'Driver Assist',
 <<<<<<< HEAD
+<<<<<<< HEAD
     routeLabel: `Route ${firstVehicle?.id || '1'} · ${stops.length} stops`,
 =======
     routeLabel: `Route X · ${stops.length} stops`,
 >>>>>>> b99938c (add collapsible UI and allow marking deliveries as complete with timestamp)
+=======
+    routeLabel: `Route ${firstVehicle?.id || '1'} · ${stops.length} stops`,
+>>>>>>> 793aeed (fix: addressed breaking schema changes, shared types, and DeliverCard issues as requested in PR 87)
     stops,
   };
 }

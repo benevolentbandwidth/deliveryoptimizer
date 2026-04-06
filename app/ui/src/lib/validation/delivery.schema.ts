@@ -5,10 +5,14 @@ export const deliverySchema = z.object({
   id: z.number().int().nonnegative(),
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   recipientName: z.string().min(1).optional(),
 =======
   recipientName: z.string().min(1),
 >>>>>>> b99938c (add collapsible UI and allow marking deliveries as complete with timestamp)
+=======
+  recipientName: z.string().min(1).optional(),
+>>>>>>> 793aeed (fix: addressed breaking schema changes, shared types, and DeliverCard issues as requested in PR 87)
 
   phoneNumber: z.string().min(7).optional(),
 
