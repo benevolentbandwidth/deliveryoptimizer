@@ -83,17 +83,25 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         setOptimizeError(`Could not geocode: ${list}${suffix}. Try more specific addresses.`);
         return;
       }
+      
+      // 5. Check that all vehicles are locked and have a type and capacity unit.
+      const lockedVehicles = availableVehicles.filter(isLocked);
 
-      // 5. Map form data to API types.
-      const vehicleInputs = availableVehicles.filter(isLocked).map((v) =>
+      if (lockedVehicles.length !== availableVehicles.length) {
+        setOptimizeError("One or more vehicles are missing type or capacity unit.");
+        return;
+      }
+
+      // 6. Map form data to API types.
+      const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
-      
+
       const deliveryInputs = addresses.map((a) =>
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!)
-      );
+      ).filter((d) => d !== undefined);
 
-      // 6. POST to /api/optimize.
+      // 7. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,7 +125,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 7. Store result for the caller to consume.
+      // 8. Store result for the caller to consume.
       setResult(data);
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
