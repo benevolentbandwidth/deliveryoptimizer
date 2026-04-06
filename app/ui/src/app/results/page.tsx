@@ -15,6 +15,17 @@ export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
+  const [pendingPinMove, setPendingPinMove] = useState<{ // created state called pendingPinMove which holds the temporary data of where user dropped the pin but not saved yet (starts as null, but after drag becomes object)
+    routeId: string; // setPendingPinMove is a function that updates the temporary data in pendingPinMove based on some actions such as saving, cancel, or edit mode off. (Triggered by savePendingPinMove, cancelPendingPinMove, handEditModeChange(false))
+    stopId: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  const handleEditModeChange = useCallback((value: boolean) => { // handleEditModeChange is a function wrapped in useCallback that gets called by sidebar when user toggles edit mode either on or off
+    setIsEditMode(value); // Updates edit mode value as before using setIsEditMode but in addition, if the edit mode is turned off (value is false), setPendingPinMove is set to null to clear the temporary pin move data
+    if (!value) setPendingPinMove(null);
+  }, []);
 
   // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
   const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
@@ -29,22 +40,28 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
-  const updateStopCoordinates = useCallback( // Created a callback function updateStopCoordinates that the map can call when a pin is dragged to a new location. (New spot is this lat/lng)
-    (routeId: string, stopId: string, lat: number, lng: number) => { // Has 3 parameters: routeId, stopId, and lat/lng (new coordinates)
-      setRoutes((prev) => // Loop through all routes, if the route's id is not the one we're looking for, leave unchanged.
-        prev.map((route) => {
-          if (route.vehicleId !== routeId) return route;
-          return { // Otherwise, create a new copy of that route to avoid editing it in place, and replace stops with a new list where each stop is the same except for the one that matches our stopId. This specific stop is updated with the new lat/lng
-            ...route,
-            stops: route.stops.map((s) =>
-              s.id === stopId ? { ...s, lat, lng } : s
-            ),
-          };
-        })
-      );
-    },
-    [setRoutes]
-  );
+  const onPendingPinMove = useCallback((routeId: string, stopId: string, lat: number, lng: number) => {
+    setPendingPinMove({ routeId, stopId, lat, lng });
+  }, []);
+
+  const savePendingPinMove = useCallback(() => {
+    if (!pendingPinMove) return;
+    const { routeId, stopId, lat, lng } = pendingPinMove;
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.vehicleId !== routeId) return route;
+        return {
+          ...route,
+          stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
+        };
+      })
+    );
+    setPendingPinMove(null);
+  }, [pendingPinMove]);
+
+  const cancelPendingPinMove = useCallback(() => {
+    setPendingPinMove(null);
+  }, []);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
@@ -60,20 +77,39 @@ export default function ResultsPage() {
           </svg>
         </button>
         <h1 className="text-2xl font-semibold text-zinc-800">Results – Route map</h1> {/* Header title */}
+        {pendingPinMove && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cancelPendingPinMove}
+              className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={savePendingPinMove}
+              className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </header>
       <div className="flex flex-1 min-h-0">
         <div
           className={`shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // h-full so sidebar has a defined height for internal scrolling; overflow hidden so only the sidebar's scroll area scrolls
         >
-          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
+          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={handleEditModeChange} onUpdateStopNote={updateStopNote} />
         </div>
         {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 w-full overflow-hidden">
-            <MapComponent // Passing the current list of routes, edit mode state (determine if pins can be dragged yes/no), and the callback function updateStopCoordinates to the Map component (so when user drags a pin, call this function to update stop with new lat/lng)
+            <MapComponent
               routes={routes}
               isEditMode={isEditMode}
-              onUpdateStopCoordinates={updateStopCoordinates}
+              pendingPinMove={pendingPinMove}
+              onPendingPinMove={onPendingPinMove}
             />
           </div>
         </div>
