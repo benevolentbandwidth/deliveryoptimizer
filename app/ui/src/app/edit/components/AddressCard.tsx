@@ -68,10 +68,8 @@ export default function AddressCard({
   addressTouched,
   geocodeFailed,
 }: AddressCardProps) {
+  const [expanded, setExpanded] = useState(!a.locked);
 
-  const [manualExpanded, setManualExpanded] = useState(false);
-  const expanded = !a.locked || manualExpanded;
-  
   const addrInvalid = geocodeFailed || (addressTouched && !a.recipientAddress.trim());
   const qtyInvalid = addressTouched && a.deliveryQuantity <= 0;
 
