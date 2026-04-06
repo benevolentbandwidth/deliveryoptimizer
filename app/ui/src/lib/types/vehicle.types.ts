@@ -4,7 +4,8 @@ export type VehicleType = "truck" | "car" | "bicycle"
 
 export type VehicleInput = {
   id: number
-  vehicleType: VehicleType
+  vehicleType: string
+  driverName?: string
   startLocation: Location
   endLocation?: Location
   capacity: Load
