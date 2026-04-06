@@ -93,7 +93,7 @@ export function addressCardToDeliveryInput(
     id: a.id,
     address: a.recipientAddress,
     location,
-    bufferTime: timeBufferToSeconds(a.timeBuffer),
+    bufferTime: a.timeBuffer ? timeBufferToSeconds(a.timeBuffer) : 0,
     demand: { type: "units", value: a.deliveryQuantity },
     ...(timeWindow && { timeWindows: [timeWindow] }),  };
 }
