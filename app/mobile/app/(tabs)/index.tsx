@@ -14,6 +14,8 @@ if (Platform.OS === 'android') {
 export default function HomeScreen() {
   const [route, setRoute] = useState<DriverRoute | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [reportingStopId, setReportingStopId] = useState<string | null>(null);
+  const [failureReason, setFailureReason] = useState('');
 
   const handleImportJson = async () => {
     try {
@@ -78,7 +80,22 @@ export default function HomeScreen() {
   };
 
   const handleReport = (stopId: string) => {
-    console.log('Report stop:', stopId);
+    setReportingStopId(stopId);
+    setOpenId(stopId);
+    setFailureReason('');
+  };
+
+  const handleSubmitFailure = (stopId: string, reason: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+    updateStop(stopId, {
+      status: 'failed',
+      failureReason: reason,
+    });
+
+    setReportingStopId(null);
+    setOpenId(null);
+    setFailureReason('');
   };
 
   const handleNavigate = (stopId: string) => {
@@ -157,6 +174,10 @@ export default function HomeScreen() {
             onComplete={() => handleComplete(stop.id)}
             onReport={() => handleReport(stop.id)}
             onNavigate={() => handleNavigate(stop.id)}
+            isReporting={reportingStopId === stop.id}
+            failureReason={failureReason}
+            onChangeFailureReason={setFailureReason}
+            onSubmitFailure={(reason) => handleSubmitFailure(stop.id, reason)}
           />
         ))}
 
@@ -174,6 +195,10 @@ export default function HomeScreen() {
                 onComplete={() => {}}
                 onReport={() => {}}
                 onNavigate={() => {}}
+                isReporting={false}
+                failureReason={''}
+                onChangeFailureReason={() => {}}
+                onSubmitFailure={() => {}}
               />
             ))}
           </View>

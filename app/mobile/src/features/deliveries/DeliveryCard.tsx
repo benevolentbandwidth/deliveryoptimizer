@@ -10,6 +10,10 @@ type Props = {
   onComplete: () => void;
   onReport: () => void;
   onNavigate?: () => void;
+  isReporting: boolean;
+  failureReason: string;
+  onChangeFailureReason: (value: string) => void;
+  onSubmitFailure: (reason: string) => void;
 };
 
 export default function DeliveryCard({
@@ -20,6 +24,10 @@ export default function DeliveryCard({
   onComplete,
   onReport,
   onNavigate,
+  isReporting,
+  failureReason,
+  onChangeFailureReason,
+  onSubmitFailure,
 }: Props) {
   const isCompleted = stop.status === 'completed';
   const isFailed = stop.status === 'failed';
@@ -78,7 +86,7 @@ export default function DeliveryCard({
             <Text style={styles.statusText}>Failure reason: {stop.failureReason}</Text>
           ) : null}
 
-          {!isDone && (
+          {!isDone && !isReporting && (
             <View style={styles.buttonRow}>
               <Pressable style={styles.actionButton} onPress={onComplete}>
                 <Text style={styles.actionText}>Complete</Text>
@@ -92,6 +100,21 @@ export default function DeliveryCard({
 
               <Pressable style={styles.actionButton} onPress={onReport}>
                 <Text style={styles.actionText}>Report</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {isReporting && (
+            <View>
+              <TextInput
+                style={styles.noteInput}
+                value={failureReason}
+                onChangeText={onChangeFailureReason}
+                placeholder="Enter failure reason"
+                multiline
+              />
+              <Pressable style={styles.actionButton} onPress={() => onSubmitFailure(failureReason)}>
+                <Text style={styles.actionText}>Mark as Failed</Text>
               </Pressable>
             </View>
           )}
