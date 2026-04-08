@@ -35,9 +35,13 @@ export function useAddresses() {
     ignoreLocation: true,   // don't penalize matches far from string start
   }), [addresses]);
 
-  const filteredAddresses = searchQuery.trim() === ""
-    ? addresses
-    : fuse.search(searchQuery).map((result) => result.item);
+  const filteredAddresses = useMemo(
+    () =>
+      searchQuery.trim() === ""
+        ? addresses
+        : fuse.search(searchQuery).map((result) => result.item),
+    [addresses, fuse, searchQuery]
+  );
 
   const isSearchActive = searchQuery.trim() !== "";
 
