@@ -127,15 +127,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 8. Check that all vehicles are locked and have a type and capacity unit.
-      const lockedVehicles = availableVehicles.filter(isLocked);
-
-      if (lockedVehicles.length !== availableVehicles.length) {
-        setOptimizeError("One or more vehicles are missing type or capacity unit.");
-        return;
-      }
-
-      // 9. Map form data to API types.
+      // 8. Map form data to API types.
       const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -144,7 +136,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
       ).filter((d) => d !== undefined);
 
-      // 10. POST to /api/optimize.
+      // 9. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -168,7 +160,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 11. Store result for the caller to consume.
+      // 10. Store result for the caller to consume.
       setResult(data);
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
