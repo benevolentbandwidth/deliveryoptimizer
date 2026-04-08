@@ -85,9 +85,6 @@ SolveCoordinator::~SolveCoordinator() {
   }
   condition_.notify_all();
 
-  queue_timer_ = std::jthread{};
-  workers_.clear();
-
   for (auto& queued_request : drained_queue) {
     EnqueueCompletion([callback = std::move(queued_request.callback)]() mutable {
       callback(CoordinatedSolveResult{
@@ -96,6 +93,9 @@ SolveCoordinator::~SolveCoordinator() {
       });
     });
   }
+
+  queue_timer_ = std::jthread{};
+  workers_.clear();
 
   {
     std::lock_guard<std::mutex> lock(completion_mutex_);
