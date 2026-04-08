@@ -190,7 +190,7 @@ export default function VehicleRow({
           </div>
           <MobileFieldLabel>Capacity Unit</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.capacityUnit === "cubic_feet" ? "Cubic Feet" : capitalize(v.capacityUnit)}</span>
           </div>
           <MobileFieldLabel>Capacity</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
@@ -358,7 +358,7 @@ export default function VehicleRow({
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.type)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.capacityUnit === "cubic_feet" ? "Cubic Feet" : capitalize(v.capacityUnit)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.capacity}</span>
