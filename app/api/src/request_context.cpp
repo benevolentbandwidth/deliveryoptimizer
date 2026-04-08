@@ -27,7 +27,7 @@ void EnsureRequestContext(const drogon::HttpRequestPtr& request) {
 
   attributes->insert(std::string{kRequestContextAttributeKey},
                      RequestContext{
-                         .request_id = drogon::utils::getUuid(true),
+                         .request_id = drogon::utils::getUuid(),
                          .started_at = std::chrono::steady_clock::now(),
                      });
 }
@@ -48,7 +48,7 @@ std::optional<RequestContext> GetRequestContext(const drogon::HttpRequestPtr& re
 SolveLifecycle CreateSolveLifecycle(const drogon::HttpRequestPtr& request) {
   EnsureRequestContext(request);
   const RequestContext context = GetRequestContext(request).value_or(RequestContext{
-      .request_id = drogon::utils::getUuid(true),
+      .request_id = drogon::utils::getUuid(),
       .started_at = std::chrono::steady_clock::now(),
   });
 

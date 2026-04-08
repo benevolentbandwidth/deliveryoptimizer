@@ -11,11 +11,26 @@
 #include <drogon/drogon.h>
 
 #include <chrono>
+#include <type_traits>
 
 namespace {
 
 constexpr std::size_t kMaxRequestBodyBytes = 10U * 1024U * 1024U;
 constexpr std::size_t kParserMaxRequestBodyBytes = 12U * 1024U * 1024U;
+
+[[nodiscard]] std::string GenerateRequestId() {
+  return drogon::utils::getUuid();
+}
+
+template <typename ErrorHandler>
+[[nodiscard]] drogon::HttpResponsePtr InvokeErrorHandler(const ErrorHandler& handler,
+                                                         const drogon::HttpStatusCode code) {
+  if constexpr (std::is_invocable_v<ErrorHandler, drogon::HttpStatusCode>) {
+    return handler(code);
+  } else {
+    return handler(code, nullptr);
+  }
+}
 
 } // namespace
 
@@ -32,29 +47,17 @@ int RunApiServer() {
       return;
     }
 
-    response->addHeader(std::string{kRequestIdHeader}, drogon::utils::getUuid(true));
+    response->addHeader(std::string{kRequestIdHeader}, GenerateRequestId());
   });
-  app.setCustomErrorHandler(
-      [default_error_handler](const drogon::HttpStatusCode code,
-                              const drogon::HttpRequestPtr& request) {
-        if (request != nullptr) {
-          EnsureRequestContext(request);
-        }
-
-        auto response = default_error_handler(code, request);
+  app.setCustomErrorHandler([default_error_handler](const drogon::HttpStatusCode code) {
+        auto response = InvokeErrorHandler(default_error_handler, code);
         if (response == nullptr) {
           return response;
         }
 
-        const std::string request_id =
-            request == nullptr
-                ? drogon::utils::getUuid(true)
-                : GetRequestContext(request).value_or(RequestContext{
-                      .request_id = drogon::utils::getUuid(true),
-                      .started_at = std::chrono::steady_clock::now(),
-                  }).request_id;
-        response->removeHeader(std::string{kRequestIdHeader});
-        response->addHeader(std::string{kRequestIdHeader}, request_id);
+        if (response->getHeader(std::string{kRequestIdHeader}).empty()) {
+          response->addHeader(std::string{kRequestIdHeader}, GenerateRequestId());
+        }
         return response;
       });
   app.registerSyncAdvice([observability](const drogon::HttpRequestPtr& request) {
