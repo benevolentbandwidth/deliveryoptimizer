@@ -4,6 +4,23 @@
 #include <gtest/gtest.h>
 #include <string>
 
+namespace {
+
+deliveryoptimizer::api::SolveLifecycle BuildLifecycle(const std::string& request_id) {
+  const auto completed_at = std::chrono::steady_clock::now();
+  return deliveryoptimizer::api::SolveLifecycle{
+      .request_id = request_id,
+      .method = "POST",
+      .path = "/api/v1/deliveries/optimize",
+      .jobs = 1U,
+      .vehicles = 1U,
+      .request_started_at = completed_at,
+      .completed_at = completed_at,
+  };
+}
+
+} // namespace
+
 TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndBuckets) {
   deliveryoptimizer::api::ObservabilityRegistry registry;
   registry.RecordAccepted();
@@ -36,5 +53,29 @@ TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndB
             std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_duration_seconds_sum 0.5"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_request_duration_seconds_sum 1.5"),
+            std::string::npos);
+}
+
+TEST(ObservabilityRegistryTest, DropsPendingLogLinesWhenAsyncQueueIsFull) {
+  deliveryoptimizer::api::ObservabilityRegistry registry(
+      deliveryoptimizer::api::ObservabilityOptions{
+          .max_pending_log_lines = 2U,
+          .start_log_writer = false,
+      });
+
+  registry.LogSolveRequest(BuildLifecycle("request-1"),
+                           deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+  registry.LogSolveRequest(BuildLifecycle("request-2"),
+                           deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+  registry.LogSolveRequest(BuildLifecycle("request-3"),
+                           deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+  registry.LogSolveRequest(BuildLifecycle("request-4"),
+                           deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+  registry.LogSolveRequest(BuildLifecycle("request-5"),
+                           deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+
+  const std::string rendered = registry.RenderPrometheusText();
+
+  EXPECT_NE(rendered.find("deliveryoptimizer_request_tracker_write_failures_total 3"),
             std::string::npos);
 }

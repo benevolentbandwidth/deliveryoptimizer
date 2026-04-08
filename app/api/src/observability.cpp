@@ -159,11 +159,15 @@ std::string_view ToOutcomeString(const SolveRequestOutcome outcome) {
   return "failed";
 }
 
-ObservabilityRegistry::ObservabilityRegistry()
-    : queue_wait_histogram_(std::make_unique<Histogram>()),
+ObservabilityRegistry::ObservabilityRegistry(const ObservabilityOptions options)
+    : max_pending_log_lines_(options.max_pending_log_lines),
+      queue_wait_histogram_(std::make_unique<Histogram>()),
       solve_duration_histogram_(std::make_unique<Histogram>()),
-      request_duration_histogram_(std::make_unique<Histogram>()),
-      log_writer_([this] { LogWriterLoop(); }) {}
+      request_duration_histogram_(std::make_unique<Histogram>()) {
+  if (options.start_log_writer) {
+    log_writer_ = std::thread([this] { LogWriterLoop(); });
+  }
+}
 
 ObservabilityRegistry::~ObservabilityRegistry() {
   {
@@ -327,7 +331,8 @@ std::string ObservabilityRegistry::RenderPrometheusText() const {
                 "Count of accepted solver requests that failed with a backend error.",
                 failed_requests_.load(std::memory_order_relaxed));
   AppendCounter(output, "deliveryoptimizer_request_tracker_write_failures_total",
-                "Count of request tracker write failures.", tracker_write_failures_.load(std::memory_order_relaxed));
+                "Count of request tracker log lines dropped or failed during write.",
+                tracker_write_failures_.load(std::memory_order_relaxed));
 
   AppendGauge(output, "deliveryoptimizer_solver_inflight",
               "Current number of inflight solver executions.", InflightSolves());
@@ -349,7 +354,7 @@ std::string ObservabilityRegistry::RenderPrometheusText() const {
 
 void ObservabilityRegistry::LogSolveRequest(const SolveLifecycle& lifecycle,
                                             const SolveRequestOutcome outcome,
-                                            const std::uint16_t http_status) const {
+                                            const std::uint16_t http_status) {
   const auto completed_at = lifecycle.completed_at.value_or(SteadyClock::now());
   const auto request_duration = completed_at - lifecycle.request_started_at;
 
@@ -376,11 +381,24 @@ void ObservabilityRegistry::LogSolveRequest(const SolveLifecycle& lifecycle,
 
   const std::string rendered_line = Json::writeString(writer_builder, log_line);
 
+  bool notify_writer = false;
   {
     std::lock_guard<std::mutex> lock(log_mutex_);
-    pending_log_lines_.push_back(rendered_line);
+    if (max_pending_log_lines_ == 0U) {
+      tracker_write_failures_.fetch_add(1U, std::memory_order_relaxed);
+    } else {
+      if (pending_log_lines_.size() >= max_pending_log_lines_) {
+        // Prefer the newest request summaries once the async logger is saturated.
+        pending_log_lines_.pop_front();
+        tracker_write_failures_.fetch_add(1U, std::memory_order_relaxed);
+      }
+      pending_log_lines_.push_back(rendered_line);
+      notify_writer = true;
+    }
   }
-  log_condition_.notify_one();
+  if (notify_writer) {
+    log_condition_.notify_one();
+  }
 }
 
 void ObservabilityRegistry::LogWriterLoop() {

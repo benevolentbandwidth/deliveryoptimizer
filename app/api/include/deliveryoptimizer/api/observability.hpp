@@ -59,6 +59,11 @@ enum class SolveRequestOutcome : std::uint8_t {
   kRequestTooLarge,
 };
 
+struct ObservabilityOptions {
+  std::size_t max_pending_log_lines{1024U};
+  bool start_log_writer{true};
+};
+
 void EnsureRequestContext(const drogon::HttpRequestPtr& request);
 [[nodiscard]] std::optional<RequestContext> GetRequestContext(const drogon::HttpRequestPtr& request);
 [[nodiscard]] SolveLifecycle CreateSolveLifecycle(const drogon::HttpRequestPtr& request);
@@ -69,7 +74,7 @@ void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observab
 
 class ObservabilityRegistry {
 public:
-  ObservabilityRegistry();
+  explicit ObservabilityRegistry(ObservabilityOptions options = {});
   ~ObservabilityRegistry();
 
   ObservabilityRegistry(const ObservabilityRegistry&) = delete;
@@ -92,7 +97,7 @@ public:
   [[nodiscard]] std::uint64_t InflightSolves() const;
   [[nodiscard]] std::string RenderPrometheusText() const;
   void LogSolveRequest(const SolveLifecycle& lifecycle, SolveRequestOutcome outcome,
-                       std::uint16_t http_status) const;
+                       std::uint16_t http_status);
 
 private:
   struct Histogram;
@@ -105,12 +110,13 @@ private:
   std::atomic<std::uint64_t> tracker_write_failures_{0U};
   std::atomic<std::uint64_t> queue_depth_{0U};
   std::atomic<std::uint64_t> inflight_solves_{0U};
+  std::size_t max_pending_log_lines_{0U};
   std::unique_ptr<Histogram> queue_wait_histogram_;
   std::unique_ptr<Histogram> solve_duration_histogram_;
   std::unique_ptr<Histogram> request_duration_histogram_;
-  mutable std::mutex log_mutex_;
-  mutable std::condition_variable log_condition_;
-  mutable std::deque<std::string> pending_log_lines_;
+  std::mutex log_mutex_;
+  std::condition_variable log_condition_;
+  std::deque<std::string> pending_log_lines_;
   bool log_shutdown_{false};
   std::thread log_writer_;
 };
