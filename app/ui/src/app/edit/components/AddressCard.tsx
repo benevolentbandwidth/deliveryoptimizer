@@ -68,7 +68,7 @@ export default function AddressCard({
   addressTouched,
   geocodeFailed,
 }: AddressCardProps) {
-
+  
   const [manualExpanded, setManualExpanded] = useState(false);
   const expanded = !a.locked || manualExpanded;
   
