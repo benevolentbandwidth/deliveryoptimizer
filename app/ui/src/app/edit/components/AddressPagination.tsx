@@ -6,6 +6,7 @@
 
 import {
   PAGINATION_ICON_BUTTON,
+  PAGINATION_ICON_BUTTON_DISABLED,
   PAGINATION_PAGE_ACTIVE,
   PAGINATION_PAGE_IDLE,
   PAGINATION_ROW,
@@ -22,16 +23,20 @@ export default function AddressPagination({
   setAddressPage,
   totalAddressPages,
 }: AddressPaginationProps) {
+  const isFirst = addressPage <= 1;
+  const isLast = addressPage >= totalAddressPages;
+
   return (
     <div className={PAGINATION_ROW}>
       {/* Step backward one page when not on the first page */}
       <button
         type="button"
-        onClick={() => addressPage > 1 && setAddressPage(addressPage - 1)}
-        className={PAGINATION_ICON_BUTTON}
+        disabled={isFirst}
+        onClick={() => !isFirst && setAddressPage(addressPage - 1)}
+        className={isFirst ? PAGINATION_ICON_BUTTON_DISABLED : PAGINATION_ICON_BUTTON}
       >
         <svg width="6" height="14" viewBox="0 0 6 14" fill="none">
-          <path d="M5 1L1 7L5 13" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M5 1L1 7L5 13" stroke={isFirst ? "#a1a1aa" : "black"} strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
       {/* Direct jump to any page in range */}
@@ -50,11 +55,12 @@ export default function AddressPagination({
       {/* Step forward when not on the last page */}
       <button
         type="button"
-        onClick={() => addressPage < totalAddressPages && setAddressPage(addressPage + 1)}
-        className={PAGINATION_ICON_BUTTON}
+        disabled={isLast}
+        onClick={() => !isLast && setAddressPage(addressPage + 1)}
+        className={isLast ? PAGINATION_ICON_BUTTON_DISABLED : PAGINATION_ICON_BUTTON}
       >
         <svg width="6" height="14" viewBox="0 0 6 14" fill="none">
-          <path d="M1 1L5 7L1 13" stroke="black" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M1 1L5 7L1 13" stroke={isLast ? "#a1a1aa" : "black"} strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
     </div>

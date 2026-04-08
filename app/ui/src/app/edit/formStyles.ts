@@ -276,6 +276,9 @@ export const PAGINATION_ROW = "flex items-center justify-center gap-2 sm:gap-4 p
 export const PAGINATION_ICON_BUTTON =
   "w-11 h-11 bg-zinc-300 rounded-3xl flex items-center justify-center hover:bg-zinc-400 transition-colors cursor-pointer";
 
+export const PAGINATION_ICON_BUTTON_DISABLED =
+  "w-11 h-11 bg-zinc-100 rounded-3xl flex items-center justify-center cursor-not-allowed opacity-40";
+
 export const PAGINATION_PAGE_ACTIVE =
   "min-w-[2.75rem] h-11 rounded-3xl flex items-center justify-center text-base font-manrope text-black cursor-pointer transition-colors bg-zinc-300 font-semibold ring-2 ring-zinc-500 ring-offset-2 hover:bg-zinc-400";
 
