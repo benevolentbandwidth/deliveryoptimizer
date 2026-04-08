@@ -32,6 +32,19 @@ ToCoordinatedSolveResult(const deliveryoptimizer::api::VroomRunResult& result) {
   return std::chrono::steady_clock::now() >= deadline;
 }
 
+[[nodiscard]] std::chrono::steady_clock::time_point
+BuildQueueDeadline(const std::chrono::milliseconds queue_wait) {
+  const auto now = std::chrono::steady_clock::now();
+  const auto remaining_until_max = std::chrono::steady_clock::time_point::max() - now;
+  const auto remaining_ms =
+      std::chrono::duration_cast<std::chrono::milliseconds>(remaining_until_max);
+  if (queue_wait > remaining_ms) {
+    return std::chrono::steady_clock::time_point::max();
+  }
+
+  return now + queue_wait;
+}
+
 } // namespace
 
 namespace deliveryoptimizer::api {
@@ -84,7 +97,7 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
       .sequence_number = next_sequence_number_++,
       .payload_factory = std::move(payload_factory),
       .callback = std::move(callback),
-      .deadline = std::chrono::steady_clock::now() + config_.max_queue_wait,
+      .deadline = BuildQueueDeadline(config_.max_queue_wait),
   });
   condition_.notify_all();
   return SolveAdmissionStatus::kAccepted;
@@ -120,7 +133,6 @@ void SolveCoordinator::WorkerLoop() {
 
     const VroomRunResult solve_result = runner_->Run(queued_request->payload_factory());
     queued_request->callback(ToCoordinatedSolveResult(solve_result));
-
     {
       std::lock_guard<std::mutex> lock(mutex_);
       --active_solves_;

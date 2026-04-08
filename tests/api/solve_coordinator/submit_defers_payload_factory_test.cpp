@@ -51,6 +51,39 @@ private:
   mutable bool released_{false};
 };
 
+class ImmediateRunner final : public deliveryoptimizer::api::VroomRunner {
+public:
+  deliveryoptimizer::api::VroomRunResult Run(const Json::Value& input) const override {
+    (void)input;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      ++run_count_;
+    }
+    condition_.notify_all();
+    return deliveryoptimizer::api::VroomRunResult{
+        .status = deliveryoptimizer::api::VroomRunStatus::kSuccess,
+        .output = Json::Value{Json::objectValue},
+    };
+  }
+
+  [[nodiscard]] std::size_t run_count() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return run_count_;
+  }
+
+  [[nodiscard]] bool WaitForRunCount(const std::size_t expected_runs,
+                                     const std::chrono::milliseconds timeout) const {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return condition_.wait_for(lock, timeout,
+                               [this, expected_runs] { return run_count_ >= expected_runs; });
+  }
+
+private:
+  mutable std::mutex mutex_;
+  mutable std::condition_variable condition_;
+  mutable std::size_t run_count_{0U};
+};
+
 deliveryoptimizer::api::SolveAdmissionConfig BuildConfig() {
   return deliveryoptimizer::api::SolveAdmissionConfig{
       .max_concurrency = 1U,
@@ -188,4 +221,33 @@ TEST(SolveCoordinatorTest, WorkerRejectsQueuedSolveThatExpiredBeforeDequeue) {
   EXPECT_EQ(second_result_future.get().status,
             deliveryoptimizer::api::CoordinatedSolveStatus::kQueueWaitTimedOut);
   EXPECT_FALSE(second_payload_factory_called.load());
+}
+
+TEST(SolveCoordinatorTest, AcceptedSolveWithMaximumQueueWaitDoesNotTimeOutImmediately) {
+  auto runner = std::make_shared<ImmediateRunner>();
+  auto config = BuildConfig();
+  config.max_queue_wait = std::chrono::milliseconds::max();
+  deliveryoptimizer::api::SolveCoordinator coordinator(
+      config, runner, deliveryoptimizer::api::SolveCoordinatorOptions{.enable_queue_timer = false});
+  std::promise<deliveryoptimizer::api::CoordinatedSolveResult> result_promise;
+  auto result_future = result_promise.get_future();
+  std::atomic<bool> payload_factory_called{false};
+
+  ASSERT_EQ(coordinator.Submit(
+                deliveryoptimizer::api::SolveRequestSize{
+                    .jobs = 1U,
+                    .vehicles = 1U,
+                },
+                [&payload_factory_called] {
+                  payload_factory_called.store(true);
+                  return Json::Value{Json::objectValue};
+                },
+                [&result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+                  result_promise.set_value(result);
+                }),
+            deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+
+  EXPECT_EQ(result_future.get().status, deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
+  EXPECT_TRUE(payload_factory_called.load());
+  EXPECT_EQ(runner->run_count(), 1U);
 }
