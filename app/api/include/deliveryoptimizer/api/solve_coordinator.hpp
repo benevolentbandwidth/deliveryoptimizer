@@ -65,7 +65,6 @@ private:
   using CompletionTask = std::function<void()>;
 
   struct QueuedSolveRequest {
-    std::uint64_t sequence_number;
     PayloadFactory payload_factory;
     CompletionCallback callback;
     std::chrono::steady_clock::time_point deadline;
@@ -95,7 +94,6 @@ private:
   std::deque<CompletionTask> completion_queue_;
   std::vector<std::jthread> completion_workers_;
   std::size_t active_solves_{0U};
-  std::uint64_t next_sequence_number_{1U};
   std::uint64_t queue_version_{0U};
   bool shutting_down_{false};
   bool completion_shutting_down_{false};

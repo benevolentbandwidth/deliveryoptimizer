@@ -823,8 +823,6 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
           respond_with_completion(BuildAdmissionRejectionResponse(admission_status));
           return;
         }
-
-        observability->RecordAccepted();
       },
       {drogon::Post});
 }

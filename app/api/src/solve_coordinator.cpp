@@ -167,7 +167,6 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
     lifecycle->completed_at.reset();
   }
   queue_.push_back(QueuedSolveRequest{
-      .sequence_number = next_sequence_number_++,
       .payload_factory = std::move(payload_factory),
       .callback = std::move(callback),
       .deadline = started_immediately ? std::chrono::steady_clock::time_point::max()
@@ -176,6 +175,7 @@ SolveAdmissionStatus SolveCoordinator::Submit(const SolveRequestSize& request_si
       .started_immediately = started_immediately,
   });
   ++queue_version_;
+  observability_->RecordAccepted();
   observability_->SetSolverState(queue_.size(), active_solves_);
   UpdateLifecycleState(queue_.back().lifecycle, queue_.size(), active_solves_);
   condition_.notify_all();

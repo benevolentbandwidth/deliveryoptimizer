@@ -9,6 +9,7 @@
 #include <json/json.h>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 
 namespace {
@@ -52,6 +53,17 @@ private:
   mutable std::condition_variable condition_;
   mutable bool started_{false};
   mutable bool released_{false};
+};
+
+class ImmediateRunner final : public deliveryoptimizer::api::VroomRunner {
+public:
+  deliveryoptimizer::api::VroomRunResult Run(const Json::Value& input) const override {
+    (void)input;
+    return deliveryoptimizer::api::VroomRunResult{
+        .status = deliveryoptimizer::api::VroomRunStatus::kSuccess,
+        .output = Json::Value{Json::objectValue},
+    };
+  }
 };
 
 [[nodiscard]] deliveryoptimizer::api::SolveAdmissionConfig BuildConfig() {
@@ -116,6 +128,36 @@ TEST(SolveCoordinatorLifecycleTest, RecordsLifecycleAndGaugeTransitionsForSucces
   EXPECT_GE(lifecycle->solve_duration, SteadyClock::duration::zero());
   EXPECT_EQ(observability->InflightSolves(), 0U);
   EXPECT_EQ(observability->QueueDepth(), 0U);
+}
+
+TEST(SolveCoordinatorLifecycleTest, RecordsAcceptedBeforeCompletionCallbackRuns) {
+  auto runner = std::make_shared<ImmediateRunner>();
+  auto observability = std::make_shared<deliveryoptimizer::api::ObservabilityRegistry>();
+  deliveryoptimizer::api::SolveCoordinator coordinator(BuildConfig(), runner, {},
+                                                       observability);
+
+  auto lifecycle = BuildLifecycle("req-accepted-metric");
+  std::promise<std::string> metrics_promise;
+  auto metrics_future = metrics_promise.get_future();
+
+  ASSERT_EQ(
+      coordinator.Submit(
+          deliveryoptimizer::api::SolveRequestSize{
+              .jobs = 1U,
+              .vehicles = 1U,
+          },
+          [] { return Json::Value{Json::objectValue}; },
+          [&metrics_promise,
+           observability](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+            EXPECT_EQ(result.status, deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
+            metrics_promise.set_value(observability->RenderPrometheusText());
+          },
+          lifecycle),
+      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+
+  const std::string rendered = metrics_future.get();
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_accepted_total 1"),
+            std::string::npos);
 }
 
 TEST(SolveCoordinatorLifecycleTest, RecordsQueuedTimeoutAndQueueGaugeTransitions) {
