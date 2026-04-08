@@ -40,11 +40,12 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
-  const onPendingPinMove = useCallback((routeId: string, stopId: string, lat: number, lng: number) => {
+  // Before we had updateStopCoordinates which on every drag it called setRoutes so the official routes changes immediately, without any save or cancel. However, now the drag should only update the draft and save should be the moment the routes change (which is through onPendingMove)
+  const onPendingPinMove = useCallback((routeId: string, stopId: string, lat: number, lng: number) => { // Function the map calls after a user has dragged a pin to a new location, only runs setPendingPinMove to update the temporary data in pendingPinMove state
     setPendingPinMove({ routeId, stopId, lat, lng });
   }, []);
 
-  const savePendingPinMove = useCallback(() => {
+  const savePendingPinMove = useCallback(() => { // Function that's called when save button is clicked. It copies the pendingPinMove data into the official routes state, then clears pendingPinMove to reset the temporary data
     if (!pendingPinMove) return;
     const { routeId, stopId, lat, lng } = pendingPinMove;
     setRoutes((prev) =>
@@ -59,7 +60,7 @@ export default function ResultsPage() {
     setPendingPinMove(null);
   }, [pendingPinMove]);
 
-  const cancelPendingPinMove = useCallback(() => {
+  const cancelPendingPinMove = useCallback(() => { // Function that's called when cancel button is clicked. It simply clears pendingPinMove to reset the temporary data
     setPendingPinMove(null);
   }, []);
 
@@ -105,7 +106,7 @@ export default function ResultsPage() {
         {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 w-full overflow-hidden">
-            <MapComponent
+            <MapComponent //
               routes={routes}
               isEditMode={isEditMode}
               pendingPinMove={pendingPinMove}
