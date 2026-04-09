@@ -147,7 +147,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         const overflow = allBad.length - shown.length;
         const list = shown.map((s) => `"${s}"`).join(", ");
         const suffix =  overflow > 0 ? `, and ${overflow} more` : ""; 
-        setOptimizeError(`Unsupported region(s):${list}${suffix}. We currently only support CA, TX, and FL.`);
+        setOptimizeError(`Unsupported region(s): ${list}${suffix}. We currently only support CA, TX, and FL.`);
         return;
       }
 
@@ -158,7 +158,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
 
       const deliveryInputs = addresses.map((a) =>
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
-      ).filter((d) => d !== undefined);
+      );
 
       // 9. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
