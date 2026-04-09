@@ -9,17 +9,24 @@ target_sources(
     src/endpoints/health_endpoint.cpp
     src/endpoints/optimize_endpoint.cpp
     src/endpoints/osrm_proxy_endpoint.cpp
+    src/solve_admission.cpp
+    src/solve_coordinator.cpp
     src/server_options.cpp
+    src/vroom_runner.cpp
   PUBLIC
     FILE_SET HEADERS
     BASE_DIRS include
     FILES
       include/deliveryoptimizer/api/api_server.hpp
+      include/deliveryoptimizer/api/deliveries_optimize_limits.hpp
       include/deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/health_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp
+      include/deliveryoptimizer/api/solve_admission.hpp
+      include/deliveryoptimizer/api/solve_coordinator.hpp
       include/deliveryoptimizer/api/server_options.hpp
+      include/deliveryoptimizer/api/vroom_runner.hpp
 )
 target_include_directories(deliveryoptimizer_api_runtime PUBLIC include)
 target_compile_features(deliveryoptimizer_api_runtime PUBLIC cxx_std_20)

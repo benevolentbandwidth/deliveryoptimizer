@@ -12,6 +12,8 @@ export function normalizeVehicle(
   return {
     id: input.id,
 
+    profile: input.vehicleType,
+
     start: [
       input.startLocation.lng,
       input.startLocation.lat

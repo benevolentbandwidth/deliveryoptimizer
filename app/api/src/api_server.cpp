@@ -18,13 +18,13 @@ namespace deliveryoptimizer::api {
 
 int RunApiServer() {
   auto& app = drogon::app();
+  const auto options = LoadServerOptionsFromEnv();
 
   RegisterHealthEndpoint(app);
   RegisterOptimizeEndpoint(app);
-  RegisterDeliveriesOptimizeEndpoint(app);
+  RegisterDeliveriesOptimizeEndpoint(app, options.solve_admission);
   RegisterOsrmProxyEndpoint(app);
 
-  const auto options = LoadServerOptionsFromEnv();
   app.addListener("0.0.0.0", options.listen_port);
   app.setClientMaxBodySize(kMaxRequestBodyBytes);
   app.setThreadNum(options.worker_threads);
