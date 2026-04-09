@@ -44,6 +44,8 @@ export default function VehicleSection({
   outOfRegionVehicleIds,
 }: VehicleSectionProps) {
   const addEnabled = allVehiclesLocked || activeVehicleIsValid;
+  const geocodeFailedSet = new Set(geocodeFailedVehicleIds);
+  const outOfRegionSet = new Set(outOfRegionVehicleIds);
 
   return (
     <section>
@@ -70,8 +72,8 @@ export default function VehicleSection({
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
             vehicleTouched={touchedIds.has(v.id)}
-            geocodeFailed={geocodeFailedVehicleIds.includes(v.id)}
-            outOfRegionFailed={outOfRegionVehicleIds.includes(v.id)}
+            geocodeFailed={geocodeFailedSet.has(v.id)}
+            outOfRegionFailed={outOfRegionSet.has(v.id)}
           />
         ))}
       </div>
@@ -89,8 +91,8 @@ export default function VehicleSection({
             unlockVehicle={unlockVehicle}
             confirmVehicle={confirmVehicle}
             vehicleTouched={touchedIds.has(v.id)}
-            geocodeFailed={geocodeFailedVehicleIds.includes(v.id)}
-            outOfRegionFailed={outOfRegionVehicleIds.includes(v.id)}
+            geocodeFailed={geocodeFailedSet.has(v.id)}
+            outOfRegionFailed={outOfRegionSet.has(v.id)}
           />
         ))}
       </div>
