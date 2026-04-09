@@ -8,18 +8,7 @@ import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/o
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 import type { CapacityUnit } from "../types/delivery";
 
-// Rough bounding boxes for the three supported states.
-const SUPPORTED_REGIONS = [
-  { name: "CA", latMin: 32.5,  latMax: 42.0,  lngMin: -124.5, lngMax: -114.1 },
-  { name: "TX", latMin: 25.8,  latMax: 36.5,  lngMin: -106.7, lngMax:  -93.5 },
-  { name: "FL", latMin: 24.4,  latMax: 31.0,  lngMin:  -87.6, lngMax:  -80.0 },
-] as const;
-
-function isInSupportedRegion(lat: number, lng: number): boolean {
-  return SUPPORTED_REGIONS.some(
-    (r) => lat >= r.latMin && lat <= r.latMax && lng >= r.lngMin && lng <= r.lngMax
-  );
-}
+const SUPPORTED_STATES = new Set(["California", "Texas", "Florida"]);
 
 // ensure that vehicleType and capacityUnit are not empty
 function isLocked(v: VehicleRow): v is LockedVehicleRow {
@@ -83,7 +72,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     // 6. Geocode all vehicle start locations and delivery addresses, collecting every failure.
     setIsOptimizing(true);
     try {
-      const vehicleLocations: Map<number, { lat: number; lng: number }> = new Map();
+      const vehicleLocations: Map<number, { lat: number; lng: number; state: string | null }> = new Map();
       const failedVehicles: { id: number; location: string }[] = [];
       for (const v of availableVehicles) {
         const loc = await geocodeAddress(v.startLocation);
@@ -94,7 +83,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         }
       }
 
-      const addressLocations: Map<number, { lat: number; lng: number }> = new Map();
+      const addressLocations: Map<number, { lat: number; lng: number; state: string | null }> = new Map();
       const failedAddresses: { id: number; address: string }[] = [];
       for (const a of addresses) {
         const loc = await geocodeAddress(a.recipientAddress);
@@ -120,17 +109,17 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
       
-      // 7. Reject any coordinate that falls outside CA, TX, or FL.
+      // 7. Reject any address whose state falls outside CA, TX, or FL.
       const badVehicleAddresses: { id: number; location: string }[] = [];
       for (const [id, loc] of vehicleLocations) {
-        if (!isInSupportedRegion(loc.lat, loc.lng)) {
+        if (!loc.state || !SUPPORTED_STATES.has(loc.state)) {
           const v = availableVehicles.find((v) => v.id === id)!;
           badVehicleAddresses.push({ id, location: v.startLocation });
         }
       }
       const badDeliveryAddresses: { id: number; address: string }[] = [];
       for (const [id, loc] of addressLocations) {
-        if (!isInSupportedRegion(loc.lat, loc.lng)) {
+        if (!loc.state || !SUPPORTED_STATES.has(loc.state)) {
           const a = addresses.find((a) => a.id === id)!;
           badDeliveryAddresses.push({ id, address: a.recipientAddress });
         }
