@@ -13,6 +13,10 @@ Port configuration defaults to `8080` for both the host mapping and the app list
 Use `DELIVERYOPTIMIZER_HOST_PORT` to change the host-facing port. If you need the API to bind a
 different in-container port, update the container environment and the compose port mapping together.
 
+Prometheus metrics stay disabled by default. If you enable `DELIVERYOPTIMIZER_ENABLE_METRICS=1`,
+the `/metrics` endpoint shares the same listener as the solve API, so only expose that port to
+trusted internal scrapers.
+
 ## Run on ARM host
 
 From the repository root:

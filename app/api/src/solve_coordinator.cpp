@@ -82,7 +82,9 @@ SolveCoordinator::SolveCoordinator(SolveAdmissionConfig config,
       runner_(std::move(runner)),
       observability_(std::move(observability)) {
   if (observability_ == nullptr) {
-    observability_ = std::make_shared<ObservabilityRegistry>();
+    observability_ = std::make_shared<ObservabilityRegistry>(ObservabilityOptions{
+        .start_log_writer = options_.start_workers,
+    });
   }
   observability_->SetSolverState(0U, 0U);
 

@@ -11,6 +11,7 @@ namespace deliveryoptimizer::api {
 struct ServerOptions {
   std::uint16_t listen_port;
   std::size_t worker_threads;
+  bool enable_metrics{false};
   SolveAdmissionConfig solve_admission;
 };
 

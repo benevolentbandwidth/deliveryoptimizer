@@ -33,6 +33,8 @@ struct CoordinatedSolveResult {
 struct SolveCoordinatorOptions {
   bool enable_queue_timer{true};
   std::optional<std::size_t> completion_worker_count;
+  // Test hook: when false, the coordinator also suppresses the async log writer
+  // if it has to create its own observability registry.
   bool start_workers{true};
 };
 

@@ -380,6 +380,16 @@ deliveryoptimizer_set_local_http_test_port(
   41000
 )
 deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiValidationTest.MetricsEndpointDisabledByDefault
+  metrics_endpoint_disabled_by_default_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.MetricsEndpointDisabledByDefault
+  38100
+)
+deliveryoptimizer_add_local_http_test(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve
   deliveries_optimize_accepts_small_sync_solve_test.sh
   30

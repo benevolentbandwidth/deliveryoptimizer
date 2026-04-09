@@ -95,7 +95,9 @@ int RunApiServer() {
   });
 
   RegisterHealthEndpoint(app);
-  RegisterMetricsEndpoint(app, observability);
+  if (options.enable_metrics) {
+    RegisterMetricsEndpoint(app, observability);
+  }
   RegisterOptimizeEndpoint(app);
   RegisterDeliveriesOptimizeEndpoint(app, options.solve_admission, observability);
   RegisterOsrmProxyEndpoint(app);

@@ -28,6 +28,7 @@ chmod +x "${stub_bin}"
 http_server_start \
   VROOM_BIN="${stub_bin}" \
   VROOM_CALLED_FILE="${vroom_called_file}" \
+  DELIVERYOPTIMIZER_ENABLE_METRICS=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_QUEUE_SIZE=1 \
   DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS=1000 \
@@ -100,6 +101,7 @@ fi
 
 for expected in \
   'deliveryoptimizer_solver_requests_accepted_total 1' \
+  'deliveryoptimizer_solver_requests_succeeded_total 1' \
   'deliveryoptimizer_solver_queue_depth 0' \
   'deliveryoptimizer_solver_inflight 0'; do
   if ! grep -Fq "${expected}" "${metrics_file}"; then

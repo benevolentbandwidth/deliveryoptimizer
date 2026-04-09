@@ -64,6 +64,7 @@ with open(payload_path, "w", encoding="utf-8") as handle:
 PY
 
 DELIVERYOPTIMIZER_PORT="${port}" \
+DELIVERYOPTIMIZER_ENABLE_METRICS=1 \
 VROOM_BIN="/usr/bin/true" \
 "${api_binary}" >"${tmpdir}/server.log" 2>&1 &
 server_pid=$!
@@ -120,6 +121,7 @@ fi
 for expected in \
   'deliveryoptimizer_solver_request_duration_seconds_count 1' \
   'deliveryoptimizer_solver_requests_accepted_total 0' \
+  'deliveryoptimizer_solver_requests_succeeded_total 0' \
   'deliveryoptimizer_solver_requests_rejected_total 0' \
   'deliveryoptimizer_solver_requests_timed_out_total 0' \
   'deliveryoptimizer_solver_requests_failed_total 0'; do

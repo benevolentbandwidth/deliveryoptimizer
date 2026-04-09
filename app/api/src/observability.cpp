@@ -184,6 +184,10 @@ void ObservabilityRegistry::RecordAccepted() {
   accepted_requests_.fetch_add(1U, std::memory_order_relaxed);
 }
 
+void ObservabilityRegistry::RecordSucceeded() {
+  succeeded_requests_.fetch_add(1U, std::memory_order_relaxed);
+}
+
 void ObservabilityRegistry::RecordRejected() {
   rejected_requests_.fetch_add(1U, std::memory_order_relaxed);
 }
@@ -247,6 +251,9 @@ void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observab
   }
 
   switch (outcome) {
+  case SolveRequestOutcome::kSucceeded:
+    observability->RecordSucceeded();
+    break;
   case SolveRequestOutcome::kRejectedTooManyJobs:
   case SolveRequestOutcome::kRejectedTooManyVehicles:
   case SolveRequestOutcome::kRejectedQueueFull:
@@ -261,7 +268,6 @@ void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observab
       observability->RecordFailed();
     }
     break;
-  case SolveRequestOutcome::kSucceeded:
   case SolveRequestOutcome::kInvalidJson:
   case SolveRequestOutcome::kValidationFailed:
   case SolveRequestOutcome::kRequestTooLarge:
@@ -319,8 +325,11 @@ std::string ObservabilityRegistry::RenderPrometheusText() const {
   output.reserve(4096);
 
   AppendCounter(output, "deliveryoptimizer_solver_requests_accepted_total",
-                "Count of solver requests accepted into the coordinator.",
+                "Count of solver requests accepted into the coordinator queue.",
                 accepted_requests_.load(std::memory_order_relaxed));
+  AppendCounter(output, "deliveryoptimizer_solver_requests_succeeded_total",
+                "Count of accepted solver requests that completed successfully.",
+                succeeded_requests_.load(std::memory_order_relaxed));
   AppendCounter(output, "deliveryoptimizer_solver_requests_rejected_total",
                 "Count of solver requests rejected before execution.",
                 rejected_requests_.load(std::memory_order_relaxed));

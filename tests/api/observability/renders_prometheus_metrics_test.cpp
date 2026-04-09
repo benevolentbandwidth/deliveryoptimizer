@@ -24,6 +24,7 @@ deliveryoptimizer::api::SolveLifecycle BuildLifecycle(const std::string& request
 TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndBuckets) {
   deliveryoptimizer::api::ObservabilityRegistry registry;
   registry.RecordAccepted();
+  registry.RecordSucceeded();
   registry.RecordRejected();
   registry.RecordTimedOut();
   registry.RecordFailed();
@@ -34,8 +35,12 @@ TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndB
 
   const std::string rendered = registry.RenderPrometheusText();
 
-  EXPECT_NE(rendered.find("# HELP deliveryoptimizer_solver_requests_accepted_total"), std::string::npos);
+  EXPECT_NE(
+      rendered.find("# HELP deliveryoptimizer_solver_requests_accepted_total Count of solver requests accepted into the coordinator queue."),
+      std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_accepted_total 1"), std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_succeeded_total 1"),
+            std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_rejected_total 1"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_timed_out_total 1"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_failed_total 1"), std::string::npos);
@@ -77,5 +82,20 @@ TEST(ObservabilityRegistryTest, DropsPendingLogLinesWhenAsyncQueueIsFull) {
   const std::string rendered = registry.RenderPrometheusText();
 
   EXPECT_NE(rendered.find("deliveryoptimizer_request_tracker_write_failures_total 3"),
+            std::string::npos);
+}
+
+TEST(ObservabilityRegistryTest, FinalizeSuccessfulAcceptedRequestIncrementsSucceededCounter) {
+  auto observability = std::make_shared<deliveryoptimizer::api::ObservabilityRegistry>();
+  auto lifecycle =
+      std::make_shared<deliveryoptimizer::api::SolveLifecycle>(BuildLifecycle("request-success"));
+  lifecycle->accepted = true;
+
+  deliveryoptimizer::api::FinalizeSolveRequest(
+      observability, lifecycle, deliveryoptimizer::api::SolveRequestOutcome::kSucceeded, 200);
+
+  const std::string rendered = observability->RenderPrometheusText();
+
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_succeeded_total 1"),
             std::string::npos);
 }

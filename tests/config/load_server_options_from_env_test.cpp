@@ -94,11 +94,13 @@ TEST(ServerOptionsTest, ExcessiveThreadCountIsCappedAndLogsWarning) {
 }
 
 TEST(ServerOptionsTest, ReadsSolverAdmissionOptionsFromEnv) {
+  ScopedEnvVar enable_metrics("DELIVERYOPTIMIZER_ENABLE_METRICS");
   ScopedEnvVar solver_max_concurrency("DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY");
   ScopedEnvVar solver_max_queue_size("DELIVERYOPTIMIZER_SOLVER_MAX_QUEUE_SIZE");
   ScopedEnvVar solver_queue_wait_ms("DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS");
   ScopedEnvVar solver_max_sync_jobs("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS");
   ScopedEnvVar solver_max_sync_vehicles("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES");
+  enable_metrics.Set("1");
   solver_max_concurrency.Set("3");
   solver_max_queue_size.Set("9");
   solver_queue_wait_ms.Set("2500");
@@ -107,11 +109,33 @@ TEST(ServerOptionsTest, ReadsSolverAdmissionOptionsFromEnv) {
 
   const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
 
+  EXPECT_TRUE(options.enable_metrics);
   EXPECT_EQ(options.solve_admission.max_concurrency, 3U);
   EXPECT_EQ(options.solve_admission.max_queue_size, 9U);
   EXPECT_EQ(options.solve_admission.max_queue_wait, std::chrono::milliseconds{2500});
   EXPECT_EQ(options.solve_admission.max_sync_jobs, 321U);
   EXPECT_EQ(options.solve_admission.max_sync_vehicles, 17U);
+}
+
+TEST(ServerOptionsTest, MetricsAreDisabledByDefault) {
+  ScopedEnvVar enable_metrics("DELIVERYOPTIMIZER_ENABLE_METRICS");
+  enable_metrics.Unset();
+
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+
+  EXPECT_FALSE(options.enable_metrics);
+}
+
+TEST(ServerOptionsTest, InvalidMetricsFlagFallsBackToDisabledAndLogsWarning) {
+  ScopedEnvVar enable_metrics("DELIVERYOPTIMIZER_ENABLE_METRICS");
+  enable_metrics.Set("maybe");
+
+  testing::internal::CaptureStderr();
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+  const std::string stderr_output = testing::internal::GetCapturedStderr();
+
+  EXPECT_FALSE(options.enable_metrics);
+  EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_ENABLE_METRICS"), std::string::npos);
 }
 
 TEST(ServerOptionsTest, AllowsZeroSolverQueueWaitTimeoutFromEnv) {

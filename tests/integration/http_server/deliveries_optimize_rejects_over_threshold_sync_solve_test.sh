@@ -27,6 +27,7 @@ chmod +x "${stub_bin}"
 http_server_start \
   VROOM_BIN="${stub_bin}" \
   VROOM_CALLED_FILE="${vroom_called_file}" \
+  DELIVERYOPTIMIZER_ENABLE_METRICS=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES=2
 http_server_wait_until_ready
@@ -86,6 +87,7 @@ fi
 
 for expected in \
   'deliveryoptimizer_solver_requests_accepted_total 0' \
+  'deliveryoptimizer_solver_requests_succeeded_total 0' \
   'deliveryoptimizer_solver_requests_rejected_total 1'; do
   if ! grep -Fq "${expected}" "${metrics_file}"; then
     echo "expected metrics output to contain '${expected}'" >&2

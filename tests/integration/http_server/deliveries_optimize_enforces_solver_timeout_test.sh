@@ -34,7 +34,7 @@ JSON
 SH
 chmod +x "${stub_bin}"
 
-http_server_start VROOM_BIN="${stub_bin}" VROOM_TIMEOUT_SECONDS=1
+http_server_start VROOM_BIN="${stub_bin}" DELIVERYOPTIMIZER_ENABLE_METRICS=1 VROOM_TIMEOUT_SECONDS=1
 http_server_wait_until_ready
 
 cat >"${payload_file}" <<'JSON'
@@ -88,6 +88,7 @@ fi
 
 for expected in \
   'deliveryoptimizer_solver_requests_accepted_total 1' \
+  'deliveryoptimizer_solver_requests_succeeded_total 0' \
   'deliveryoptimizer_solver_requests_timed_out_total 1' \
   'deliveryoptimizer_solver_duration_seconds_count 1'; do
   if ! grep -Fq "${expected}" "${metrics_file}"; then

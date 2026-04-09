@@ -19,6 +19,7 @@ constexpr std::uint16_t kDefaultListenPort = 8080U;
 constexpr std::size_t kMaxWorkerThreads = 64U;
 constexpr std::string_view kListenPortEnv = "DELIVERYOPTIMIZER_PORT";
 constexpr std::string_view kThreadCountEnv = "DELIVERYOPTIMIZER_THREADS";
+constexpr std::string_view kEnableMetricsEnv = "DELIVERYOPTIMIZER_ENABLE_METRICS";
 constexpr std::string_view kSolverMaxConcurrencyEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY";
 constexpr std::string_view kSolverMaxQueueSizeEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_QUEUE_SIZE";
 constexpr std::string_view kSolverQueueWaitMsEnv = "DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS";
@@ -108,6 +109,22 @@ template <typename Integer>
   }
 
   return parsed_value;
+}
+
+[[nodiscard]] bool ResolveMetricsEnabled() {
+  const char* raw_value = std::getenv(kEnableMetricsEnv.data());
+  if (raw_value == nullptr || *raw_value == '\0') {
+    return false;
+  }
+
+  const auto parsed_value = ParseNonNegativeIntegerEnv<unsigned int>(raw_value);
+  if (!parsed_value.has_value() || *parsed_value > 1U) {
+    std::cerr << "Ignoring invalid " << kEnableMetricsEnv << "='" << raw_value
+              << "'. Using metrics-disabled default.\n";
+    return false;
+  }
+
+  return *parsed_value == 1U;
 }
 
 [[nodiscard]] std::size_t ResolvePositiveSizeOption(const std::string_view env_name,
@@ -225,6 +242,7 @@ ServerOptions LoadServerOptionsFromEnv() {
   return ServerOptions{
       .listen_port = ResolveListenPort(),
       .worker_threads = worker_threads,
+      .enable_metrics = ResolveMetricsEnabled(),
       .solve_admission = ResolveSolveAdmissionConfig(worker_threads),
   };
 }

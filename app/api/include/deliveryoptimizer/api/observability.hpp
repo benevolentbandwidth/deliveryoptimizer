@@ -83,6 +83,7 @@ public:
   ObservabilityRegistry& operator=(ObservabilityRegistry&&) = delete;
 
   void RecordAccepted();
+  void RecordSucceeded();
   void RecordRejected();
   void RecordTimedOut();
   void RecordFailed();
@@ -104,6 +105,7 @@ private:
   void LogWriterLoop();
 
   std::atomic<std::uint64_t> accepted_requests_{0U};
+  std::atomic<std::uint64_t> succeeded_requests_{0U};
   std::atomic<std::uint64_t> rejected_requests_{0U};
   std::atomic<std::uint64_t> timed_out_requests_{0U};
   std::atomic<std::uint64_t> failed_requests_{0U};
