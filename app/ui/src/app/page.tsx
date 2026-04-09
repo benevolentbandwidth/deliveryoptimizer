@@ -34,7 +34,7 @@ export default function LandingPage() {
           marginBottom: '48px',
           textAlign: 'center',
         }}>
-          Select how you'd like to get started.
+          {"Select how you'd like to get started."}
         </p>
 
         <div style={{

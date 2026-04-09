@@ -348,36 +348,31 @@ export default function AddressGeocoder() {
 
   // Click outside to close dropdowns
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
+  const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as Node;
 
-      if (deliveryAutocomplete.showSuggestions) {
-        const clickedInside = Array.from(document.querySelectorAll('[data-delivery-input]'))
-          .some(el => el.contains(target));
-        if (!clickedInside) {
-          deliveryAutocomplete.clearSuggestions();
-          setActiveDeliveryId(null);
-        }
+    if (deliveryAutocomplete.showSuggestions) {
+      const clickedInside = Array.from(document.querySelectorAll('[data-delivery-input]'))
+        .some(el => el.contains(target));
+      if (!clickedInside) {
+        deliveryAutocomplete.clearSuggestions();
+        setActiveDeliveryId(null);
       }
+    }
 
-      if (vehicleAutocomplete.showSuggestions) {
-        const clickedInside = Array.from(document.querySelectorAll('[data-vehicle-input]'))
-          .some(el => el.contains(target));
-        if (!clickedInside) {
-          vehicleAutocomplete.clearSuggestions();
-          setActiveAddressField(null);
-        }
+    if (vehicleAutocomplete.showSuggestions) {
+      const clickedInside = Array.from(document.querySelectorAll('[data-vehicle-input]'))
+        .some(el => el.contains(target));
+      if (!clickedInside) {
+        vehicleAutocomplete.clearSuggestions();
+        setActiveAddressField(null);
       }
-    };
+    }
+  };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [
-    deliveryAutocomplete.showSuggestions,
-    deliveryAutocomplete.clearSuggestions,
-    vehicleAutocomplete.showSuggestions,
-    vehicleAutocomplete.clearSuggestions,
-  ]);
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, [deliveryAutocomplete, vehicleAutocomplete]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
