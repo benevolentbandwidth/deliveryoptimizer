@@ -42,6 +42,13 @@ export default function AddressAutocompleteInput({
   }
 
   function handleSelect(suggestion: AddressSuggestion) {
+
+    // Avoid redundant blur events
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    blurTimeoutRef.current = null;
+    }
+
     onChange(suggestion.display_name);
     clearSuggestions();
   }
