@@ -30,6 +30,8 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [geocodeFailedAddressIds, setGeocodeFailedAddressIds] = useState<number[]>([]);
   const [geocodeFailedVehicleIds, setGeocodeFailedVehicleIds] = useState<number[]>([]);
+  const [outOfRegionAddressIds, setOutOfRegionAddressIds] = useState<number[]>([]);
+  const [outOfRegionVehicleIds, setOutOfRegionVehicleIds] = useState<number[]>([]);
 
   // TODO: Result will be updated to store the result of the optimize request
   const [result, setResult] = useState<unknown>(null);
@@ -38,6 +40,8 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     setOptimizeError(null);
     setGeocodeFailedAddressIds([]);
     setGeocodeFailedVehicleIds([]);
+    setOutOfRegionAddressIds([]);
+    setOutOfRegionVehicleIds([]);
 
     // 1. All rows must be locked before optimizing.
     const unlockedVehicle = vehicles.find((v) => !v.locked);
@@ -117,13 +121,33 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
       }
       
       // 7. Reject any coordinate that falls outside CA, TX, or FL.
-      const outOfRegion = [
-        ...[...vehicleLocations.values()],
-        ...[...addressLocations.values()],
-      ].some(({ lat, lng }) => !isInSupportedRegion(lat, lng));
+      const badVehicleAddresses: { id: number; location: string }[] = [];
+      for (const [id, loc] of vehicleLocations) {
+        if (!isInSupportedRegion(loc.lat, loc.lng)) {
+          const v = availableVehicles.find((v) => v.id === id)!;
+          badVehicleAddresses.push({ id, location: v.startLocation });
+        }
+      }
+      const badDeliveryAddresses: { id: number; address: string }[] = [];
+      for (const [id, loc] of addressLocations) {
+        if (!isInSupportedRegion(loc.lat, loc.lng)) {
+          const a = addresses.find((a) => a.id === id)!;
+          badDeliveryAddresses.push({ id, address: a.recipientAddress });
+        }
+      }
 
-      if (outOfRegion) {
-        setOptimizeError("Unsupported Region. We currently only support CA, TX, and FL.");
+      if (badVehicleAddresses.length > 0 || badDeliveryAddresses.length > 0) {
+        setOutOfRegionVehicleIds(badVehicleAddresses.map((f) => f.id));
+        setOutOfRegionAddressIds(badDeliveryAddresses.map((f) => f.id));
+        const allBad = [
+          ...badVehicleAddresses.map((f) => f.location),
+          ...badDeliveryAddresses.map((f) => f.address),
+        ];
+        const shown = allBad.slice(0, 3);
+        const overflow = allBad.length - shown.length;
+        const list = shown.map((s) => `"${s}"`).join(", ");
+        const suffix =  overflow > 0 ? `, and ${overflow} more` : ""; 
+        setOptimizeError(`Unsupported region(s):${list}${suffix}. We currently only support CA, TX, and FL.`);
         return;
       }
 
@@ -181,6 +205,8 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     clearOptimizeError,
     geocodeFailedAddressIds,
     geocodeFailedVehicleIds,
+    outOfRegionAddressIds,
+    outOfRegionVehicleIds,
     result,
   };
 }

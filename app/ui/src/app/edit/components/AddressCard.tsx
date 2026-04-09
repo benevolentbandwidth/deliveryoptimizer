@@ -57,6 +57,7 @@ type AddressCardProps = {
   confirmAddress: (id: number) => void;
   addressTouched: boolean;
   geocodeFailed: boolean;
+  outOfRegionFailed: boolean;
 };
 
 export default function AddressCard({
@@ -68,6 +69,7 @@ export default function AddressCard({
   confirmAddress,
   addressTouched,
   geocodeFailed,
+  outOfRegionFailed,
 }: AddressCardProps) {
   
   const [manualExpanded, setManualExpanded] = useState(false);
@@ -104,7 +106,7 @@ export default function AddressCard({
           <span />
           {a.locked ? (
             <>
-              <div className={`${ADDRESS_LOCKED_SURFACE_MD}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+              <div className={`${ADDRESS_LOCKED_SURFACE_MD}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
                 <span className={`${ADDRESS_DESKTOP_FIELD} truncate`}>{a.recipientAddress}</span>
               </div>
               <div className={`${ADDRESS_LOCKED_SURFACE_MD} ${ADDRESS_COL_MIN_TIME_BUFFER}`}>
@@ -305,7 +307,7 @@ export default function AddressCard({
               <>
                 <div>
                   <span className={MOBILE_FIELD_LABEL}>Address</span>
-                  <div className={`${MOBILE_ADDRESS_LOCKED_ROW}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+                  <div className={`${MOBILE_ADDRESS_LOCKED_ROW}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
                     <span className="text-sm text-black truncate">{a.recipientAddress}</span>
                   </div>
                 </div>

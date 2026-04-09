@@ -34,6 +34,7 @@ type AddressSectionProps = {
   geocodeFailedIds: number[];
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  outOfRegionIds: number[];
 };
 
 export default function AddressSection({
@@ -50,6 +51,7 @@ export default function AddressSection({
   geocodeFailedIds,
   searchQuery,
   setSearchQuery,
+  outOfRegionIds,
 }: AddressSectionProps) {
   const addEnabled = allAddressesLocked || activeAddressIsValid;
 
@@ -116,7 +118,8 @@ export default function AddressSection({
               confirmAddress={confirmAddress}
               addressTouched={addressTouched}
               geocodeFailed={geocodeFailedIds.includes(a.id)}
-            />
+              outOfRegionFailed={outOfRegionIds.includes(a.id)}
+          />
           ))}
         </div>
       )}
