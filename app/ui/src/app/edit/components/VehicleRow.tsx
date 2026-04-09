@@ -67,6 +67,7 @@ type VehicleRowProps = {
   confirmVehicle: (id: number) => void;
   vehicleTouched: boolean;
   geocodeFailed: boolean;
+  outOfRegionFailed: boolean;
 };
 
 function MobileFieldLabel({ children }: { children: ReactNode }) {
@@ -161,6 +162,7 @@ export default function VehicleRow({
   confirmVehicle,
   vehicleTouched,
   geocodeFailed,
+  outOfRegionFailed,
 }: VehicleRowProps) {
   const nameInvalid = vehicleTouched && !v.name.trim();
   const startLocationInvalid = vehicleTouched && !(v.startLocation ?? "").trim();
@@ -181,7 +183,7 @@ export default function VehicleRow({
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.name}</span>
           </div>
           <MobileFieldLabel>Start Location</MobileFieldLabel>
-          <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+          <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.startLocation}</span>
           </div>
           <MobileFieldLabel>Type</MobileFieldLabel>
@@ -351,7 +353,7 @@ export default function VehicleRow({
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.name}</span>
         </div>
-        <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+        <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.startLocation}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
