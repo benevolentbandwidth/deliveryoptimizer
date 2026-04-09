@@ -31,6 +31,7 @@ type AddressSectionProps = {
   allAddressesLocked: boolean;
   activeAddressIsValid: boolean;
   geocodeFailedIds: number[];
+  outOfRegionIds: number[];
 };
 
 export default function AddressSection({
@@ -45,6 +46,7 @@ export default function AddressSection({
   allAddressesLocked,
   activeAddressIsValid,
   geocodeFailedIds,
+  outOfRegionIds,
 }: AddressSectionProps) {
   const addEnabled = allAddressesLocked || activeAddressIsValid;
 
@@ -96,6 +98,7 @@ export default function AddressSection({
             confirmAddress={confirmAddress}
             addressTouched={addressTouched}
             geocodeFailed={geocodeFailedIds.includes(a.id)}
+            outOfRegionFailed={outOfRegionIds.includes(a.id)}
           />
         ))}
       </div>
