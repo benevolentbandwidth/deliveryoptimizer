@@ -2,7 +2,7 @@
  * Vehicle list state: same lock/edit/confirm pattern as addresses, without pagination.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { VehicleRow } from "../types/delivery";
 
 function isVehicleValid(v: VehicleRow): boolean {
@@ -32,12 +32,6 @@ export function useVehicles() {
     },
   ]);
 
-  // Latest vehicles for handlers (ref sync must not run during render — react-hooks/refs).
-  const vehiclesRef = useRef(vehicles);
-  useEffect(() => {
-    vehiclesRef.current = vehicles;
-  }, [vehicles]);
-
   // Set of vehicle IDs whose fields should show validation errors.
   const [touchedIds, setTouchedIds] = useState<Set<number>>(new Set());
 
@@ -56,32 +50,34 @@ export function useVehicles() {
   }, []);
 
   const addVehicle = useCallback(() => {
-    const prev = vehiclesRef.current;
-    const active = prev.find((v) => !v.locked);
-    const allLocked = prev.length > 0 && prev.every((v) => v.locked);
-
-    if (!allLocked && !(active && isVehicleValid(active))) {
-      if (active) setTouchedIds((t) => new Set([...t, active.id]));
-      return;
-    }
-
-    setTouchedIds(new Set());
-    const newId = prev.reduce((max, v) => Math.max(max, v.id), 0) + 1;
-    setVehicles([
-      ...prev.map((v) => (v.locked ? v : { ...v, locked: true, editingExisting: false })),
-      {
-        id: newId,
-        locked: false,
-        editingExisting: false,
-        name: "",
-        startLocation: "",
-        type: "",
-        capacityUnit: "",
-        capacity: 0,
-        available: true,
-        departureTime: "",
-      },
-    ]);
+    setVehicles((prev) => {
+      const active = prev.find((v) => !v.locked);
+      const allLocked = prev.length > 0 && prev.every((v) => v.locked);
+  
+      if (!allLocked && !(active && isVehicleValid(active))) {
+        if (active) setTouchedIds((t) => new Set([...t, active.id]));
+        return prev;
+      }
+  
+      setTouchedIds(new Set());
+      const newId = prev.reduce((max, v) => Math.max(max, v.id), 0) + 1;
+  
+      return [
+        ...prev.map((v) => (v.locked ? v : { ...v, locked: true, editingExisting: false })),
+        {
+          id: newId,
+          locked: false,
+          editingExisting: false,
+          name: "",
+          startLocation: "",
+          type: "",
+          capacityUnit: "",
+          capacity: 0,
+          available: true,
+          departureTime: "",
+        },
+      ];
+    });
   }, []);
 
   // Always keep at least one vehicle in the list.
@@ -111,22 +107,24 @@ export function useVehicles() {
 
   // Validate required fields; on failure mark only this row, on success lock it.
   const confirmVehicle = useCallback((id: number) => {
-    const v = vehiclesRef.current.find((x) => x.id === id);
-    if (!v) return;
-
-    if (!isVehicleValid(v)) {
-      setTouchedIds((t) => new Set([...t, id]));
-      return;
-    }
-
-    setTouchedIds((t) => {
-      const next = new Set(t);
-      next.delete(id);
-      return next;
+    setVehicles((prev) => {
+      const v = prev.find((x) => x.id === id);
+      if (!v) return prev;
+  
+      if (!isVehicleValid(v)) {
+        setTouchedIds((t) => new Set([...t, id]));
+        return prev;
+      }
+  
+      setTouchedIds((t) => {
+        const next = new Set(t);
+        next.delete(id);
+        return next;
+      });
+      return prev.map((x) =>
+        x.id === id ? { ...x, locked: true, editingExisting: false } : x
+      );
     });
-    setVehicles((prev) =>
-      prev.map((x) => (x.id === id ? { ...x, locked: true, editingExisting: false } : x))
-    );
   }, []);
 
   return {
