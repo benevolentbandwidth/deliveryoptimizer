@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import Navbar from '@/app/edit/components/Navbar';
+import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
 interface UploadedFile {
   id: string;
@@ -72,12 +72,8 @@ export default function AddressEntryPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar
-        onOptimize={() => {}}
-        isOptimizing={false}
-        optimizeError={null}
-        onClearOptimizeError={() => {}}
-      />
+      <ShellNavbar />
+
       <main style={{
         display: 'flex',
         alignItems: 'center',

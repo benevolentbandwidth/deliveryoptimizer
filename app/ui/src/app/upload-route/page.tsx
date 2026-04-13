@@ -2,7 +2,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/app/edit/components/Navbar';
+import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
 export default function UploadRoutePage() {
   const router = useRouter();
@@ -48,12 +48,7 @@ export default function UploadRoutePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar
-        onOptimize={() => {}}
-        isOptimizing={false}
-        optimizeError={null}
-        onClearOptimizeError={() => {}}
-      />
+      <ShellNavbar />
 
       <main style={{
         display: 'flex',

@@ -2,7 +2,7 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import Navbar from '@/app/edit/components/Navbar';
+import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
 function WelcomeContent() {
   const router = useRouter();
@@ -19,12 +19,7 @@ function WelcomeContent() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar
-        onOptimize={() => {}}
-        isOptimizing={false}
-        optimizeError={null}
-        onClearOptimizeError={() => {}}
-      />
+      <ShellNavbar />
 
       <main style={{
         display: 'flex',
@@ -35,10 +30,10 @@ function WelcomeContent() {
         padding: '40px 24px',
       }}>
         <h1 style={{
-          fontSize: '2.25rem',
+          fontSize: '2rem',
           fontWeight: 700,
           color: '#111',
-          marginBottom: '12px',
+          marginBottom: '10px',
           textAlign: 'center',
           letterSpacing: '-0.02em',
         }}>

@@ -1,19 +1,15 @@
 // app/page.tsx
 'use client';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/app/edit/components/Navbar';
+import ShellNavbar from '@/app/edit/components/ShellNavbar';
+
 
 export default function LandingPage() {
   const router = useRouter();
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar
-        onOptimize={() => {}}
-        isOptimizing={false}
-        optimizeError={null}
-        onClearOptimizeError={() => {}}
-      />
+      <ShellNavbar />
 
       <main style={{
         display: 'flex',
@@ -39,7 +35,7 @@ export default function LandingPage() {
           marginBottom: '48px',
           textAlign: 'center',
         }}>
-          {"Select how you'd like to get started."}
+          Select how you'd like to get started.
         </p>
 
         <div style={{

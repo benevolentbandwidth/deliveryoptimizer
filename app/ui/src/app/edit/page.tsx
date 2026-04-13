@@ -4,7 +4,7 @@
  * Delivery edit screen: wires vehicle and address state into sections and pagination.
  */
 
-import Navbar from "./components/Navbar";
+import ShellNavbar from "./components/Navbar";
 import VehicleSection from "./components/VehicleSection";
 import AddressSection from "./components/AddressSection";
 import AddressPagination from "./components/AddressPagination";
@@ -27,7 +27,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-white font-sans-manrope">
-      <Navbar
+      <ShellNavbar
         onOptimize={optimize}
         isOptimizing={isOptimizing}
         optimizeError={optimizeError}
