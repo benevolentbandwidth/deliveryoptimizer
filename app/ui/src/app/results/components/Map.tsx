@@ -4,18 +4,49 @@
 
 import { useCallback, useEffect, useRef, useState, Fragment } from "react";
 import { LoadScriptNext, GoogleMap, Marker, Polyline } from "@react-google-maps/api";
-import type { Route } from "../types";
+import type { PendingPinMove, Route } from "../types";
 
 const DAVIS_CENTER = { lat: 38.5449, lng: -121.7405 }; // Map center coordinates for Davis,CA (Google Maps needs as an initial center to position the initial view of the map)
 const POLYLINE_COLOR = "#2563eb"; // Blue path per route (single mock route)
 
+function latLngFromMarkerPosition( // after a drag, google maps can provide the new lat/lng object in either LatLng (.lat(), .lng()) or plain object (.lat, .lng)
+  p: google.maps.marker.AdvancedMarkerElement["position"] // this function looks at the what type object we have and turns into the sample format of {lat: number, lng: number}, and if it doesn't understand the value still, it returns null again
+): { lat: number; lng: number } | null {
+  if (p == null) return null;
+  if (typeof (p as google.maps.LatLng).lat === "function") {
+    const ll = p as google.maps.LatLng;
+    return { lat: ll.lat(), lng: ll.lng() };
+  }
+  const lit = p as google.maps.LatLngLiteral;
+  if (typeof lit.lat === "number" && typeof lit.lng === "number") {
+    return { lat: lit.lat, lng: lit.lng };
+  }
+  return null;
+}
+
 type MapComponentProps = {
   routes: Route[];
+  isEditMode: boolean; // defining the props that map component receives from parent (page.tsx)
+  pendingPinMove: PendingPinMove | null;
+  onPendingPinMove: (vehicleId: string, stopId: string, lat: number, lng: number) => void;
 };
 
-// Created a helper component (AdvancedMarkers), which creates the pins and attaches them to the map (it receives two things: google map instance and list of routes)
-function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes: Route[] }) {
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]); // markersRef is a ref that holds an array of the pin objects we'll create
+type AdvancedMarkersProps = { // Before AdvancedMarkers only needed map and routes, but now it needs five props, so we pulled the shape out instead of writing inline in the function
+  map: google.maps.Map | null;
+  routes: Route[];
+  isEditMode: boolean;
+  pendingPinMove: PendingPinMove | null;
+  onPendingPinMove: (vehicleId: string, stopId: string, lat: number, lng: number) => void;
+};
+
+function AdvancedMarkers({
+  map,
+  routes,
+  isEditMode,
+  pendingPinMove,
+  onPendingPinMove,
+}: AdvancedMarkersProps) {
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
 
   useEffect(() => {
     if (!map || routes.length === 0) return;
@@ -34,33 +65,64 @@ function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes:
         routes.forEach((route) => { // For each route, we take its stops and sort them by sequence (visit order). We copy the array first so we don't mutate the original array
           const sorted = [...route.stops].sort((a, b) => a.sequence - b.sequence);
           sorted.forEach((stop) => {
-            const m = new AdvancedMarkerElement({ // We create a new instance of the Advanced Marker Element class for each stop, with the map, position, and title
+            const atPending = // creating a variable to check if the current stop is the one we dragged but unsaved yet
+              pendingPinMove != null &&
+              pendingPinMove.vehicleId === route.vehicleId &&
+              pendingPinMove.stopId === stop.id;
+            const position = atPending // creating a variable to determine the position of the pin, if atPending then use draft coords from pendingPinMove (unsaved dragged), otherwise use saved coords from stop obj
+              ? { lat: pendingPinMove.lat, lng: pendingPinMove.lng }
+              : { lat: stop.lat, lng: stop.lng };
+
+            const m = new AdvancedMarkerElement({
               map,
-              position: { lat: stop.lat, lng: stop.lng },
+              position,
               title: stop.address,
+              gmpDraggable: isEditMode,
             });
-            markers.push(m); // We save the array of pins we created into markersRef
+
+            m.addListener("dragend", () => { //
+              const ll = latLngFromMarkerPosition(m.position); // read where pin ended
+              if (!ll) return;
+              onPendingPinMove(route.vehicleId, stop.id, ll.lat, ll.lng); // call onPendingPinMove so page updates draft only (advanced marker version of onDragEnd in <Marker>)
+            });
+
+            markers.push(m);
           });
         });
+
+        if (cancelled) { // Setting cancelled to true in cleanup since react will re-run the effect while component is mounted, as it may create duplicate pins or stale drag handlers from an older effect
+          markers.forEach((m) => {
+            google.maps.event.clearInstanceListeners(m);
+            m.map = null;
+          });
+          return;
+        }
+
         markersRef.current = markers;
       } catch {
         // In the event of library failed to load or no mapID, then we catch and the map just won't show any pins
       }
     })();
 
-    return () => { // Cleanup function to clean up the pins when the component unmounts
+    return () => {
       cancelled = true;
-      markersRef.current.forEach((m: google.maps.marker.AdvancedMarkerElement) => {
+      markersRef.current.forEach((m) => {
+        google.maps.event.clearInstanceListeners(m);
         m.map = null;
       });
       markersRef.current = [];
     };
-  }, [map, routes]);
+  }, [map, routes, pendingPinMove, isEditMode, onPendingPinMove]);
 
   return null;
 }
 
-export default function MapComponent({ routes }: MapComponentProps) {
+export default function MapComponent({ // Receiving props (routes, isEditMode, pendingPinMove, onPendingPinMove) from parent (page.tsx)
+  routes,
+  isEditMode,
+  pendingPinMove,
+  onPendingPinMove,
+}: MapComponentProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ""; // API key for Google Maps API
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined; // mapId is the ID of the map instance, Advanced Markers needs a map id
   const [map, setMap] = useState<google.maps.Map | null>(null); // Creating a state variable to hold the map instance, initially null, but when Google calls the onMapLoad function, we'll call setMap(mapInstance) to save it
@@ -117,11 +179,27 @@ export default function MapComponent({ routes }: MapComponentProps) {
           onLoad={onMapLoad} // when maps finished loading, google calls this and passes the map instance
           onUnmount={onUnmount}
         >
-          {mapId && <AdvancedMarkers map={map} routes={routes} />}
-          {routes.map((route) => { // For each route, we sort the stops by sequence (visit order), then map the stops to an array of lat/lng objects
+          {mapId && (
+            <AdvancedMarkers
+              map={map}
+              routes={routes}
+              isEditMode={isEditMode}
+              pendingPinMove={pendingPinMove}
+              onPendingPinMove={onPendingPinMove}
+            />
+          )}
+          {routes.map((route) => { // For each route, we copy the stops array and sort them by sequence (visit order)
             const sorted = [...route.stops].sort((a, b) => a.sequence - b.sequence);
-            const path = sorted.map((s) => ({ lat: s.lat, lng: s.lng }));
-            return ( // We draw a polyline for each route, with the stops in the order they're visited
+            const path = sorted.map((s) => { // And then for each stop in the sorted list, if this stop is the one that we dragged but haven't saved yet (from pendingPinMove) then use the new spot for that stop, otherwise use the original lat/lng coordinates
+              if (
+                pendingPinMove?.vehicleId === route.vehicleId &&
+                pendingPinMove.stopId === s.id
+              ) {
+                return { lat: pendingPinMove.lat, lng: pendingPinMove.lng };
+              }
+              return { lat: s.lat, lng: s.lng };
+            });
+            return (
               <Fragment key={route.vehicleId}>
                 <Polyline
                   path={path}
@@ -131,14 +209,33 @@ export default function MapComponent({ routes }: MapComponentProps) {
                     strokeOpacity: 0.9,
                   }}
                 />
-                {!mapId && // Fallback pins when Map ID is not set (devs without NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID still see pins)
-                  sorted.map((stop) => (
-                    <Marker
-                      key={stop.id}
-                      position={{ lat: stop.lat, lng: stop.lng }}
-                      title={stop.address}
-                    />
-                  ))}
+                {!mapId && // Fallback pins for when mapID isn't set. This renders pins using the original <Marker> for each stop instead of <AdvancedMarker>
+                  sorted.map((stop) => {
+                    const atPending = // Checks if the current stop is the one that we dragged but haven't saved yet (from pendingPinMove)
+                      pendingPinMove?.vehicleId === route.vehicleId &&
+                      pendingPinMove.stopId === stop.id;
+                    const position = atPending // position uses the new lat/lng coordinates if the stop is the one that we dragged but haven't saved yet, otherwise uses the original lat/lng coordinates
+                      ? { lat: pendingPinMove.lat, lng: pendingPinMove.lng }
+                      : { lat: stop.lat, lng: stop.lng };
+                    return (
+                      <Marker
+                        key={stop.id}
+                        position={position}
+                        title={stop.address}
+                        draggable={isEditMode}
+                        onDragEnd={(e) => { // onDragEnd calls onPendingPinMove to update the temporary data in pendingPinMove state, not routes until user saves
+                          const latLng = e.latLng;
+                          if (!latLng) return;
+                          onPendingPinMove(
+                            route.vehicleId,
+                            stop.id,
+                            latLng.lat(),
+                            latLng.lng()
+                          );
+                        }}
+                      />
+                    );
+                  })}
               </Fragment>
             );
           })}
