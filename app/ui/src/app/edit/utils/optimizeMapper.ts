@@ -4,7 +4,7 @@
  */
 
 import { timeToSeconds } from "@/app/components/AddressGeocoder/utils/timeConversion";
-import type { VehicleRow, LockedVehicleRow, CapacityUnit } from "../types/delivery";
+import type { LockedVehicleRow, CapacityUnit } from "../types/delivery"; //removed VehicleRow to get rid of npm run lint warning
 import type { AddressCard } from "../types/delivery";
 import type { VehicleInput } from "@/lib/types/vehicle.types";
 import type { DeliveryInput } from "@/lib/types/delivery.types";

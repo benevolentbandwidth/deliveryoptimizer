@@ -1,6 +1,6 @@
 // app/driver-view/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
@@ -16,19 +16,20 @@ interface RouteFile {
  */
 export default function DriverViewPage() {
   const router = useRouter();
-  const [routeFile, setRouteFile] = useState<RouteFile | null>(null);
 
-  useEffect(() => {
+  // Lazy useState initialiser: reads sessionStorage once on mount without
+  // needing a useEffect + setState pair, which triggers cascading renders.
+  const [routeFile] = useState<RouteFile | null>(() => {
     const raw = sessionStorage.getItem('routeFile');
-    if (raw) {
-      try {
-        setRouteFile(JSON.parse(raw));
-        sessionStorage.removeItem('routeFile');
-      } catch {
-        console.error('Failed to parse route file from sessionStorage');
-      }
+    if (!raw) return null;
+    try {
+      sessionStorage.removeItem('routeFile');
+      return JSON.parse(raw) as RouteFile;
+    } catch {
+      console.error('Failed to parse route file from sessionStorage');
+      return null;
     }
-  }, []);
+  });
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>

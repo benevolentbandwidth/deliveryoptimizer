@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
-
 export default function LandingPage() {
   const router = useRouter();
 
@@ -35,7 +34,7 @@ export default function LandingPage() {
           marginBottom: '48px',
           textAlign: 'center',
         }}>
-          Select how you'd like to get started.
+          Select how you&apos;d like to get started.
         </p>
 
         <div style={{
