@@ -6,13 +6,20 @@
 import { useCallback, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
-import { mockRouteToRoute } from "./data/mockRouteLoader";
 import type { Route } from "./types";
-import type { MockRouteJson } from "./data/mockRouteLoader";
-import mockRouteJson from "./data/mock_route.json";
 
 export default function ResultsPage() {
-  const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
+  const [routes, setRoutes] = useState<Route[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = sessionStorage.getItem("optimizeResults");
+      if (stored) {
+        sessionStorage.removeItem("optimizeResults"); // consume once — prevents stale data on refresh
+        return JSON.parse(stored) as Route[];
+      }
+    } catch { /* corrupt storage — fall through */ }
+    return [];
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
 

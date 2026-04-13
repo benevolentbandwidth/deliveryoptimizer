@@ -3,23 +3,24 @@
  */
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { geocodeAddress } from "@/app/components/AddressGeocoder/utils/nominatim";
 import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/optimizeMapper";
+import { vroomToRoutes } from "../utils/vroomToRoutes";
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 import type { CapacityUnit } from "../types/delivery";
+import type { VroomResponse } from "../types/vroomResponse";
 
 // ensure that vehicleType and capacityUnit are not empty
 function isLocked(v: VehicleRow): v is LockedVehicleRow {
   return v.locked && v.type !== "" && v.capacityUnit !== "";
 }
 export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
+  const router = useRouter();
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [geocodeFailedAddressIds, setGeocodeFailedAddressIds] = useState<number[]>([]);
   const [geocodeFailedVehicleIds, setGeocodeFailedVehicleIds] = useState<number[]>([]);
-
-  // TODO: Result will be updated to store the result of the optimize request
-  const [result, setResult] = useState<unknown>(null);
 
   const optimize = useCallback(async () => {
     setOptimizeError(null);
@@ -136,8 +137,10 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 9. Store result for the caller to consume.
-      setResult(data);
+      // 9. Transform, persist to sessionStorage, and navigate to results.
+      const routes = vroomToRoutes(data as VroomResponse, lockedVehicles, addresses);
+      sessionStorage.setItem("optimizeResults", JSON.stringify(routes));
+      router.push("/results");
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
     } finally {
@@ -157,6 +160,5 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     clearOptimizeError,
     geocodeFailedAddressIds,
     geocodeFailedVehicleIds,
-    result,
   };
 }

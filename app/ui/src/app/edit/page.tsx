@@ -5,6 +5,7 @@
  */
 
 import Navbar from "./components/Navbar";
+import OptimizingModal from "./components/OptimizingModal";
 import VehicleSection from "./components/VehicleSection";
 import AddressSection from "./components/AddressSection";
 import AddressPagination from "./components/AddressPagination";
@@ -32,6 +33,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-white font-sans-manrope">
+      <OptimizingModal isOpen={isOptimizing} />
       <Navbar
         onOptimize={optimize}
         isOptimizing={isOptimizing}
