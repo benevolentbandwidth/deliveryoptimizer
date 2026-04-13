@@ -20,10 +20,10 @@ export const DELIVERY_BETWEEN_OPTIONS: string[] = (() => {
   const options: string[] = [];
   for (let h = 0; h < 24; h++) {
     const startHour = h % 12 || 12;
-    const startAmpm = h < 12 ? "am" : "pm";
+    const startAmpm = h < 12 ? " AM" : " PM";
     const endH = (h + 1) % 24;
     const endHour = endH % 12 || 12;
-    const endAmpm = endH < 12 ? "am" : "pm";
+    const endAmpm = endH < 12 ? " AM" : " PM";
     options.push(`${startHour}${startAmpm} - ${endHour}${endAmpm}`);
   }
   return options;
