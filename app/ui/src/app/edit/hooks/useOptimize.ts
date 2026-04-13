@@ -3,10 +3,13 @@
  */
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { geocodeAddress } from "@/app/components/AddressGeocoder/utils/nominatim";
 import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/optimizeMapper";
+import { vroomToRoutes } from "../utils/vroomToRoutes";
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 import type { CapacityUnit } from "../types/delivery";
+import type { VroomResponse } from "../types/vroomResponse";
 
 const SUPPORTED_STATES = new Set(["California", "Texas", "Florida"]);
 
@@ -15,6 +18,7 @@ function isLocked(v: VehicleRow): v is LockedVehicleRow {
   return v.locked && v.type !== "" && v.capacityUnit !== "";
 }
 export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
+  const router = useRouter();
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [geocodeFailedAddressIds, setGeocodeFailedAddressIds] = useState<number[]>([]);
@@ -173,8 +177,10 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 10. Store result for the caller to consume.
-      setResult(data);
+      // 10. Transform, persist to sessionStorage, and navigate to results.
+      const routes = vroomToRoutes(data as VroomResponse, lockedVehicles, addresses);
+      sessionStorage.setItem("optimizeResults", JSON.stringify(routes));
+      router.push("/results");
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
     } finally {
