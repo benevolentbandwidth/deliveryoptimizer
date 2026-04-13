@@ -4,27 +4,21 @@
 
 import { useCallback, useEffect, useRef, useState, Fragment } from "react";
 import { LoadScriptNext, GoogleMap, Marker, Polyline } from "@react-google-maps/api";
-import type { Route } from "../types";
+import type { PendingPinMove, Route } from "../types";
 
 const DAVIS_CENTER = { lat: 38.5449, lng: -121.7405 }; // Map center coordinates for Davis,CA (Google Maps needs as an initial center to position the initial view of the map)
 const POLYLINE_COLOR = "#2563eb"; // Blue path per route (single mock route)
-
-type PendingPinMove = { // type for pending pin move data
-  routeId: string;
-  stopId: string;
-  lat: number;
-  lng: number;
-};
 
 type MapComponentProps = {
   routes: Route[];
   isEditMode: boolean; // defining the props that map component receives from parent (page.tsx)
   pendingPinMove: PendingPinMove | null;
-  onPendingPinMove: (routeId: string, stopId: string, lat: number, lng: number) => void;
+  onPendingPinMove: (vehicleId: string, stopId: string, lat: number, lng: number) => void;
 };
 
 // Created a helper component (AdvancedMarkers), which creates the pins and attaches them to the map (it receives two things: google map instance and list of routes)
 function AdvancedMarkers({ map, routes }: { map: google.maps.Map | null; routes: Route[] }) {
+  // TODO: draggable not yet implemented for AdvancedMarkers (see #84)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]); // markersRef is a ref that holds an array of the pin objects we'll create
 
   useEffect(() => {
@@ -137,7 +131,7 @@ export default function MapComponent({ // Receiving props (routes, isEditMode, p
             const sorted = [...route.stops].sort((a, b) => a.sequence - b.sequence);
             const path = sorted.map((s) => { // And then for each stop in the sorted list, if this stop is the one that we dragged but haven't saved yet (from pendingPinMove) then use the new spot for that stop, otherwise use the original lat/lng coordinates
               if (
-                pendingPinMove?.routeId === route.vehicleId &&
+                pendingPinMove?.vehicleId === route.vehicleId &&
                 pendingPinMove.stopId === s.id
               ) {
                 return { lat: pendingPinMove.lat, lng: pendingPinMove.lng };
@@ -157,7 +151,7 @@ export default function MapComponent({ // Receiving props (routes, isEditMode, p
                 {!mapId && // Fallback pins for when mapID isn't set. This renders pins using the original <Marker> for each stop instead of <AdvancedMarker>
                   sorted.map((stop) => {
                     const atPending = // Checks if the current stop is the one that we dragged but haven't saved yet (from pendingPinMove)
-                      pendingPinMove?.routeId === route.vehicleId &&
+                      pendingPinMove?.vehicleId === route.vehicleId &&
                       pendingPinMove.stopId === stop.id;
                     const position = atPending // position uses the new lat/lng coordinates if the stop is the one that we dragged but haven't saved yet, otherwise uses the original lat/lng coordinates
                       ? { lat: pendingPinMove.lat, lng: pendingPinMove.lng }
