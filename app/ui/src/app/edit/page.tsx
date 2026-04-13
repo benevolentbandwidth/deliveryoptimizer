@@ -11,9 +11,9 @@ import AddressPagination from "./components/AddressPagination";
 import { useVehicles } from "./hooks/useVehicles";
 import { useAddresses } from "./hooks/useAddresses";
 import { useOptimize } from "./hooks/useOptimize";
+import { useCSVUpload } from "./hooks/useCSVUpload";
 
 export default function Page() {
-  // Local UI state for vehicles and addresses (no persistence in this page yet).
   const vehicleState = useVehicles();
   const addressState = useAddresses();
   const {
@@ -25,13 +25,20 @@ export default function Page() {
     geocodeFailedVehicleIds,
   } = useOptimize(vehicleState.vehicles, addressState.addresses);
 
+  const { handleCSVUpload, csvFileName, csvError, clearCsvError } = useCSVUpload({
+    importAddresses: addressState.importAddresses,
+    importVehicles: vehicleState.importVehicles,
+  });
+
   return (
     <div className="min-h-screen bg-white font-sans-manrope">
       <Navbar
         onOptimize={optimize}
         isOptimizing={isOptimizing}
-        optimizeError={optimizeError}
-        onClearOptimizeError={clearOptimizeError}
+        error={optimizeError ?? csvError}
+        onClearError={() => { clearOptimizeError(); clearCsvError(); }}
+        onCSVUpload={handleCSVUpload}
+        csvFileName={csvFileName}
       />
 
       <main className="px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-8 md:space-y-10 max-w-[1480px] mx-auto">

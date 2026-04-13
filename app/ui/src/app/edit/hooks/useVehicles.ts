@@ -129,6 +129,12 @@ export function useVehicles() {
     );
   }, []);
 
+  const importVehicles = useCallback((incoming: VehicleRow[]) => {
+    if (incoming.length === 0) return;
+    setVehicles(incoming);
+    setTouchedIds(new Set());
+  }, []);
+
   return {
     vehicles,
     updateVehicle,
@@ -136,6 +142,7 @@ export function useVehicles() {
     deleteVehicle,
     unlockVehicle,
     confirmVehicle,
+    importVehicles,
     touchedIds,
     activeVehicleIsValid,
     allVehiclesLocked,
