@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import { mockRouteToRoute } from "./data/mockRouteLoader";
-import type { Route } from "./types";
+import type { PendingPinMove, Route } from "./types";
 import type { MockRouteJson } from "./data/mockRouteLoader";
 import mockRouteJson from "./data/mock_route.json";
 
@@ -15,12 +15,7 @@ export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
-  const [pendingPinMove, setPendingPinMove] = useState<{ // created state called pendingPinMove which holds the temporary data of where user dropped the pin but not saved yet (starts as null, but after drag becomes object)
-    routeId: string; // setPendingPinMove is a function that updates the temporary data in pendingPinMove based on some actions such as saving, cancel, or edit mode off. (Triggered by savePendingPinMove, cancelPendingPinMove, handEditModeChange(false))
-    stopId: string;
-    lat: number;
-    lng: number;
-  } | null>(null);
+  const [pendingPinMove, setPendingPinMove] = useState<PendingPinMove | null>(null);
 
   const handleEditModeChange = useCallback((value: boolean) => { // handleEditModeChange is a function wrapped in useCallback that gets called by sidebar when user toggles edit mode either on or off
     setIsEditMode(value); // Updates edit mode value as before using setIsEditMode but in addition, if the edit mode is turned off (value is false), setPendingPinMove is set to null to clear the temporary pin move data
@@ -40,24 +35,28 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
-  const onPendingPinMove = useCallback((routeId: string, stopId: string, lat: number, lng: number) => {
-    setPendingPinMove({ routeId, stopId, lat, lng });
+  // Before we had updateStopCoordinates which on every drag it called setRoutes so the official routes changes immediately, without any save or cancel. However, now the drag should only update the draft and save should be the moment the routes change (which is through onPendingMove)
+  const onPendingPinMove = useCallback((vehicleId: string, stopId: string, lat: number, lng: number) => { // Note: pendingPinMove is only one object, meaning if the user drags a different pin before Save, the earlier unsaved drag gets replaced (this is a known V2 #89 limitation)
+
+    setPendingPinMove({ vehicleId, stopId, lat, lng });
   }, []);
 
   const savePendingPinMove = useCallback(() => {
-    if (!pendingPinMove) return;
-    const { routeId, stopId, lat, lng } = pendingPinMove;
-    setRoutes((prev) =>
-      prev.map((route) => {
-        if (route.vehicleId !== routeId) return route;
-        return {
-          ...route,
-          stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
-        };
-      })
-    );
-    setPendingPinMove(null);
-  }, [pendingPinMove]);
+    setPendingPinMove((pending) => {
+      if (!pending) return null;
+      const { vehicleId, stopId, lat, lng } = pending;
+      setRoutes((prev) =>
+        prev.map((route) => {
+          if (route.vehicleId !== vehicleId) return route;
+          return {
+            ...route,
+            stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
+          };
+        })
+      );
+      return null;
+    });
+  }, []);
 
   const cancelPendingPinMove = useCallback(() => {
     setPendingPinMove(null);
