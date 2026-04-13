@@ -23,29 +23,30 @@ interface RouteFile {
  */
 export default function DriverViewPage() {
   const router = useRouter();
-  const [routeFile, setRouteFile] = useState<RouteFile | null>(null);
-  const [ready, setReady] = useState(false);
+  const [init, setInit] = useState<{ ready: boolean; routeFile: RouteFile | null }>({
+    ready: false,
+    routeFile: null
+  });
 
   // useEffect only runs in the browser — never during SSR or static
   // prerendering — so sessionStorage is always available here.
-  useEffect(() => {
-    const raw = sessionStorage.getItem('routeFile');
-    let parsed: RouteFile | null = null;
-    if (raw) {
-      try {
-        parsed = JSON.parse(raw) as RouteFile;
-        sessionStorage.removeItem('routeFile');
-      } catch {
-        console.error('Failed to parse route file from sessionStorage');
-      }
+useEffect(() => {
+  const raw = sessionStorage.getItem('routeFile');
+  let parsed: RouteFile | null = null;
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw) as RouteFile;
+      sessionStorage.removeItem('routeFile');
+    } catch {
+      console.error('Failed to parse route file from sessionStorage');
     }
-    setRouteFile(parsed);
-    setReady(true);
-  }, []);
+  }
+  setInit({ ready: true, routeFile: parsed });
+}, []);
 
   // Render nothing until the client-side effect has run to avoid
   // a flash of the "no route file" message during hydration.
-  if (!ready) return null;
+  if (!init.ready) return null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>
@@ -64,14 +65,10 @@ export default function DriverViewPage() {
           Driver View
         </h1>
 
-        {routeFile ? (
-          <p style={{ fontSize: '14px', color: '#555' }}>
-            Loaded: <strong>{routeFile.name}</strong> — route display coming soon.
-          </p>
+        {init.routeFile ? (
+          <p>Loaded: <strong>{init.routeFile.name}</strong> — route display coming soon.</p>
         ) : (
-          <p style={{ fontSize: '14px', color: '#999' }}>
-            No route file found. Please go back and upload your route.
-          </p>
+          <p>No route file found. Please go back and upload your route.</p>
         )}
 
         <button
