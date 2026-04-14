@@ -19,6 +19,7 @@ constexpr std::uint16_t kDefaultListenPort = 8080U;
 constexpr std::size_t kMaxWorkerThreads = 64U;
 constexpr std::string_view kListenPortEnv = "DELIVERYOPTIMIZER_PORT";
 constexpr std::string_view kThreadCountEnv = "DELIVERYOPTIMIZER_THREADS";
+constexpr std::string_view kEnableMetricsEnv = "DELIVERYOPTIMIZER_ENABLE_METRICS";
 constexpr std::string_view kSolverMaxConcurrencyEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY";
 constexpr std::string_view kSolverMaxQueueSizeEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_QUEUE_SIZE";
 constexpr std::string_view kSolverQueueWaitMsEnv = "DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS";
@@ -110,6 +111,22 @@ template <typename Integer>
   return parsed_value;
 }
 
+[[nodiscard]] bool ResolveMetricsEnabled() {
+  const char* raw_value = std::getenv(kEnableMetricsEnv.data());
+  if (raw_value == nullptr || *raw_value == '\0') {
+    return false;
+  }
+
+  const auto parsed_value = ParseNonNegativeIntegerEnv<unsigned int>(raw_value);
+  if (!parsed_value.has_value() || *parsed_value > 1U) {
+    std::cerr << "Ignoring invalid " << kEnableMetricsEnv << "='" << raw_value
+              << "'. Using metrics-disabled default.\n";
+    return false;
+  }
+
+  return *parsed_value == 1U;
+}
+
 [[nodiscard]] std::size_t ResolvePositiveSizeOption(const std::string_view env_name,
                                                     const std::size_t default_value,
                                                     const std::string_view description) {
@@ -163,16 +180,18 @@ template <typename Integer>
 }
 
 [[nodiscard]] std::chrono::milliseconds ResolveQueueWaitTimeout() {
-  const std::size_t timeout_ms = ResolvePositiveSizeOption(
+  const std::size_t timeout_ms = ResolveNonNegativeSizeOption(
       kSolverQueueWaitMsEnv, static_cast<std::size_t>(kDefaultSolverQueueWaitMs),
       "solver queue wait timeout (ms)");
+  const auto max_queue_wait_timeout =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::duration::max());
   const std::uint64_t max_timeout_ms =
-      static_cast<std::uint64_t>(std::chrono::milliseconds::max().count());
+      static_cast<std::uint64_t>(max_queue_wait_timeout.count());
   if (static_cast<std::uint64_t>(timeout_ms) > max_timeout_ms) {
     std::cerr << "Capping " << kSolverQueueWaitMsEnv << "='" << timeout_ms << "' to "
-              << max_timeout_ms
-              << " because larger solver queue wait timeout (ms) values are not representable.\n";
-    return std::chrono::milliseconds::max();
+              << max_timeout_ms << " because larger solver queue wait timeout (ms) values "
+              << "overflow the solver deadline clock.\n";
+    return max_queue_wait_timeout;
   }
 
   return std::chrono::milliseconds{
@@ -223,6 +242,7 @@ ServerOptions LoadServerOptionsFromEnv() {
   return ServerOptions{
       .listen_port = ResolveListenPort(),
       .worker_threads = worker_threads,
+      .enable_metrics = ResolveMetricsEnabled(),
       .solve_admission = ResolveSolveAdmissionConfig(worker_threads),
   };
 }

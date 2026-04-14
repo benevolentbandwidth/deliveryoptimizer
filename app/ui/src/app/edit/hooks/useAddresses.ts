@@ -2,8 +2,9 @@
  * Address list state: paged stops, lock/edit workflow, and validation for "add next".
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { AddressCard } from "../types/delivery";
+import Fuse from "fuse.js";
 
 const ADDRESSES_PER_PAGE = 7;
 
@@ -24,13 +25,38 @@ export function useAddresses() {
     },
   ]);
 
+  // Search: fuzzy filter across address and notes fields.
+  const [searchQuery, _setSearchQuery] = useState("");
+
+  // Fuse.js is a fuzzy search library that allows us to search for addresses and notes.
+  const fuse = useMemo(() => new Fuse(addresses, {
+    keys: ["recipientAddress", "notes"],
+    threshold: 0.3,         // 0.0 = exact, 1.0 = match anything
+    ignoreLocation: true,   // don't penalize matches far from string start
+  }), [addresses]);
+
+  const filteredAddresses = useMemo(
+    () =>
+      searchQuery.trim() === ""
+        ? addresses
+        : fuse.search(searchQuery).map((result) => result.item),
+    [addresses, fuse, searchQuery]
+  );
+
+  const isSearchActive = searchQuery.trim() !== "";
+
   // Pagination: slice the flat list so the UI only renders one page of cards.
   const [addressPage, setAddressPage] = useState(1);
-  const totalAddressPages = Math.max(1, Math.ceil(addresses.length / ADDRESSES_PER_PAGE));
-  const addressesOnCurrentPage = addresses.slice(
+  const totalAddressPages = Math.max(1, Math.ceil(filteredAddresses.length / ADDRESSES_PER_PAGE));
+  const addressesOnCurrentPage = filteredAddresses.slice(
     (addressPage - 1) * ADDRESSES_PER_PAGE,
     addressPage * ADDRESSES_PER_PAGE
   );
+
+  const setSearchQuery = useCallback((q: string) => {
+    _setSearchQuery(q);
+    setAddressPage(1);
+  }, []);
 
   // After submit attempts, drive inline error styling until the user fixes fields.
   const [addressTouched, setAddressTouched] = useState(false);
@@ -73,6 +99,7 @@ export function useAddresses() {
       }
 
       setAddressTouched(false);
+      _setSearchQuery("");
       const newId = prev.reduce((max, a) => Math.max(max, a.id), 0) + 1;
       setAddressPage(Math.ceil((prev.length + 1) / ADDRESSES_PER_PAGE));
 
@@ -146,5 +173,8 @@ export function useAddresses() {
     addressesCount: addresses.length,
     activeAddressIsValid,
     allAddressesLocked,
+    searchQuery,
+    setSearchQuery,
+    isSearchActive,
   };
 }

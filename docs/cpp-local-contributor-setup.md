@@ -122,6 +122,10 @@ Current label taxonomy:
 Optional: override the listen port with `DELIVERYOPTIMIZER_PORT`, for example
 `DELIVERYOPTIMIZER_PORT=9090 ./build/build/Release/app/api/deliveryoptimizer-api`.
 
+Prometheus metrics are disabled by default on the shared API listener. Only enable them for
+trusted local or internal scraping, for example
+`DELIVERYOPTIMIZER_ENABLE_METRICS=1 ./build/build/Release/app/api/deliveryoptimizer-api`.
+
 In another terminal:
 
 ```bash

@@ -52,6 +52,7 @@ services:
       VROOM_HOST: osrm
       VROOM_PORT: ${OSRM_INTERNAL_PORT:-5001}
       VROOM_TIMEOUT_SECONDS: ${VROOM_TIMEOUT_SECONDS:-30}
+      DELIVERYOPTIMIZER_ENABLE_METRICS: ${DELIVERYOPTIMIZER_ENABLE_METRICS:-0}
     depends_on:
       osrm:
         condition: service_healthy

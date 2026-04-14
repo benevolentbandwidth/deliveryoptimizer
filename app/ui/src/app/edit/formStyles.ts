@@ -253,8 +253,8 @@ export const ADDRESS_TOOLBAR_MOBILE_WRAP = "flex flex-col gap-3 mb-6 lg:hidden";
 
 export const ADDRESS_TOOLBAR_DESKTOP = "hidden lg:flex items-center gap-3 mb-5 xl:gap-4 xl:mb-6";
 
-export const ADDRESS_FIND_PILL_DESKTOP =
-  "h-9 shrink-0 rounded-full bg-zinc-300 px-4 text-sm font-normal text-black hover:bg-zinc-400 transition-colors cursor-pointer xl:h-11 xl:px-6 xl:text-base";
+export const ADDRESS_SEARCH_INPUT_DESKTOP =
+  "h-9 w-56 shrink-0 rounded-full bg-zinc-100 border border-zinc-300 px-4 text-sm font-normal text-black placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 xl:h-11 xl:w-72 xl:px-5 xl:text-base";
 
 export const ADDRESS_ADD_PILL_DESKTOP_ENABLED =
   "h-9 shrink-0 rounded-full px-4 text-sm font-normal transition-colors xl:h-11 xl:px-6 xl:text-base bg-zinc-300 text-black hover:bg-zinc-400 cursor-pointer";
@@ -268,8 +268,11 @@ export const ADDRESS_ADD_PILL_MOBILE_ENABLED =
 export const ADDRESS_ADD_PILL_MOBILE_DISABLED =
   "w-full h-11 px-6 rounded-full text-base font-normal transition-colors bg-zinc-200 text-zinc-400 cursor-not-allowed";
 
-export const ADDRESS_FIND_PILL_MOBILE =
-  "w-full h-11 px-6 rounded-full bg-zinc-300 text-black text-base font-normal hover:bg-zinc-400 transition-colors cursor-pointer";
+export const ADDRESS_SEARCH_INPUT_MOBILE =
+  "w-full h-11 px-5 rounded-full bg-zinc-100 border border-zinc-300 text-black text-base font-normal placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400";
+
+export const ADDRESS_EMPTY_STATE =
+  "flex items-center justify-center py-16 text-sm text-zinc-400 xl:text-base";
 
 export const ADDRESS_LIST_WRAP =
   "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-hidden";
