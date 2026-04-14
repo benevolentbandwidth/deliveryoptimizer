@@ -5,7 +5,7 @@
 
 import { useCallback, useState } from "react";
 import Papa from "papaparse";
-import type { AddressCard, VehicleRow, VehicleType } from "../types/delivery";
+import type { AddressCard, CapacityUnit, VehicleRow, VehicleType } from "../types/delivery";
 import { hasAtLeastOneLetter } from "@/app/components/AddressGeocoder/utils";
 
 const VALID_VEHICLE_TYPES: VehicleType[] = ["truck", "car", "bicycle"];
@@ -118,9 +118,9 @@ export function useCSVUpload({ importAddresses, importVehicles }: UseCSVUploadAr
                 const startAddr = row.start_address?.trim() ?? "";
                 if (!hasAtLeastOneLetter(startAddr)) continue;
 
-                const rawType = (row.vehicle_type ?? "").toLowerCase();
-                const vehicleType: VehicleType | "" = VALID_VEHICLE_TYPES.includes(rawType as VehicleType)
-                  ? (rawType as VehicleType)
+                const rawVehicleType = (row.vehicle_type ?? "").toLowerCase();
+                const vehicleType: VehicleType | "" = VALID_VEHICLE_TYPES.includes(rawVehicleType as VehicleType)
+                  ? (rawVehicleType as VehicleType)
                   : VALID_VEHICLE_TYPES[1] as VehicleType;  // Default to car if no valid type is provided
 
                 vehicles.push({
@@ -130,8 +130,8 @@ export function useCSVUpload({ importAddresses, importVehicles }: UseCSVUploadAr
                   name: row.name?.trim() ?? `Vehicle ${vehId - 1}`,
                   startLocation: startAddr,
                   type: vehicleType,
-                  capacityUnit: "units",
-                  capacity: parseInt(row.capacity_units ?? "100", 10) || 100,
+                  capacityUnit: (row.capacity_unit as CapacityUnit) ?? "units" as CapacityUnit,
+                  capacity: parseInt(row.capacity ?? "100", 10) || 100,
                   available: true,
                   departureTime: normaliseTimeOption(row.departure_time ?? "") || "8:00 AM",
                 });
