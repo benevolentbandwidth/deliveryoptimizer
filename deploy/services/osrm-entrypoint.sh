@@ -6,6 +6,19 @@ pbf_url="${OSRM_PBF_URL:-https://download.geofabrik.de/north-america/us/californ
 profile="${OSRM_PROFILE:-/opt/osrm-backend/profiles/car.lua}"
 port="${OSRM_PORT:-5001}"
 
+# GCS fast-boot path (Cloud Run): skip PBF download/processing
+gcs_bucket="${OSRM_GCS_BUCKET:-}"
+gcs_prefix="${OSRM_GCS_PREFIX:-california}"
+
+if [[ -n "${gcs_bucket}" ]]; then
+  echo "GCS mode: fetching pre-processed OSRM data from gs://${gcs_bucket}/${gcs_prefix}/"
+  mkdir -p "${data_dir}"
+  gcloud storage cp "gs://${gcs_bucket}/${gcs_prefix}/*.osrm*" "${data_dir}/"
+  osrm_file="${data_dir}/${gcs_prefix}.osrm"
+  echo "Starting OSRM on port ${port}"
+  exec osrm-routed --algorithm mld --port "${port}" "${osrm_file}"
+fi
+
 mkdir -p "${data_dir}"
 
 pbf_file_name="${OSRM_PBF_FILE:-${pbf_url##*/}}"

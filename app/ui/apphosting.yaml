@@ -1,0 +1,16 @@
+runConfig:
+  runtime: nodejs20
+  memoryMiB: 512
+  concurrency: 100
+  minInstances: 0
+  maxInstances: 4
+
+env:
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_KEY
+    secret: GOOGLE_MAPS_KEY
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
+    secret: GOOGLE_MAPS_MAP_ID
+  - variable: DELIVERYOPTIMIZER_API_URL
+    availability:
+      - BUILD
+      - RUNTIME

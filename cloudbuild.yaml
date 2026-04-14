@@ -1,0 +1,74 @@
+steps:
+  # Build and push API image
+  - name: gcr.io/cloud-builders/docker
+    id: build-api
+    args:
+      - build
+      - --cache-from
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api:cache
+      - -f
+      - deploy/services/http-server.Dockerfile
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api:$COMMIT_SHA
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api:latest
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api:cache
+      - .
+
+  # Build and push OSRM image
+  - name: gcr.io/cloud-builders/docker
+    id: build-osrm
+    waitFor: ['-']  # run in parallel with build-api
+    args:
+      - build
+      - --cache-from
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm:cache
+      - -f
+      - deploy/services/osrm.Dockerfile
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm:$COMMIT_SHA
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm:latest
+      - -t
+      - us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm:cache
+      - .
+
+  # Push API images
+  - name: gcr.io/cloud-builders/docker
+    id: push-api
+    waitFor: [build-api]
+    args: [push, --all-tags, us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api]
+
+  # Push OSRM images
+  - name: gcr.io/cloud-builders/docker
+    id: push-osrm
+    waitFor: [build-osrm]
+    args: [push, --all-tags, us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm]
+
+  # Deploy sidecar service to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy
+    waitFor: [push-api, push-osrm]
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        sed "s/:TAG/:$COMMIT_SHA/g" infra/cloud-run/service.yaml \
+          | gcloud run services replace - \
+            --region us-east1 \
+            --project b2-delivery-optimizer
+        gcloud run services add-iam-policy-binding deliveryoptimizer \
+          --region us-east1 \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --project b2-delivery-optimizer \
+          --quiet || true
+
+serviceAccount: projects/b2-delivery-optimizer/serviceAccounts/do-app-service@b2-delivery-optimizer.iam.gserviceaccount.com
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8  # C++ build needs more CPU
+
+timeout: 3600s  # 60 min — C++ build can take 15-20 min uncached

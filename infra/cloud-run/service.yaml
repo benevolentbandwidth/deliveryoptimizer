@@ -1,0 +1,60 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: deliveryoptimizer
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/container-dependencies: '{"api":["osrm"]}'
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "4"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 60
+      serviceAccountName: do-app-service@b2-delivery-optimizer.iam.gserviceaccount.com
+      containers:
+        - name: api
+          image: us-east1-docker.pkg.dev/b2-delivery-optimizer/services/deliveryoptimizer-api:TAG
+          ports:
+            - containerPort: 8080
+          env:
+            - name: VROOM_HOST
+              value: localhost
+            - name: VROOM_PORT
+              value: "5001"
+            - name: OSRM_URL
+              value: http://localhost:5001
+            - name: VROOM_BIN
+              value: /usr/local/bin/vroom
+            - name: VROOM_ROUTER
+              value: osrm
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 20
+        - name: osrm
+          image: us-east1-docker.pkg.dev/b2-delivery-optimizer/services/osrm:TAG
+          env:
+            - name: OSRM_GCS_BUCKET
+              value: b2-delivery-optimizer-osrm-data
+            - name: OSRM_GCS_PREFIX
+              value: california
+            - name: OSRM_PORT
+              value: "5001"
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: "1"
+          startupProbe:
+            tcpSocket:
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
