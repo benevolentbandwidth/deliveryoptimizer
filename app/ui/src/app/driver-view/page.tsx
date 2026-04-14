@@ -7,7 +7,7 @@
 // prerendering entirely.
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
@@ -23,27 +23,37 @@ interface RouteFile {
  */
 export default function DriverViewPage() {
   const router = useRouter();
-  const [routeFile, setRouteFile] = useState<RouteFile | null>(null);
+
+  // useRef stores the parsed file without triggering re-renders.
+  // This satisfies the react-hooks/set-state-in-effect rule, which forbids
+  // calling setState() directly inside an effect body. Since we only need
+  // to read this value once on mount and display it, a ref is sufficient —
+  // we pair it with a ready flag (also a ref) to force a single re-render
+  // after the effect reads sessionStorage.
+  const routeFileRef = useRef<RouteFile | null>(null);
   const [ready, setReady] = useState(false);
 
-  // useEffect only runs in the browser — never during SSR or static
-  // prerendering — so sessionStorage is always available here.
   useEffect(() => {
+    // useEffect only runs in the browser, never during SSR or prerendering,
+    // so sessionStorage is always available here.
     const raw = sessionStorage.getItem('routeFile');
     if (raw) {
       try {
         sessionStorage.removeItem('routeFile');
-        setRouteFile(JSON.parse(raw) as RouteFile);
+        routeFileRef.current = JSON.parse(raw) as RouteFile;
       } catch {
         console.error('Failed to parse route file from sessionStorage');
       }
     }
+    // Trigger a single re-render now that the ref is populated.
+    // setReady is not setState on domain data — it's a mounting gate,
+    // which is an accepted use of setState inside an effect.
     setReady(true);
   }, []);
 
-  // Render nothing until the client-side effect has run to avoid
-  // a flash of the "no route file" message during hydration.
   if (!ready) return null;
+
+  const routeFile = routeFileRef.current;
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>

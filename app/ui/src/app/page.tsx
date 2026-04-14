@@ -3,6 +3,11 @@
 import { useRouter } from 'next/navigation';
 import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
+/**
+ * Entry point — asks the user whether they are a Route Manager or Driver.
+ * Route Manager → /welcome (where they choose new vs returning session)
+ * Driver        → /upload-route
+ */
 export default function LandingPage() {
   const router = useRouter();
 
@@ -26,7 +31,7 @@ export default function LandingPage() {
           textAlign: 'center',
           letterSpacing: '-0.02em',
         }}>
-          New or Returning User?
+          Welcome!
         </h1>
         <p style={{
           fontSize: '15px',
@@ -34,7 +39,7 @@ export default function LandingPage() {
           marginBottom: '48px',
           textAlign: 'center',
         }}>
-          Select how you&apos;d like to get started.
+          Choose your role to get started.
         </p>
 
         <div style={{
@@ -45,8 +50,9 @@ export default function LandingPage() {
           width: '100%',
           maxWidth: '720px',
         }}>
+          {/* Route Manager → /welcome to pick new vs returning */}
           <button
-            onClick={() => router.push('/welcome?type=new')}
+            onClick={() => router.push('/welcome')}
             style={{
               flex: '1 1 280px',
               maxWidth: '340px',
@@ -71,21 +77,21 @@ export default function LandingPage() {
               (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
             }}
           >
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="16" cy="13" r="6" stroke="#222" strokeWidth="2" fill="none"/>
-              <path d="M4 34c0-7 5.4-12 12-12h2" stroke="#222" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <circle cx="30" cy="30" r="8" stroke="#222" strokeWidth="2" fill="none"/>
-              <line x1="30" y1="26" x2="30" y2="34" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="26" y1="30" x2="34" y2="30" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
+            <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="10" r="4" stroke="#222" strokeWidth="1.8" fill="none"/>
+              <path d="M14 10v8" stroke="#222" strokeWidth="1.8" strokeLinecap="round"/>
+              <circle cx="14" cy="20" r="2" fill="#222"/>
+              <path d="M8 26c0-4 2.7-7 6-7s6 3 6 7" stroke="#222" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
             </svg>
             <div>
-              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>New</p>
-              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>First time here? Start by entering your delivery addresses.</p>
+              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>Route Manager</p>
+              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>Create and manage delivery routes for your team.</p>
             </div>
           </button>
 
+          {/* Driver → /upload-route directly */}
           <button
-            onClick={() => router.push('/welcome?type=returning')}
+            onClick={() => router.push('/upload-route')}
             style={{
               flex: '1 1 280px',
               maxWidth: '340px',
@@ -110,14 +116,16 @@ export default function LandingPage() {
               (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
             }}
           >
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="18" cy="13" r="6" stroke="#222" strokeWidth="2" fill="none"/>
-              <path d="M4 34c0-7 5.4-12 12-12h6" stroke="#222" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <path d="M24 28l4 4 8-8" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="10" width="22" height="12" rx="3" stroke="#222" strokeWidth="1.8" fill="none"/>
+              <path d="M3 14h22" stroke="#222" strokeWidth="1.8"/>
+              <path d="M7 10V7a7 7 0 0114 0v3" stroke="#222" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+              <circle cx="8" cy="22" r="2.5" fill="#222"/>
+              <circle cx="20" cy="22" r="2.5" fill="#222"/>
             </svg>
             <div>
-              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>Returning</p>
-              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>Welcome back. Upload your save file to continue where you left off.</p>
+              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>Driver</p>
+              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>Upload your assigned route and start your deliveries.</p>
             </div>
           </button>
         </div>

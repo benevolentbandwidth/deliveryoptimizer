@@ -41,6 +41,9 @@ export default function UploadSavePointPage() {
     if (!file) return;
     // Serialise the file into sessionStorage so the editor can read it
     // after navigation — local state is dropped on router.push().
+    // Routes to /edit directly: returning users land in the editor with
+    // their save data pre-loaded, bypassing the address-entry upload flow
+    // which is only for new sessions.
     const text = await file.text();
     sessionStorage.setItem('savePointFile', JSON.stringify({ name: file.name, content: text }));
     router.push('/edit');
