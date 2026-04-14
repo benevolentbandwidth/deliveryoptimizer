@@ -46,7 +46,7 @@ export default function AddressAutocompleteInput({
     // Avoid redundant blur events
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
-    blurTimeoutRef.current = null;
+      blurTimeoutRef.current = null;
     }
 
     onChange(suggestion.display_name);
