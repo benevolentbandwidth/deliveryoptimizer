@@ -28,7 +28,7 @@ type AddressSectionProps = {
   deleteAddress: (id: number) => void;
   unlockAddress: (id: number) => void;
   confirmAddress: (id: number) => void;
-  addressTouched: boolean;
+  touchedIds: Set<number>;
   allAddressesLocked: boolean;
   activeAddressIsValid: boolean;
   geocodeFailedIds: number[];
@@ -45,7 +45,7 @@ export default function AddressSection({
   deleteAddress,
   unlockAddress,
   confirmAddress,
-  addressTouched,
+  touchedIds,
   allAddressesLocked,
   activeAddressIsValid,
   geocodeFailedIds,
@@ -116,7 +116,7 @@ export default function AddressSection({
               deleteAddress={deleteAddress}
               unlockAddress={unlockAddress}
               confirmAddress={confirmAddress}
-              addressTouched={addressTouched}
+              addressTouched={touchedIds.has(a.id)}
               geocodeFailed={geocodeFailedIds.includes(a.id)}
               outOfRegionFailed={outOfRegionIds.includes(a.id)}
           />
