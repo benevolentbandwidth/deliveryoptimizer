@@ -1,13 +1,8 @@
 // app/driver-view/page.tsx
 'use client';
 
-// This page reads from sessionStorage on mount and cannot be statically
-// prerendered — its content depends on runtime browser state passed from
-// the upload-route page. Marking as dynamic opts it out of build-time
-// prerendering entirely.
 export const dynamic = 'force-dynamic';
 
-import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ShellNavbar from '@/app/edit/components/ShellNavbar';
 
@@ -16,44 +11,20 @@ interface RouteFile {
   content: string;
 }
 
-/**
- * Stub page — reads the route file forwarded via sessionStorage from
- * upload-route/page.tsx and will render the driver's assigned deliveries.
- * Full implementation is a follow-up task.
- */
+function getRouteFile(): RouteFile | null {
+  try {
+    const raw = sessionStorage.getItem('routeFile');
+    if (!raw) return null;
+    sessionStorage.removeItem('routeFile');
+    return JSON.parse(raw) as RouteFile;
+  } catch {
+    return null;
+  }
+}
+
 export default function DriverViewPage() {
   const router = useRouter();
-
-  // useRef stores the parsed file without triggering re-renders.
-  // This satisfies the react-hooks/set-state-in-effect rule, which forbids
-  // calling setState() directly inside an effect body. Since we only need
-  // to read this value once on mount and display it, a ref is sufficient —
-  // we pair it with a ready flag (also a ref) to force a single re-render
-  // after the effect reads sessionStorage.
-  const routeFileRef = useRef<RouteFile | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    // useEffect only runs in the browser, never during SSR or prerendering,
-    // so sessionStorage is always available here.
-    const raw = sessionStorage.getItem('routeFile');
-    if (raw) {
-      try {
-        sessionStorage.removeItem('routeFile');
-        routeFileRef.current = JSON.parse(raw) as RouteFile;
-      } catch {
-        console.error('Failed to parse route file from sessionStorage');
-      }
-    }
-    // Trigger a single re-render now that the ref is populated.
-    // setReady is not setState on domain data — it's a mounting gate,
-    // which is an accepted use of setState inside an effect.
-    setReady(true);
-  }, []);
-
-  if (!ready) return null;
-
-  const routeFile = routeFileRef.current;
+  const routeFile = getRouteFile();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f4f2', fontFamily: "'DM Sans', sans-serif" }}>
