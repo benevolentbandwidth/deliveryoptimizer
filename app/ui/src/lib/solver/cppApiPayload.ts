@@ -45,8 +45,8 @@ export function buildCppDeliveriesOptimizePayload(
     if (v.end) {
       row.end = v.end
     }
-    if (v.timeWindow) {
-      row.time_window = relativeDayWindowToEpoch(v.timeWindow)
+    if (v.departureTime != null && v.returnTime != null) {
+      row.time_window = relativeDayWindowToEpoch([v.departureTime, v.returnTime])
     }
     return row
   })
