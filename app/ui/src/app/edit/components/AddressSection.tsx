@@ -64,8 +64,11 @@ export default function AddressSection({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv"
-        onChange={onCSVUpload}
+        accept=".csv,text/csv"
+        onChange={(e) => {
+          onCSVUpload(e);
+          e.target.value = "";
+        }}
         className="hidden"
         aria-hidden
       />
