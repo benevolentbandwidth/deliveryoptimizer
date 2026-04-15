@@ -17,10 +17,10 @@ import type { Location } from "@/lib/types/common.types";
 export function timeBufferToSeconds(buffer: string): number {
   const lower = buffer.trim().toLowerCase();
   if (lower.includes("min")) {
-    return parseInt(lower) * 60;
+    return parseInt(lower, 10) * 60;
   }
   if (lower.endsWith("hr")) {
-    return parseInt(lower) * 3600;
+    return parseInt(lower, 10) * 3600;
   }
   return 0;
 }

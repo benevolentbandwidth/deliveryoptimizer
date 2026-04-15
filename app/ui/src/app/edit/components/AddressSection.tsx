@@ -11,9 +11,8 @@ import {
   ADDRESS_ADD_PILL_DESKTOP_ENABLED,
   ADDRESS_ADD_PILL_MOBILE_DISABLED,
   ADDRESS_ADD_PILL_MOBILE_ENABLED,
-  ADDRESS_SEARCH_INPUT_DESKTOP,
-  ADDRESS_SEARCH_INPUT_MOBILE,
-  ADDRESS_EMPTY_STATE,
+  ADDRESS_FIND_PILL_DESKTOP,
+  ADDRESS_FIND_PILL_MOBILE,
   ADDRESS_LIST_WRAP,
   ADDRESS_SECTION_TITLE,
   ADDRESS_TOOLBAR_DESKTOP,
@@ -28,12 +27,11 @@ type AddressSectionProps = {
   deleteAddress: (id: number) => void;
   unlockAddress: (id: number) => void;
   confirmAddress: (id: number) => void;
-  addressTouched: boolean;
+  touchedIds: Set<number>;
   allAddressesLocked: boolean;
   activeAddressIsValid: boolean;
   geocodeFailedIds: number[];
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
+  outOfRegionIds: number[];
 };
 
 export default function AddressSection({
@@ -44,12 +42,11 @@ export default function AddressSection({
   deleteAddress,
   unlockAddress,
   confirmAddress,
-  addressTouched,
+  touchedIds,
   allAddressesLocked,
   activeAddressIsValid,
   geocodeFailedIds,
-  searchQuery,
-  setSearchQuery,
+  outOfRegionIds,
 }: AddressSectionProps) {
   const addEnabled = allAddressesLocked || activeAddressIsValid;
 
@@ -57,7 +54,7 @@ export default function AddressSection({
     <section>
       <h2 className={ADDRESS_SECTION_TITLE}>Addresses</h2>
 
-      {/* Mobile: Add first, then search full-width */}
+      {/* Mobile: Add first, then find full-width pills */}
       <div className={ADDRESS_TOOLBAR_MOBILE_WRAP}>
         <button
           type="button"
@@ -67,26 +64,16 @@ export default function AddressSection({
         >
           Add new address
         </button>
-        <input
-          type="search"
-          value={searchQuery}
-          aria-label="Search addresses"
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Find address"
-          className={ADDRESS_SEARCH_INPUT_MOBILE}
-        />
+        <button type="button" className={ADDRESS_FIND_PILL_MOBILE} disabled={true}>
+          Find address
+        </button>
       </div>
 
-      {/* Desktop: Search left, spacer, Add right */}
+      {/* Desktop: Find left, spacer, Add right type scales with viewport */}
       <div className={ADDRESS_TOOLBAR_DESKTOP}>
-        <input
-          type="search"
-          value={searchQuery}
-          aria-label="Search addresses"
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Find address"
-          className={ADDRESS_SEARCH_INPUT_DESKTOP}
-        />
+        <button type="button" className={ADDRESS_FIND_PILL_DESKTOP} disabled={true}>
+          Find address
+        </button>
         <div className="flex-1 min-w-0" />
         <button
           type="button"
@@ -99,27 +86,22 @@ export default function AddressSection({
       </div>
 
       {/* Mobile: spaced cards; desktop: single divided panel */}
-      {searchQuery.trim() !== "" && addressesOnCurrentPage.length === 0 ? (
-        <div className={ADDRESS_EMPTY_STATE}>
-          No Addresses Found
-        </div>
-      ) : (
-        <div className={ADDRESS_LIST_WRAP}>
-          {addressesOnCurrentPage.map((a) => (
-            <AddressCard
-              key={`address-${a.id}`}
-              address={a}
-              addressesCount={addressesCount}
-              updateAddress={updateAddress}
-              deleteAddress={deleteAddress}
-              unlockAddress={unlockAddress}
-              confirmAddress={confirmAddress}
-              addressTouched={addressTouched}
-              geocodeFailed={geocodeFailedIds.includes(a.id)}
-            />
-          ))}
-        </div>
-      )}
+      <div className={ADDRESS_LIST_WRAP}>
+        {addressesOnCurrentPage.map((a) => (
+          <AddressCard
+            key={`address-${a.id}`}
+            address={a}
+            addressesCount={addressesCount}
+            updateAddress={updateAddress}
+            deleteAddress={deleteAddress}
+            unlockAddress={unlockAddress}
+            confirmAddress={confirmAddress}
+            addressTouched={touchedIds.has(a.id)}
+            geocodeFailed={geocodeFailedIds.includes(a.id)}
+            outOfRegionFailed={outOfRegionIds.includes(a.id)}
+          />
+        ))}
+      </div>
     </section>
   );
 }

@@ -28,13 +28,14 @@ export interface NominatimResult {
 /** Geocode a single address. Returns null if nothing was found. */
 export async function geocodeAddress(
   address: string
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<{ lat: number; lng: number; state: string | null } | null> {
   await throttle();
 
   const params = new URLSearchParams({
     q: address,
     format: 'json',
     limit: '1',
+    addressdetails: '1',
   });
 
   const response = await fetch(
@@ -49,7 +50,11 @@ export async function geocodeAddress(
   const data: NominatimResult[] = await response.json();
   if (!data.length) return null;
 
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return {
+    lat: parseFloat(data[0].lat),
+    lng: parseFloat(data[0].lon),
+    state: data[0].address?.state ?? null,
+  };
 }
 
 /** Autocomplete — returns up to `limit` suggestions. */
