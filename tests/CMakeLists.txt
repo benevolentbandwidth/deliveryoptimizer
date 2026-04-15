@@ -26,6 +26,7 @@ add_executable(deliveryoptimizer_tests ${DELIVERYOPTIMIZER_TEST_SOURCES})
 target_sources(
   deliveryoptimizer_tests
   PRIVATE
+    "${CMAKE_SOURCE_DIR}/app/api/src/observability.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/solve_admission.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/solve_coordinator.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/server_options.cpp"
@@ -150,7 +151,35 @@ set_tests_properties(
 )
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsExcessiveBodySize
-  23000
+  23200
+)
+
+add_test(
+  NAME DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsHugeContentLengthEarly
+  COMMAND "${BASH_PROGRAM}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/deliveries_optimize_rejects_huge_content_length_early_test.sh"
+          "$<TARGET_FILE:deliveryoptimizer_api>" "${PYTHON3_PROGRAM}" "${CURL_PROGRAM}"
+)
+set_tests_properties(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsHugeContentLengthEarly
+  PROPERTIES
+    TIMEOUT 30
+    LABELS "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsHugeContentLengthEarly
+  23100
+)
+
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsMalformedJsonWithRequestId
+  deliveries_optimize_rejects_malformed_json_with_request_id_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeRejectsMalformedJsonWithRequestId
+  29100
 )
 
 deliveryoptimizer_add_local_http_test(
@@ -349,6 +378,16 @@ deliveryoptimizer_add_local_http_test(
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeRejectsExcessiveVroomOutput
   41000
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiValidationTest.MetricsEndpointDisabledByDefault
+  metrics_endpoint_disabled_by_default_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.MetricsEndpointDisabledByDefault
+  38100
 )
 deliveryoptimizer_add_local_http_test(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve
