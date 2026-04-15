@@ -3,23 +3,25 @@
 
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import type { Route } from "./types";
 
 export default function ResultsPage() {
-  const [routes, setRoutes] = useState<Route[]>(() => {
-    if (typeof window === "undefined") return [];
+  const [routes, setRoutes] = useState<Route[]>([]);
+  if (typeof window === "undefined") return null;
+  
+  useEffect(() => {
     try {
       const stored = sessionStorage.getItem("optimizeResults");
       if (stored) {
         sessionStorage.removeItem("optimizeResults"); // consume once — prevents stale data on refresh
-        return JSON.parse(stored) as Route[];
+        setRoutes(JSON.parse(stored) as Route[]);
       }
-    } catch { /* corrupt storage — fall through */ }
-    return [];
-  });
+    } catch { /* corrupt storage — ignore */ }
+  }, []);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
 
