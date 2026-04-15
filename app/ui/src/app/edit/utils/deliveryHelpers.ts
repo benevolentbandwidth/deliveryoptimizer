@@ -9,7 +9,7 @@ import type { AddressCard } from "../types/delivery";
 export function deliveryTimeFilled(
   a: Pick<AddressCard, "deliveryTimeStart" | "deliveryTimeEnd">
 ): boolean {
-  return a.deliveryTimeStart.trim() !== "" || a.deliveryTimeEnd.trim() !== "";
+  return (a.deliveryTimeStart?.trim() ?? "") !== "" || (a.deliveryTimeEnd?.trim() ?? "") !== "";
 }
 
 /** Capitalise the first letter of a string. Safe on empty strings. */
