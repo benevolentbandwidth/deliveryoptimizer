@@ -29,9 +29,8 @@ export default function Page() {
     outOfRegionVehicleIds,
   } = useOptimize(vehicleState.vehicles, addressState.addresses);
 
-  const { handleCSVUpload, csvFileName, csvError, clearCsvError } = useCSVUpload({
+  const { handleCSVUpload, csvError, clearCsvError } = useCSVUpload({
     importAddresses: addressState.importAddresses,
-    importVehicles: vehicleState.importVehicles,
   });
 
   return (
@@ -42,12 +41,10 @@ export default function Page() {
         isOptimizing={isOptimizing}
         error={optimizeError ?? csvError}
         onClearError={() => { clearOptimizeError(); clearCsvError(); }}
-        onCSVUpload={handleCSVUpload}
-        csvFileName={csvFileName}
       />
       <main className="px-4 sm:px-6 md:px-8 py-6 md:py-8 space-y-8 md:space-y-10 max-w-[1480px] mx-auto">
         <VehicleSection {...vehicleState} geocodeFailedVehicleIds={geocodeFailedVehicleIds} outOfRegionVehicleIds={outOfRegionVehicleIds} />
-        <AddressSection {...addressState} geocodeFailedIds={geocodeFailedAddressIds} outOfRegionIds={outOfRegionAddressIds} />
+        <AddressSection {...addressState} geocodeFailedIds={geocodeFailedAddressIds} outOfRegionIds={outOfRegionAddressIds} onCSVUpload={handleCSVUpload} />
         <AddressPagination {...addressState} />
       </main>
     </div>
