@@ -23,10 +23,17 @@ type ErrorPopupProps = {
 export default function ErrorPopup({ message, onClose }: ErrorPopupProps) {
   const panelRef = useFocusTrap<HTMLDivElement>(!!message);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  };
+
   if (!message) return null;
 
   return (
-    <div className={ERROR_POPUP_OVERLAY} role="dialog" aria-modal="true" aria-labelledby="error-popup-title">
+    <div 
+    className={ERROR_POPUP_OVERLAY} role="dialog" aria-modal="true" aria-labelledby="error-popup-title" onKeyDown={handleKeyDown}>
       <div ref={panelRef} className={ERROR_POPUP_PANEL}>
         <button
           type="button"
