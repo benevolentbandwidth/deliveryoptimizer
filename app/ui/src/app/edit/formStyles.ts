@@ -322,3 +322,7 @@ export const ERROR_POPUP_DISMISS_BUTTON =
 /** Error popup top-right close icon button. */
 export const ERROR_POPUP_CLOSE_ICON =
   "absolute top-4 right-4 w-8 h-8 rounded-md border border-zinc-300 flex items-center justify-center text-black hover:bg-zinc-100 transition-colors cursor-pointer";
+
+/** Spinner shown inside the optimizing modal. */
+export const OPTIMIZING_SPINNER =
+  "inline-block h-8 w-8 rounded-full border-4 border-zinc-300 border-t-zinc-700 animate-spin";
