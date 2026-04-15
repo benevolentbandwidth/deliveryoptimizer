@@ -1,14 +1,12 @@
 /**
- * CSV upload hook: parses a CSV file into AddressCard[] and VehicleRow[],
+ * CSV upload hook: parses a CSV file into AddressCard[],
  * then bulk-imports them into the edit page state.
  */
 
 import { useCallback, useState } from "react";
 import Papa from "papaparse";
-import type { AddressCard, CapacityUnit, VehicleRow, VehicleType } from "../types/delivery";
+import type { AddressCard } from "../types/delivery";
 import { hasAtLeastOneLetter } from "@/app/components/AddressGeocoder/utils";
-
-const VALID_VEHICLE_TYPES: VehicleType[] = ["truck", "car", "bicycle"];
 
 /** Map a raw time-buffer string (seconds) to the nearest TIME_BUFFER_OPTIONS label. */
 function bufferSecondsToLabel(raw: string): string {
@@ -65,10 +63,9 @@ function normaliseTimeOption(raw: string): string {
 
 type UseCSVUploadArgs = {
   importAddresses: (addresses: AddressCard[]) => void;
-  importVehicles: (vehicles: VehicleRow[]) => void;
 };
 
-export function useCSVUpload({ importAddresses, importVehicles }: UseCSVUploadArgs) {
+export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
   const [csvFileName, setCsvFileName] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
 
@@ -87,64 +84,36 @@ export function useCSVUpload({ importAddresses, importVehicles }: UseCSVUploadAr
         complete: (results) => {
           try {
             const addresses: AddressCard[] = [];
-            const vehicles: VehicleRow[] = [];
             let addrId = 1;
-            let vehId = 1;
 
             for (const row of results.data) {
-              const rowType = row.type?.toLowerCase();
+              const address = row.address?.trim() ?? "";
+              if (!address || !hasAtLeastOneLetter(address)) continue;
 
-              if (rowType === "delivery") {
-                const address = row.address?.trim() ?? "";
-                if (!address || !hasAtLeastOneLetter(address)) continue;
+              const timeStart = normaliseTimeOption(row.time_window_start ?? "")
+              const timeEnd = normaliseTimeOption(row.time_window_end ?? "")
+              const hasBothWindows = timeStart !== "" && timeEnd !== "";
 
-                const timeStart = normaliseTimeOption(row.time_window_start ?? "")
-                const timeEnd = normaliseTimeOption(row.time_window_end ?? "")
-                const hasBothWindows = timeStart !== "" && timeEnd !== "";
-
-                addresses.push({
-                  id: addrId++,
-                  locked: true,
-                  editingExisting: false,
-                  recipientAddress: address,
-                  timeBuffer: bufferSecondsToLabel(row.time_buffer ?? ""),
-                  deliveryTimeMode: hasBothWindows ? "between" : "by",
-                  deliveryBy: hasBothWindows ? "" : timeEnd || timeStart,
-                  deliveryBetween: hasBothWindows ? `${timeStart} - ${timeEnd}` : "", // TODO: Add validation for delivery between
-                  deliveryQuantity: parseInt(row.demand_value ?? "1", 10) || 1,
-                  notes: row.notes?.trim() ?? "",
-                });
-              } else if (rowType === "vehicle") {
-                const startAddr = row.start_address?.trim() ?? "";
-                if (!hasAtLeastOneLetter(startAddr)) continue;
-
-                const rawVehicleType = (row.vehicle_type ?? "").toLowerCase();
-                const vehicleType: VehicleType | "" = VALID_VEHICLE_TYPES.includes(rawVehicleType as VehicleType)
-                  ? (rawVehicleType as VehicleType)
-                  : VALID_VEHICLE_TYPES[1] as VehicleType;  // Default to car if no valid type is provided
-
-                vehicles.push({
-                  id: vehId++,
-                  locked: true,
-                  editingExisting: false,
-                  name: row.name?.trim() ?? `Vehicle ${vehId - 1}`,
-                  startLocation: startAddr,
-                  type: vehicleType,
-                  capacityUnit: (row.capacity_unit as CapacityUnit) ?? "units" as CapacityUnit,
-                  capacity: parseInt(row.capacity ?? "100", 10) || 100,
-                  available: true,
-                  departureTime: normaliseTimeOption(row.departure_time ?? "") || "8:00 AM",
-                });
-              }
+              addresses.push({
+                id: addrId++,
+                locked: true,
+                editingExisting: false,
+                recipientAddress: address,
+                timeBuffer: bufferSecondsToLabel(row.time_buffer ?? ""),
+                deliveryTimeMode: hasBothWindows ? "between" : "by",
+                deliveryBy: hasBothWindows ? "" : timeEnd || timeStart,
+                deliveryBetween: hasBothWindows ? `${timeStart} - ${timeEnd}` : "", // TODO: Add validation for delivery between
+                deliveryQuantity: parseInt(row.demand_value ?? "1", 10) || 1,
+                notes: row.notes?.trim() ?? "",
+              });
             }
 
-            if (addresses.length === 0 && vehicles.length === 0) {
-              setCsvError("No valid deliveries or vehicles found in the CSV.");
+            if (addresses.length === 0) {
+              setCsvError("No valid deliveries found in the CSV.");
               return;
             }
 
-            if (addresses.length > 0) importAddresses(addresses);
-            if (vehicles.length > 0) importVehicles(vehicles);
+            importAddresses(addresses);
           } catch {
             setCsvError("Error parsing CSV file.");
           }
@@ -157,7 +126,7 @@ export function useCSVUpload({ importAddresses, importVehicles }: UseCSVUploadAr
       // Reset so re-uploading the same file still triggers onChange.
       event.target.value = "";
     },
-    [importAddresses, importVehicles],
+    [importAddresses],
   );
 
   const clearCsvError = useCallback(() => setCsvError(null), []);
