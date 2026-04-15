@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import {Alert,LayoutAnimation,Platform,SafeAreaView,ScrollView,StyleSheet,Text,TouchableOpacity,UIManager,View} from 'react-native';
 
 import DeliveryCard from '../../src/features/deliveries/DeliveryCard';
+import { loadSessionFromDocument } from '../../src/features/deliveries/importSession';
 import { transformSessionToDriverRoute } from '../../src/features/deliveries/transformSession';
-import type { DriverRoute, DeliveryStop, OptimizeRequestLike } from '../../src/features/deliveries/types';
-import { migrateSessionSaveFile } from '../../../ui/src/lib/validation/session.schema';
+import type { DriverRoute, DeliveryStop } from '../../src/features/deliveries/types';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -30,17 +30,13 @@ export default function HomeScreen() {
         return;
       }
 
-      const response = await fetch(file.uri);
-      const text = await response.text();
-      const json = JSON.parse(text);
-
-      const saveFile = migrateSessionSaveFile(json);
-      const routeData = saveFile.data;
+      const routeData = await loadSessionFromDocument(file);
 
       const newRoute = transformSessionToDriverRoute(routeData);
       setRoute(newRoute);
       setOpenId(newRoute.stops[0]?.id || null);
     } catch (error) {
+      console.error('Failed to import route JSON', error);
       Alert.alert('Import failed', 'Please upload a valid JSON file.');
     }
   };

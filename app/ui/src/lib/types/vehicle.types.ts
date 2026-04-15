@@ -4,7 +4,7 @@ export type VehicleType = "truck" | "car" | "bicycle"
 
 export type VehicleInput = {
   id: number
-  vehicleType: string
+  vehicleType: VehicleType
   driverName?: string
   startLocation: Location
   endLocation?: Location
@@ -15,9 +15,10 @@ export type VehicleInput = {
 
 export type Vehicle = {
   id: number
-  profile: string
+  profile: VehicleType
   start: [number, number]
   end?: [number, number]
   capacity: number[]
-  timeWindow?: [number, number]
+  departureTime?: number
+  returnTime?: number
 }

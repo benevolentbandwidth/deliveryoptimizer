@@ -28,7 +28,9 @@ export function normalizeVehicle(
 
     capacity: [input.capacity.value],
 
-    timeWindow: input.timeWindow
+    departureTime: input.departureTime,
+
+    returnTime: input.returnTime
   }
 }
 

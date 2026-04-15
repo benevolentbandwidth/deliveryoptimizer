@@ -14,20 +14,26 @@ export const vehicleSchema = z.object({
 
   capacity: loadSchema,
 
-  timeWindow: z
-    .tuple([
-      z.number().int().nonnegative(),
-      z.number().int().nonnegative()
-    ])
-    .refine(
-      ([start, end]) => end > start,
-      {
-        message: "timeWindow end must be after start",
-        path: [1]
-      }
-    )
+  departureTime: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional(),
+
+  returnTime: z
+    .number()
+    .int()
+    .nonnegative()
     .optional()
-})
+}).refine(
+  (data) =>
+    data.departureTime == null ||
+    data.returnTime == null ||
+    data.returnTime > data.departureTime,
+  {
+    message: "returnTime must be after departureTime"
+  }
+)
 
 /**
  * Ensure each ID is unique

@@ -24,6 +24,9 @@ export default function DeliveryCard({
   const isCompleted = stop.status === 'completed';
   const isFailed = stop.status === 'failed';
   const isDone = isCompleted || isFailed;
+  const completedAtText = stop.completedAt
+    ? new Date(stop.completedAt).toLocaleString()
+    : null;
 
   return (
     <Pressable
@@ -67,8 +70,8 @@ export default function DeliveryCard({
             multiline
           />
 
-          {isCompleted && stop.completedAt ? (
-            <Text style={styles.statusText}>Completed at: {stop.completedAt}</Text>
+          {isCompleted && completedAtText ? (
+            <Text style={styles.statusText}>Completed at: {completedAtText}</Text>
           ) : null}
 
           {isFailed && stop.failureReason ? (
