@@ -160,8 +160,8 @@ export function useAddresses() {
     setAddresses(incoming);
     setAddressPage(1);
     setAddressTouched(false);
+    _setSearchQuery("");
   }, []);
-
   return {
     addresses,
     updateAddress,
