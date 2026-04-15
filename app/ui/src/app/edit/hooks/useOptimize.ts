@@ -146,7 +146,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     } finally {
       setIsOptimizing(false);
     }
-  }, [vehicles, addresses]);
+  }, [vehicles, addresses, router]);
 
   // Only clears the error message; geocode failure highlights persist until the next optimize run.
   const clearOptimizeError = useCallback(() => {
