@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import {
   ERROR_POPUP_MESSAGE,
   ERROR_POPUP_OVERLAY,
@@ -8,32 +7,14 @@ import {
   ERROR_POPUP_TITLE,
   OPTIMIZING_SPINNER,
 } from "../formStyles";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 type OptimizingModalProps = {
   isOpen: boolean;
 };
 
 export default function OptimizingModal({ isOpen }: OptimizingModalProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      panelRef.current?.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  const panelRef = useFocusTrap<HTMLDivElement>(isOpen);
 
   if (!isOpen) return null;
 
@@ -46,7 +27,7 @@ export default function OptimizingModal({ isOpen }: OptimizingModalProps) {
         aria-modal="true"
         aria-labelledby="optimizing-title"
         aria-describedby="optimizing-desc"
-        tabIndex={-1}
+        tabIndex={0}
       >
         <h2 id="optimizing-title" className={ERROR_POPUP_TITLE}>
           Optimizing routes…

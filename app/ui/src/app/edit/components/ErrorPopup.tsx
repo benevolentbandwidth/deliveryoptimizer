@@ -13,6 +13,7 @@ import {
   ERROR_POPUP_PANEL,
   ERROR_POPUP_TITLE,
 } from "../formStyles";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 type ErrorPopupProps = {
   message: string | null;
@@ -20,11 +21,13 @@ type ErrorPopupProps = {
 };
 
 export default function ErrorPopup({ message, onClose }: ErrorPopupProps) {
+  const panelRef = useFocusTrap<HTMLDivElement>(!!message);
+
   if (!message) return null;
 
   return (
     <div className={ERROR_POPUP_OVERLAY} role="dialog" aria-modal="true" aria-labelledby="error-popup-title">
-      <div className={ERROR_POPUP_PANEL}>
+      <div ref={panelRef} className={ERROR_POPUP_PANEL}>
         <button
           type="button"
           onClick={onClose}
