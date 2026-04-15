@@ -6,6 +6,7 @@
 import { useCallback, useState } from "react";
 import Papa from "papaparse";
 import type { AddressCard } from "../types/delivery";
+import { resolveColumns } from "@/app/edit/utils/csvParserUtils";
 import { hasAtLeastOneLetter } from "@/app/components/AddressGeocoder/utils";
 
 /** Map a raw time-buffer string (seconds) to the nearest TIME_BUFFER_OPTIONS label. */
@@ -83,26 +84,41 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
         encoding: "UTF-8",
         complete: (results) => {
           try {
+            const cols = resolveColumns(results.meta.fields ?? []);
+            if (!cols.address) {
+              setCsvError(
+                "CSV must contain an 'address' column (or similar: delivery_address, street, location, destination).",
+              );
+              return;
+            }
+            
+            // Getter lambda to get the value of a column from the row
+            const get = (row: Record<string, string>, key: string) =>
+              (cols[key] ? row[cols[key]!]?.trim() : undefined) ?? "";
+
             const addresses: AddressCard[] = [];
             let addrId = 1;
 
             for (const row of results.data) {
-              const address = row.address?.trim() ?? "";
+              const address = get(row, "address");
               if (!address || !hasAtLeastOneLetter(address)) continue;
 
-              const timeStart = normaliseTimeOption(row.time_window_start ?? "");
-              const timeEnd = normaliseTimeOption(row.time_window_end ?? "");
+              const timeStart = normaliseTimeOption(
+                get(row, "time_window_start"),
+              );
+              const timeEnd = normaliseTimeOption(get(row, "time_window_end"));
 
               addresses.push({
                 id: addrId++,
                 locked: true,
                 editingExisting: false,
                 recipientAddress: address,
-                timeBuffer: bufferSecondsToLabel(row.time_buffer ?? ""),
+                timeBuffer: bufferSecondsToLabel(get(row, "time_buffer")),
                 deliveryTimeStart: timeStart,
                 deliveryTimeEnd: timeEnd,
-                deliveryQuantity: parseInt(row.demand_value ?? "1", 10) || 1,
-                notes: row.notes?.trim() ?? "",
+                deliveryQuantity:
+                  parseInt(get(row, "demand_value") || "1", 10) || 1,
+                notes: get(row, "notes"),
               });
             }
 
