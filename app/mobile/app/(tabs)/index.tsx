@@ -1,21 +1,70 @@
 import * as DocumentPicker from 'expo-document-picker';
-import React, { useState } from 'react';
-import {Alert,LayoutAnimation,Linking,Platform,SafeAreaView,ScrollView,StyleSheet,Text,TouchableOpacity,UIManager,View} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  LayoutAnimation,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
 
 import DeliveryCard from '../../src/features/deliveries/DeliveryCard';
+import { exportEndOfShiftSummary } from '../../src/features/deliveries/endShift';
 import { loadSessionFromDocument } from '../../src/features/deliveries/importSession';
 import { transformSessionToDriverRoute } from '../../src/features/deliveries/transformSession';
-import type { DriverRoute, DeliveryStop } from '../../src/features/deliveries/types';
+import { useRoutePersistence } from '../../src/features/deliveries/useRoutePersistence';
+import type { DeliveryStop } from '../../src/features/deliveries/types';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
 export default function HomeScreen() {
-  const [route, setRoute] = useState<DriverRoute | null>(null);
+  const { route, setRoute, clearRoute, storageAvailable } = useRoutePersistence();
   const [openId, setOpenId] = useState<string | null>(null);
   const [reportingStopId, setReportingStopId] = useState<string | null>(null);
   const [failureReason, setFailureReason] = useState('');
+  const [isEndShiftModalVisible, setIsEndShiftModalVisible] = useState(false);
+  const [endReason, setEndReason] = useState('');
+  const [isEndingRoute, setIsEndingRoute] = useState(false);
+
+  useEffect(() => {
+    if (!route) {
+      setOpenId(null);
+      return;
+    }
+
+    if (openId && route.stops.some((stop) => stop.id === openId)) {
+      return;
+    }
+
+    const firstPendingStop = route.stops.find((stop) => stop.status === 'pending');
+    setOpenId(firstPendingStop?.id || route.stops[0]?.id || null);
+  }, [route, openId]);
+
+  const stops = route?.stops ?? [];
+  const pendingStops = stops.filter((stop) => stop.status === 'pending');
+  const completedStops = stops.filter((stop) => stop.status !== 'pending');
+  const completedCount = stops.filter((stop) => stop.status === 'completed').length;
+  const failedCount = stops.filter((stop) => stop.status === 'failed').length;
+  const progress = stops.length > 0 ? completedCount / stops.length : 0;
+
+  const resetTransientState = () => {
+    setOpenId(null);
+    setReportingStopId(null);
+    setFailureReason('');
+    setEndReason('');
+    setIsEndShiftModalVisible(false);
+  };
 
   const handleImportJson = async () => {
     try {
@@ -33,35 +82,41 @@ export default function HomeScreen() {
       }
 
       const routeData = await loadSessionFromDocument(file);
-
       const newRoute = transformSessionToDriverRoute(routeData);
       setRoute(newRoute);
       setOpenId(newRoute.stops[0]?.id || null);
+      setReportingStopId(null);
+      setFailureReason('');
+      setEndReason('');
     } catch (error) {
       console.error('Failed to import route JSON', error);
       Alert.alert('Import failed', 'Please upload a valid JSON file.');
     }
   };
 
-  const updateStop = (stopId: string, changes: Partial<DeliveryStop>) => {
-    if (!route) return;
-
-    const updatedStops = route.stops.map((stop) => {
-      if (stop.id === stopId) {
-        return { ...stop, ...changes };
+  const updateStop = (stopId: string, updates: Partial<DeliveryStop>) => {
+    setRoute((currentRoute) => {
+      if (!currentRoute) {
+        return currentRoute;
       }
-      return stop;
-    });
 
-    setRoute({
-      ...route,
-      stops: updatedStops,
+      const updatedStops = currentRoute.stops.map((stop) => {
+        if (stop.id === stopId) {
+          return { ...stop, ...updates };
+        }
+        return stop;
+      });
+
+      return {
+        ...currentRoute,
+        stops: updatedStops,
+      };
     });
   };
 
   const handleToggle = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpenId(openId === id ? null : id);
+    setOpenId((currentOpenId) => (currentOpenId === id ? null : id));
   };
 
   const handleChangeNote = (stopId: string, value: string) => {
@@ -142,15 +197,43 @@ export default function HomeScreen() {
     }
   };
 
-  const stops = route?.stops || [];
-  const pendingStops = stops.filter((stop) => stop.status === 'pending');
-  const completedStops = stops.filter((stop) => stop.status !== 'pending');
+  const handleFinishRoute = () => {
+    if (!route) {
+      return;
+    }
 
-  const remaining = pendingStops.length;
-  const completed = stops.filter((stop) => stop.status === 'completed').length;
-  const failed = stops.filter((stop) => stop.status === 'failed').length;
-  const total = stops.length;
-  const progress = total > 0 ? completed / total : 0;
+    setEndReason('');
+    setIsEndShiftModalVisible(true);
+  };
+
+  const handleCancelEndShift = () => {
+    if (isEndingRoute) {
+      return;
+    }
+
+    setIsEndShiftModalVisible(false);
+    setEndReason('');
+  };
+
+  const handleConfirmEndShift = async () => {
+    if (!route || isEndingRoute) {
+      return;
+    }
+
+    setIsEndingRoute(true);
+
+    try {
+      await exportEndOfShiftSummary(route, endReason);
+      clearRoute();
+      resetTransientState();
+      Alert.alert('Shift ended', 'Your route was cleared after exporting the shift summary.');
+    } catch (error) {
+      console.error('Failed to end route', error);
+      Alert.alert('End shift failed', 'We could not export the end-of-shift summary.');
+    } finally {
+      setIsEndingRoute(false);
+    }
+  };
 
   if (!route) {
     return (
@@ -160,6 +243,11 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.uploadButton} onPress={handleImportJson}>
             <Text style={styles.uploadButtonText}>Upload JSON</Text>
           </TouchableOpacity>
+          {storageAvailable ? (
+            <Text style={styles.uploadHint}>
+              Saved routes reopen automatically for up to 24 hours.
+            </Text>
+          ) : null}
         </View>
       </SafeAreaView>
     );
@@ -178,7 +266,7 @@ export default function HomeScreen() {
           <View style={styles.progressHeader}>
             <Text style={styles.progressText}>Progress</Text>
             <Text style={styles.progressText}>
-              {completed}/{total} Deliveries Complete
+              {completedCount}/{stops.length} Deliveries Complete
             </Text>
           </View>
 
@@ -188,20 +276,24 @@ export default function HomeScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statBlock}>
-              <Text style={styles.statNumber}>{remaining}</Text>
+              <Text style={styles.statNumber}>{pendingStops.length}</Text>
               <Text style={styles.statLabel}>Remaining</Text>
             </View>
 
             <View style={styles.statBlock}>
-              <Text style={styles.statNumber}>{failed}</Text>
+              <Text style={styles.statNumber}>{failedCount}</Text>
               <Text style={styles.statLabel}>Failed</Text>
             </View>
 
             <View style={styles.statBlock}>
-              <Text style={styles.statNumber}>{completed}</Text>
+              <Text style={styles.statNumber}>{completedCount}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
           </View>
+
+          <Pressable style={styles.finishRouteButton} onPress={handleFinishRoute}>
+            <Text style={styles.finishRouteButtonText}>Finish Route</Text>
+          </Pressable>
         </View>
 
         {pendingStops.map((stop) => (
@@ -244,6 +336,53 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isEndShiftModalVisible}
+        onRequestClose={handleCancelEndShift}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {pendingStops.length > 0 ? 'End Route With Incomplete Stops?' : 'Finish Route?'}
+            </Text>
+
+            <Text style={styles.modalBody}>
+              {pendingStops.length > 0
+                ? `You have ${pendingStops.length} incomplete stop${
+                    pendingStops.length === 1 ? '' : 's'
+                  }. End anyway?`
+                : 'This will export an end-of-shift summary and reset the active route.'}
+            </Text>
+
+            <TextInput
+              style={styles.modalInput}
+              value={endReason}
+              onChangeText={setEndReason}
+              placeholder="End reason (optional)"
+              multiline
+            />
+
+            <View style={styles.modalButtonRow}>
+              <Pressable style={styles.modalSecondaryButton} onPress={handleCancelEndShift}>
+                <Text style={styles.modalSecondaryButtonText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.modalPrimaryButton, isEndingRoute && styles.disabledPrimaryButton]}
+                onPress={handleConfirmEndShift}
+                disabled={isEndingRoute}
+              >
+                <Text style={styles.modalPrimaryButtonText}>
+                  {isEndingRoute ? 'Ending...' : 'End Shift'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -275,6 +414,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  uploadHint: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   container: {
     padding: 16,
@@ -328,6 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderRadius: 18,
     paddingVertical: 18,
+    marginBottom: 16,
   },
   statBlock: {
     flex: 1,
@@ -351,5 +497,78 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginBottom: 10,
+  },
+  finishRouteButton: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  finishRouteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 24, 39, 0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  modalBody: {
+    fontSize: 16,
+    color: '#4b5563',
+    marginBottom: 14,
+  },
+  modalInput: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    minHeight: 88,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalSecondaryButton: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalSecondaryButtonText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+  modalPrimaryButton: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: '#111827',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  disabledPrimaryButton: {
+    backgroundColor: '#9ca3af',
+  },
+  modalPrimaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });
