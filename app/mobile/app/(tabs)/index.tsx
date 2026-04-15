@@ -29,7 +29,7 @@ if (Platform.OS === 'android') {
 }
 
 export default function HomeScreen() {
-  const { route, setRoute, clearRoute, storageAvailable } = useRoutePersistence();
+  const { route, setRoute, clearRoute, isRestored, storageAvailable } = useRoutePersistence();
   const [openId, setOpenId] = useState<string | null>(null);
   const [reportingStopId, setReportingStopId] = useState<string | null>(null);
   const [failureReason, setFailureReason] = useState('');
@@ -234,6 +234,17 @@ export default function HomeScreen() {
       setIsEndingRoute(false);
     }
   };
+
+  if (!isRestored) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.uploadScreen}>
+          <Text style={styles.appHeader}>Driver Assist</Text>
+          <Text style={styles.uploadHint}>Restoring saved route...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!route) {
     return (

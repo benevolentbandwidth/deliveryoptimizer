@@ -1,7 +1,7 @@
 import type { DocumentPickerAsset } from 'expo-document-picker';
 import { ZodError, z } from 'zod';
 
-import type { OptimizeRequestLike } from './types';
+import type { DriverRoute, OptimizeRequestLike } from './types';
 
 const MAX_SESSION_FILE_BYTES = 1_000_000;
 
@@ -41,7 +41,35 @@ const sessionSaveV1Schema = z.object({
   data: optimizeRequestSchema,
 });
 
+const persistedStopSchema = z.object({
+  id: z.string(),
+  stopNumber: z.number(),
+  address: z.string(),
+  customerName: z.string(),
+  phoneNumber: z.string().optional(),
+  packageCount: z.number(),
+  notes: z.string(),
+  status: z.enum(['pending', 'completed', 'failed']),
+  lat: z.number(),
+  lng: z.number(),
+  completedAt: z.string().optional(),
+  failureReason: z.string().optional(),
+});
+
+const persistedRouteSchema = z.object({
+  driverName: z.string(),
+  routeLabel: z.string(),
+  stops: z.array(persistedStopSchema),
+});
+
+const persistedRouteStateSchema = z.object({
+  version: z.literal(1),
+  savedAt: z.string().datetime(),
+  route: persistedRouteSchema,
+});
+
 type SessionSaveFile = z.infer<typeof sessionSaveV1Schema>;
+type PersistedRouteState = z.infer<typeof persistedRouteStateSchema>;
 
 export async function loadSessionFromDocument(
   file: Pick<DocumentPickerAsset, 'uri' | 'name' | 'mimeType' | 'size'>
@@ -76,6 +104,18 @@ export async function loadSessionFromDocument(
   } catch (error) {
     throw new Error(formatValidationError(error) ?? 'Invalid save file format.');
   }
+}
+
+export function createPersistedRouteState(route: DriverRoute): PersistedRouteState {
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    route,
+  };
+}
+
+export function parsePersistedRouteState(input: unknown): PersistedRouteState {
+  return persistedRouteStateSchema.parse(input);
 }
 
 function parseSessionSaveFile(input: unknown): SessionSaveFile {
