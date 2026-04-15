@@ -1,8 +1,7 @@
 // Normalize the header to a consistent format
 function normalizeHeader(h: string): string {
-    return h.toLowerCase().replace(/[\s\-_.]+/g, "_").trim();
-}
-  
+    return h.trim().toLowerCase().replace(/[\s\-_.]+/g, "_");
+}  
 // Column aliases for the CSV file
 const COLUMN_ALIASES: Record<string, string[]> = {
 address: ["address", "delivery_address", "street", "location", "destination"],
