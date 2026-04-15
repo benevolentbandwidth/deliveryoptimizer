@@ -90,9 +90,8 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
               const address = row.address?.trim() ?? "";
               if (!address || !hasAtLeastOneLetter(address)) continue;
 
-              const timeStart = normaliseTimeOption(row.time_window_start ?? "")
-              const timeEnd = normaliseTimeOption(row.time_window_end ?? "")
-              const hasBothWindows = timeStart !== "" && timeEnd !== "";
+              const timeStart = normaliseTimeOption(row.time_window_start ?? "");
+              const timeEnd = normaliseTimeOption(row.time_window_end ?? "");
 
               addresses.push({
                 id: addrId++,
@@ -100,9 +99,8 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
                 editingExisting: false,
                 recipientAddress: address,
                 timeBuffer: bufferSecondsToLabel(row.time_buffer ?? ""),
-                deliveryTimeMode: hasBothWindows ? "between" : "by",
-                deliveryBy: hasBothWindows ? "" : timeEnd || timeStart,
-                deliveryBetween: hasBothWindows ? `${timeStart} - ${timeEnd}` : "", // TODO: Add validation for delivery between
+                deliveryTimeStart: timeStart,
+                deliveryTimeEnd: timeEnd,
                 deliveryQuantity: parseInt(row.demand_value ?? "1", 10) || 1,
                 notes: row.notes?.trim() ?? "",
               });

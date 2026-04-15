@@ -4,7 +4,7 @@
  */
 
 import { timeToSeconds } from "@/app/components/AddressGeocoder/utils/timeConversion";
-import type { VehicleRow, LockedVehicleRow, CapacityUnit } from "../types/delivery";
+import type { LockedVehicleRow, CapacityUnit } from "../types/delivery";
 import type { AddressCard } from "../types/delivery";
 import type { VehicleInput } from "@/lib/types/vehicle.types";
 import type { DeliveryInput } from "@/lib/types/delivery.types";
@@ -25,27 +25,6 @@ export function timeBufferToSeconds(buffer: string): number {
   return 0;
 }
 
-/**
- * Converts a "Delivery by" time string to a VROOM time window.
- * "2:00 PM" → [0, 50400] (window: midnight until deadline)
- */
-export function deliveryByToTimeWindow(time: string): [number, number] {
-  return [0, timeToSeconds(time)];
-}
-
-/**
- * Converts a "Delivery between" window string to a VROOM time window.
- * "1am - 2am" → [3600, 7200]
- */
-export function deliveryBetweenToTimeWindow(window: string): [number, number] {
-  const parts = window.split(" - ");
-  if (parts.length !== 2) {
-    console.warn(`Invalid delivery window format: "${window}"`);
-    return [0, 86400]; // fallback to full day
-  }
-  const [start, end] = parts.map((s) => timeToSeconds(s.trim().toUpperCase()));
-  return [start, end];
-}
 
 /**
  * Maps a locked VehicleRow + geocoded location to a VehicleInput for the API.
@@ -83,12 +62,13 @@ export function addressCardToDeliveryInput(
   location: Location,
   demandType: CapacityUnit
 ): DeliveryInput {
-  const rawTime = a.deliveryTimeMode === "by" ? a.deliveryBy : a.deliveryBetween;
-  const timeWindow: [number, number] | undefined = rawTime
-    ? a.deliveryTimeMode === "by"
-      ? deliveryByToTimeWindow(a.deliveryBy)
-      : deliveryBetweenToTimeWindow(a.deliveryBetween)
-    : undefined;
+  const { deliveryTimeStart: start, deliveryTimeEnd: end } = a;
+  let timeWindow: [number, number] | undefined;
+  if (start && end) {
+    timeWindow = [timeToSeconds(start), timeToSeconds(end)];
+  } else if (start || end) {
+    timeWindow = [0, timeToSeconds(start || end)];
+  }
 
   return {
     id: a.id,
