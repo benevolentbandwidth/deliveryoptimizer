@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import React, { useState } from 'react';
-import {Alert,LayoutAnimation,Platform,SafeAreaView,ScrollView,StyleSheet,Text,TouchableOpacity,UIManager,View} from 'react-native';
+import {Alert,LayoutAnimation,Linking,Platform,SafeAreaView,ScrollView,StyleSheet,Text,TouchableOpacity,UIManager,View} from 'react-native';
 
 import DeliveryCard from '../../src/features/deliveries/DeliveryCard';
 import { loadSessionFromDocument } from '../../src/features/deliveries/importSession';
@@ -105,8 +105,41 @@ export default function HomeScreen() {
     setFailureReason('');
   };
 
-  const handleNavigate = (stopId: string) => {
-    console.log('Navigate to stop:', stopId);
+  const handleNavigate = async (stopId: string) => {
+    const stop = route?.stops.find((routeStop) => routeStop.id === stopId);
+
+    if (!stop) {
+      Alert.alert('Navigation failed', 'We could not find that stop.');
+      return;
+    }
+
+    const destination = `${stop.lat},${stop.lng}`;
+    const googleMapsAppUrl = `comgooglemaps://?daddr=${destination}&directionsmode=driving`;
+    const appleMapsUrl = `http://maps.apple.com/?daddr=${destination}&dirflg=d`;
+    const geoUri = `geo:${destination}?q=${destination}`;
+    const googleMapsWebUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+
+    try {
+      if (await Linking.canOpenURL(googleMapsAppUrl)) {
+        await Linking.openURL(googleMapsAppUrl);
+        return;
+      }
+
+      if (Platform.OS === 'ios') {
+        await Linking.openURL(appleMapsUrl);
+        return;
+      }
+
+      if (await Linking.canOpenURL(geoUri)) {
+        await Linking.openURL(geoUri);
+        return;
+      }
+
+      await Linking.openURL(googleMapsWebUrl);
+    } catch (error) {
+      console.error('Failed to open navigation app', error);
+      Alert.alert('Navigation failed', 'We could not open a navigation app for this stop.');
+    }
   };
 
   const stops = route?.stops || [];
