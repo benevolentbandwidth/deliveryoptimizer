@@ -8,10 +8,10 @@
 import {
   ERROR_POPUP_CLOSE_ICON,
   ERROR_POPUP_DISMISS_BUTTON,
-  ERROR_POPUP_MESSAGE,
-  ERROR_POPUP_OVERLAY,
-  ERROR_POPUP_PANEL,
-  ERROR_POPUP_TITLE,
+  MODAL_MESSAGE,
+  MODAL_OVERLAY,
+  MODAL_PANEL,
+  MODAL_TITLE,
 } from "../formStyles";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 
@@ -33,8 +33,8 @@ export default function ErrorPopup({ message, onClose }: ErrorPopupProps) {
 
   return (
     <div 
-    className={ERROR_POPUP_OVERLAY} role="dialog" aria-modal="true" aria-labelledby="error-popup-title" onKeyDown={handleKeyDown}>
-      <div ref={panelRef} className={ERROR_POPUP_PANEL}>
+    className={MODAL_OVERLAY} role="dialog" aria-modal="true" aria-labelledby="error-popup-title" onKeyDown={handleKeyDown}>
+      <div ref={panelRef} className={MODAL_PANEL}>
         <button
           type="button"
           onClick={onClose}
@@ -45,8 +45,8 @@ export default function ErrorPopup({ message, onClose }: ErrorPopupProps) {
             <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
-        <h2 id="error-popup-title" className={ERROR_POPUP_TITLE}>Something went wrong</h2>
-        <p className={ERROR_POPUP_MESSAGE}>{message}</p>
+        <h2 id="error-popup-title" className={MODAL_TITLE}>Something went wrong</h2>
+        <p className={MODAL_MESSAGE}>{message}</p>
         <button type="button" onClick={onClose} className={ERROR_POPUP_DISMISS_BUTTON}>
           Dismiss
         </button>
