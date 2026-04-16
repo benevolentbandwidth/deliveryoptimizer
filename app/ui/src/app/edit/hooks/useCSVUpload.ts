@@ -87,7 +87,7 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
             const cols = resolveColumns(results.meta.fields ?? []);
             if (!cols.address) {
               setCsvError(
-                "CSV must contain an 'address' column (or similar: delivery_address, street, location, destination).",
+                'CSV must contain an "address" column (or similar: "delivery address", "street", "location", "destination").',
               );
               return;
             }
