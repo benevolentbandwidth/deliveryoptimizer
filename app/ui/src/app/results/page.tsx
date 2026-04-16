@@ -10,13 +10,13 @@ import type { Route } from "./types";
 
 export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
-  if (typeof window === "undefined") return null;
   
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem("optimizeResults");
       if (stored) {
         sessionStorage.removeItem("optimizeResults"); // consume once — prevents stale data on refresh
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRoutes(JSON.parse(stored) as Route[]);
       }
     } catch { /* corrupt storage — ignore */ }
