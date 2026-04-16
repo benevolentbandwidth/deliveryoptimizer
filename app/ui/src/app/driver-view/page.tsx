@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useRouter } from 'next/navigation';
-import ShellNavbar from '@/app/edit/components/ShellNavbar';
+import ShellNavbar from '@/app/components/ShellNavbar';
 
 interface RouteFile {
   name: string;

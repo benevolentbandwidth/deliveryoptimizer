@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import ShellNavbar from '@/app/edit/components/ShellNavbar';
+import ShellNavbar from '@/app/components/ShellNavbar';
 
 interface UploadedFile {
   id: string;

@@ -1,7 +1,7 @@
 // app/welcome/page.tsx
 'use client';
 import { useRouter } from 'next/navigation';
-import ShellNavbar from '@/app/edit/components/ShellNavbar';
+import ShellNavbar from '@/app/components/ShellNavbar';
 
 /**
  * Route Manager session type selector.

@@ -2,7 +2,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import ShellNavbar from '@/app/edit/components/ShellNavbar';
+import ShellNavbar from '@/app/components/ShellNavbar';
 
 export default function UploadRoutePage() {
   const router = useRouter();
