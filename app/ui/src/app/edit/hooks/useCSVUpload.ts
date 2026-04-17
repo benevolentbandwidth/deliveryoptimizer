@@ -75,8 +75,12 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
             }
 
             importAddresses(addresses);
-          } catch {
-            setCsvError("Error parsing CSV file.");
+          } catch (err) {
+            setCsvError(
+              err instanceof Error
+                ? `Failed to process CSV: ${err.message}`
+                : "An unexpected error occurred while processing the CSV."
+            );
           }
         },
         error: (err) => {
