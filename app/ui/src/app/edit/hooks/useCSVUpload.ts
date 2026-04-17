@@ -136,9 +136,6 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
           setCsvError(`CSV parsing error: ${err.message}`);
         },
       });
-
-      // Reset so re-uploading the same file still triggers onChange.
-      event.target.value = "";
     },
     [importAddresses],
   );
