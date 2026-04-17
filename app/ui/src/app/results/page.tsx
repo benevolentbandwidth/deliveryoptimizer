@@ -42,21 +42,19 @@ export default function ResultsPage() {
   }, []);
 
   const savePendingPinMove = useCallback(() => {
-    setPendingPinMove((pending) => {
-      if (!pending) return null;
-      const { vehicleId, stopId, lat, lng } = pending;
-      setRoutes((prev) =>
-        prev.map((route) => {
-          if (route.vehicleId !== vehicleId) return route;
-          return {
-            ...route,
-            stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
-          };
-        })
-      );
-      return null;
-    });
-  }, []);
+    if (!pendingPinMove) return;
+    const { vehicleId, stopId, lat, lng } = pendingPinMove;
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.vehicleId !== vehicleId) return route;
+        return {
+          ...route,
+          stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
+        };
+      })
+    );
+    setPendingPinMove(null);
+  }, [pendingPinMove, setRoutes]);
 
   const cancelPendingPinMove = useCallback(() => {
     setPendingPinMove(null);
