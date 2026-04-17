@@ -72,6 +72,7 @@ struct OptimizationJobStoreConfig {
   std::string connection_string;
   std::size_t connection_count{4U};
   std::size_t max_queue_size{8U};
+  std::size_t max_attempts{3U};
   std::chrono::milliseconds lease_duration{std::chrono::milliseconds{90000}};
   std::chrono::seconds result_ttl{std::chrono::hours{24}};
 };

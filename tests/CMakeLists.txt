@@ -528,6 +528,17 @@ if(INITDB_PROGRAM AND PG_CTL_PROGRAM)
     57000
   )
 
+  deliveryoptimizer_add_local_http_pg_test(
+    DeliveryOptimizerApiAsyncTest.ExpiredLeaseFailsAfterMaxAttempts
+    optimization_job_expired_lease_fails_after_max_attempts_test.sh
+    60
+    "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+  )
+  deliveryoptimizer_set_local_http_test_port(
+    DeliveryOptimizerApiAsyncTest.ExpiredLeaseFailsAfterMaxAttempts
+    58000
+  )
+
   if(PSQL_PROGRAM)
     add_test(
       NAME DeliveryOptimizerApiContractTest.HealthReportsSchemaBootstrapFailure

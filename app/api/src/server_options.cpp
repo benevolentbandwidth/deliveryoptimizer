@@ -30,6 +30,7 @@ constexpr std::string_view kPgDsnEnv = "DELIVERYOPTIMIZER_PG_DSN";
 constexpr std::string_view kJobDbConnectionsEnv = "DELIVERYOPTIMIZER_JOB_DB_CONNECTIONS";
 constexpr std::string_view kJobWorkersEnv = "DELIVERYOPTIMIZER_JOB_WORKERS";
 constexpr std::string_view kJobMaxQueueSizeEnv = "DELIVERYOPTIMIZER_JOB_MAX_QUEUE_SIZE";
+constexpr std::string_view kJobMaxAttemptsEnv = "DELIVERYOPTIMIZER_JOB_MAX_ATTEMPTS";
 constexpr std::string_view kJobPollMsEnv = "DELIVERYOPTIMIZER_JOB_POLL_MS";
 constexpr std::string_view kJobHeartbeatMsEnv = "DELIVERYOPTIMIZER_JOB_HEARTBEAT_MS";
 constexpr std::string_view kJobSweepMsEnv = "DELIVERYOPTIMIZER_JOB_SWEEP_MS";
@@ -44,6 +45,7 @@ constexpr std::size_t kDefaultSolverMaxSyncVehicles = 2000U;
 constexpr std::size_t kDefaultJobDbConnections = 4U;
 constexpr std::size_t kDefaultJobWorkers = 2U;
 constexpr std::size_t kDefaultJobQueueSizePerWorker = 4U;
+constexpr std::size_t kDefaultJobMaxAttempts = 3U;
 constexpr std::uint64_t kDefaultJobPollMs = 250U;
 constexpr std::uint64_t kDefaultJobHeartbeatMs = 1000U;
 constexpr std::uint64_t kDefaultJobSweepMs = 1000U;
@@ -233,6 +235,8 @@ ResolveOptimizationJobStoreConfig(const std::size_t worker_count) {
                                                     "job database connection count"),
       .max_queue_size = ResolvePositiveSizeOption(kJobMaxQueueSizeEnv, default_max_queue_size,
                                                   "optimization job queue size"),
+      .max_attempts = ResolvePositiveSizeOption(kJobMaxAttemptsEnv, kDefaultJobMaxAttempts,
+                                                "optimization job max attempts"),
       .lease_duration = std::chrono::milliseconds{
           static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
               kJobLeaseMsEnv, kDefaultJobLeaseMs, "job lease timeout (ms)"))},

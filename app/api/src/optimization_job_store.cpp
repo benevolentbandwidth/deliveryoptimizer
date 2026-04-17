@@ -501,7 +501,28 @@ std::size_t OptimizationJobStore::RequeueExpiredRunningJobs() {
   }
 
   try {
-    const auto result = client_->execSqlSync(
+    const auto failed_result = client_->execSqlSync(
+        "update optimization_jobs "
+        "set status = 'failed', "
+        "    worker_id = null, "
+        "    completed_at = now(), "
+        "    updated_at = now(), "
+        "    lease_expires_at = null, "
+        "    last_heartbeat_at = null, "
+        "    expires_at = now() + (($2)::bigint * interval '1 second'), "
+        "    outcome = $3, "
+        "    http_status = $4, "
+        "    error_message = $5, "
+        "    result_json = null "
+        "where status = 'running' "
+        "  and lease_expires_at is not null "
+        "  and lease_expires_at < now() "
+        "  and attempt_count >= $1",
+        static_cast<long long>(config_.max_attempts),
+        static_cast<long long>(config_.result_ttl.count()),
+        std::string{ToOutcomeString(SolveRequestOutcome::kFailed)}, 500,
+        "Optimization job lease expired too many times.");
+    const auto requeued_result = client_->execSqlSync(
         "update optimization_jobs "
         "set status = 'queued', "
         "    worker_id = null, "
@@ -514,8 +535,10 @@ std::size_t OptimizationJobStore::RequeueExpiredRunningJobs() {
         "    error_message = null "
         "where status = 'running' "
         "  and lease_expires_at is not null "
-        "  and lease_expires_at < now()");
-    return result.affectedRows();
+        "  and lease_expires_at < now() "
+        "  and attempt_count < $1",
+        static_cast<long long>(config_.max_attempts));
+    return failed_result.affectedRows() + requeued_result.affectedRows();
   } catch (...) {
     return 0U;
   }
