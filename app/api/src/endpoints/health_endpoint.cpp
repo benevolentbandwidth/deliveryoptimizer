@@ -1,7 +1,6 @@
 #include "deliveryoptimizer/api/endpoints/health_endpoint.hpp"
 
 #include "deliveryoptimizer/api/observability.hpp"
-
 #include "env_utils.hpp"
 
 #include <chrono>
@@ -170,9 +169,8 @@ void RegisterHealthEndpoint(drogon::HttpAppFramework& app,
 
         osrm_client->sendRequest(
             osrm_probe_request,
-            [osrm_client = std::move(osrm_client), vroom_ready,
-             observability = observability, extension = extension,
-             callback = std::move(callback)](
+            [osrm_client = std::move(osrm_client), vroom_ready, observability = observability,
+             extension = extension, callback = std::move(callback)](
                 const drogon::ReqResult result, const drogon::HttpResponsePtr& response) mutable {
               (void)osrm_client;
               const OsrmProbeResult osrm_probe = EvaluateOsrmProbe(result, response);

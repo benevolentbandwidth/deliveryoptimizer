@@ -1,9 +1,8 @@
 #pragma once
 
 #include <functional>
-#include <memory>
-
 #include <json/json.h>
+#include <memory>
 
 namespace drogon {
 class HttpAppFramework;

@@ -5,7 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/f8573b9c935cfaa162dd62cc9e75ae2db86f85df";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       systems = [
         "aarch64-darwin"
@@ -13,14 +14,20 @@
         "aarch64-linux"
         "x86_64-linux"
       ];
-      forAllSystems = f:
-        nixpkgs.lib.genAttrs systems (system:
-          f (import nixpkgs {
-            inherit system;
-          }));
+      forAllSystems =
+        f:
+        nixpkgs.lib.genAttrs systems (
+          system:
+          f (
+            import nixpkgs {
+              inherit system;
+            }
+          )
+        );
     in
     {
-      devShells = forAllSystems (pkgs:
+      devShells = forAllSystems (
+        pkgs:
         let
           # On this pinned nixpkgs rev, pkgs.llvmPackages resolves to LLVM 21.1.8.
           llvm = pkgs.llvmPackages;
@@ -68,7 +75,8 @@
               echo "Next step: conan profile detect --force && cmake --preset conan-release"
             '';
           };
-        });
+        }
+      );
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
     };

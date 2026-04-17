@@ -1,10 +1,9 @@
 #include "deliveryoptimizer/api/observability.hpp"
 
-#include <json/json.h>
-
 #include <array>
 #include <iomanip>
 #include <iostream>
+#include <json/json.h>
 #include <limits>
 #include <ostream>
 #include <sstream>
@@ -231,9 +230,8 @@ std::uint64_t ObservabilityRegistry::InflightSolves() const {
 }
 
 void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observability,
-                         const std::shared_ptr<SolveLifecycle>& lifecycle,
-                         const SolveRequestOutcome outcome,
-                         const std::uint16_t http_status) {
+                          const std::shared_ptr<SolveLifecycle>& lifecycle,
+                          const SolveRequestOutcome outcome, const std::uint16_t http_status) {
   if (observability == nullptr || lifecycle == nullptr) {
     return;
   }
@@ -275,8 +273,7 @@ void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observab
     break;
   }
 
-  observability->LogSolveRequest(*lifecycle, outcome,
-                                 http_status);
+  observability->LogSolveRequest(*lifecycle, outcome, http_status);
 }
 
 std::string ObservabilityRegistry::RenderPrometheusText() const {
@@ -382,7 +379,8 @@ void ObservabilityRegistry::LogSolveRequest(const SolveLifecycle& lifecycle,
       static_cast<Json::Int64>(DurationToMilliseconds(lifecycle.queue_wait_duration));
   log_line["solve_duration_ms"] =
       static_cast<Json::Int64>(DurationToMilliseconds(lifecycle.solve_duration));
-  log_line["request_duration_ms"] = static_cast<Json::Int64>(DurationToMilliseconds(request_duration));
+  log_line["request_duration_ms"] =
+      static_cast<Json::Int64>(DurationToMilliseconds(request_duration));
 
   Json::StreamWriterBuilder writer_builder;
   writer_builder["indentation"] = "";

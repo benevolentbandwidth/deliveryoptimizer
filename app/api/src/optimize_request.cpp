@@ -305,7 +305,8 @@ void ParseDepot(const Json::Value& root, deliveryoptimizer::api::OptimizeRequest
 }
 
 void ParseVehicles(const Json::Value& root,
-                   deliveryoptimizer::api::OptimizeRequestInput& parsed_input, Json::Value& issues) {
+                   deliveryoptimizer::api::OptimizeRequestInput& parsed_input,
+                   Json::Value& issues) {
   const Json::Value& vehicles = root["vehicles"];
   if (!vehicles.isArray()) {
     AddValidationIssue(issues, "vehicles", "is required and must be a non-empty array.");
@@ -369,7 +370,8 @@ void ParseJobs(const Json::Value& root, deliveryoptimizer::api::OptimizeRequestI
   return values;
 }
 
-[[nodiscard]] Json::Value BuildTimeWindowArray(const deliveryoptimizer::api::TimeWindow& time_window) {
+[[nodiscard]] Json::Value
+BuildTimeWindowArray(const deliveryoptimizer::api::TimeWindow& time_window) {
   Json::Value values{Json::arrayValue};
   values.append(static_cast<Json::Int64>(time_window.start.time_since_epoch().count()));
   values.append(static_cast<Json::Int64>(time_window.end.time_since_epoch().count()));
@@ -466,7 +468,7 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
 namespace deliveryoptimizer::api {
 
 std::optional<ParsedOptimizeRequest> ParseAndValidateOptimizeRequest(const Json::Value& root,
-                                                                    Json::Value& issues) {
+                                                                     Json::Value& issues) {
   issues = Json::Value{Json::arrayValue};
   if (!root.isObject()) {
     AddValidationIssue(issues, "body", "must be a JSON object.");

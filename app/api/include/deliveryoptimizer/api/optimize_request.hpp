@@ -57,6 +57,6 @@ ParseAndValidateOptimizeRequest(const Json::Value& root, Json::Value& issues);
 [[nodiscard]] Json::Value BuildVroomInput(const OptimizeRequestInput& input);
 
 [[nodiscard]] Json::Value BuildOptimizeSuccessBody(const OptimizeRequestInput& input,
-                                                  const Json::Value& vroom_output);
+                                                   const Json::Value& vroom_output);
 
 } // namespace deliveryoptimizer::api

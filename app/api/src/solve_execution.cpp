@@ -2,8 +2,8 @@
 
 namespace {
 
-[[nodiscard]] deliveryoptimizer::api::CoordinatedSolveResult ToCoordinatedSolveResult(
-    const deliveryoptimizer::api::VroomRunResult& result) {
+[[nodiscard]] deliveryoptimizer::api::CoordinatedSolveResult
+ToCoordinatedSolveResult(const deliveryoptimizer::api::VroomRunResult& result) {
   switch (result.status) {
   case deliveryoptimizer::api::VroomRunStatus::kSuccess:
     return deliveryoptimizer::api::CoordinatedSolveResult{

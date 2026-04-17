@@ -54,9 +54,9 @@ public:
   SolveCoordinator(SolveCoordinator&&) = delete;
   SolveCoordinator& operator=(SolveCoordinator&&) = delete;
 
-  [[nodiscard]] SolveAdmissionStatus CheckAdmission(
-      const SolveRequestSize& request_size,
-      std::shared_ptr<SolveLifecycle> lifecycle = nullptr);
+  [[nodiscard]] SolveAdmissionStatus
+  CheckAdmission(const SolveRequestSize& request_size,
+                 const std::shared_ptr<SolveLifecycle>& lifecycle = nullptr);
 
   [[nodiscard]] SolveAdmissionStatus Submit(const SolveRequestSize& request_size,
                                             PayloadFactory payload_factory,
@@ -78,9 +78,9 @@ private:
   void WorkerLoop();
   void QueueTimerLoop();
   void CompletionLoop();
-  [[nodiscard]] SolveAdmissionStatus CheckAdmissionLocked(
-      const SolveRequestSize& request_size,
-      const std::shared_ptr<SolveLifecycle>& lifecycle);
+  [[nodiscard]] SolveAdmissionStatus
+  CheckAdmissionLocked(const SolveRequestSize& request_size,
+                       const std::shared_ptr<SolveLifecycle>& lifecycle);
 
   SolveAdmissionConfig config_;
   SolveCoordinatorOptions options_;

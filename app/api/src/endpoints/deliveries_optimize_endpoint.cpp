@@ -47,12 +47,12 @@ BuildAdmissionRejectionResponse(const deliveryoptimizer::api::SolveAdmissionStat
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs:
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyVehicles:
     return CompletedResponse{
-        .response = BuildErrorResponse(drogon::k422UnprocessableEntity,
-                                       "Routing optimization is unavailable for requests of this size."),
-        .outcome =
-            status == deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs
-                ? deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyJobs
-                : deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyVehicles,
+        .response =
+            BuildErrorResponse(drogon::k422UnprocessableEntity,
+                               "Routing optimization is unavailable for requests of this size."),
+        .outcome = status == deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs
+                       ? deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyJobs
+                       : deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyVehicles,
     };
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedQueueFull:
     return CompletedResponse{
@@ -108,10 +108,9 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
 
   app.registerHandler(
       "/api/v1/deliveries/optimize",
-      [coordinator = std::move(coordinator),
-       observability = std::move(observability)](const drogon::HttpRequestPtr& request,
-                                                 std::function<void(const drogon::HttpResponsePtr&)>&&
-                                                     callback) {
+      [coordinator = std::move(coordinator), observability = std::move(observability)](
+          const drogon::HttpRequestPtr& request,
+          std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
         auto lifecycle = std::make_shared<SolveLifecycle>(CreateSolveLifecycle(request));
         auto response_callback =
             std::make_shared<std::function<void(const drogon::HttpResponsePtr&)>>(
@@ -127,9 +126,9 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
         };
         const auto respond_with_completion =
             [respond, observability, lifecycle](const CompletedResponse& completed_response) {
-              FinalizeSolveRequest(observability, lifecycle, completed_response.outcome,
-                                   static_cast<std::uint16_t>(
-                                       completed_response.response->getStatusCode()));
+              FinalizeSolveRequest(
+                  observability, lifecycle, completed_response.outcome,
+                  static_cast<std::uint16_t>(completed_response.response->getStatusCode()));
               respond(completed_response.response);
             };
 
@@ -177,7 +176,8 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
 
         const SolveAdmissionStatus admission_status = coordinator->Submit(
             request_size, [optimize_request_ptr] { return BuildVroomInput(*optimize_request_ptr); },
-            [optimize_request_ptr, respond_with_completion](const CoordinatedSolveResult& result) mutable {
+            [optimize_request_ptr,
+             respond_with_completion](const CoordinatedSolveResult& result) mutable {
               respond_with_completion(BuildSolveExecutionResponse(
                   BuildSolveExecutionResult(*optimize_request_ptr, result)));
             },

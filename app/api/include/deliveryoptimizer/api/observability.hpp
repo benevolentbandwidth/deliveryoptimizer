@@ -65,12 +65,13 @@ struct ObservabilityOptions {
 };
 
 void EnsureRequestContext(const drogon::HttpRequestPtr& request);
-[[nodiscard]] std::optional<RequestContext> GetRequestContext(const drogon::HttpRequestPtr& request);
+[[nodiscard]] std::optional<RequestContext>
+GetRequestContext(const drogon::HttpRequestPtr& request);
 [[nodiscard]] SolveLifecycle CreateSolveLifecycle(const drogon::HttpRequestPtr& request);
 [[nodiscard]] std::string_view ToOutcomeString(SolveRequestOutcome outcome);
 void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observability,
-                         const std::shared_ptr<SolveLifecycle>& lifecycle,
-                         SolveRequestOutcome outcome, std::uint16_t http_status);
+                          const std::shared_ptr<SolveLifecycle>& lifecycle,
+                          SolveRequestOutcome outcome, std::uint16_t http_status);
 
 class ObservabilityRegistry {
 public:

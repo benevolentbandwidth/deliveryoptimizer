@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory>
-
 #include "deliveryoptimizer/api/solve_admission.hpp"
+
+#include <memory>
 
 namespace drogon {
 class HttpAppFramework;

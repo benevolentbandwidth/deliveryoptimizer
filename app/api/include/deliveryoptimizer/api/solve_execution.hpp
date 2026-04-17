@@ -27,10 +27,10 @@ struct SolveExecutionResult {
   std::string error_message;
 };
 
-[[nodiscard]] SolveExecutionResult BuildSolveExecutionResult(
-    const OptimizeRequestInput& input, const CoordinatedSolveResult& result);
+[[nodiscard]] SolveExecutionResult BuildSolveExecutionResult(const OptimizeRequestInput& input,
+                                                             const CoordinatedSolveResult& result);
 
-[[nodiscard]] SolveExecutionResult BuildSolveExecutionResult(
-    const OptimizeRequestInput& input, const VroomRunResult& result);
+[[nodiscard]] SolveExecutionResult BuildSolveExecutionResult(const OptimizeRequestInput& input,
+                                                             const VroomRunResult& result);
 
 } // namespace deliveryoptimizer::api
