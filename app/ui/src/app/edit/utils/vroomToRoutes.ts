@@ -51,7 +51,14 @@ export function vroomToRoutes(
         sequence: idx + 1,
         capacityUsed: step.load?.[0] ?? 0,
         timeWindow: {
-          kind: address?.deliveryTimeStart && address?.deliveryTimeEnd ? "at" : "by",
+          kind: (() => {
+            const start = address?.deliveryTimeStart;
+            const end = address?.deliveryTimeEnd;
+            if (start && end) return "at";
+            if (end) return "by";
+            if (start) return "from";
+            return "by";
+          })(),
           time: arrivalTimeStr,
         },
         note: address?.notes ?? "",
