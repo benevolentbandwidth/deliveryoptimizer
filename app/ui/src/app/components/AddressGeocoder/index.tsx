@@ -347,24 +347,32 @@ export default function AddressGeocoder() {
   };
 
   // Click outside to close dropdowns
+  // Extract individual values so the linter sees stable primitive/function
+  // references in the dep array — using whole hook objects would cause
+  // the effect to re-run on every render (objects are new refs each time).
+  const deliveryShowSuggestions = deliveryAutocomplete.showSuggestions;
+  const deliveryClearSuggestions = deliveryAutocomplete.clearSuggestions;
+  const vehicleShowSuggestions = vehicleAutocomplete.showSuggestions;
+  const vehicleClearSuggestions = vehicleAutocomplete.clearSuggestions;
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      if (deliveryAutocomplete.showSuggestions) {
+      if (deliveryShowSuggestions) {
         const clickedInside = Array.from(document.querySelectorAll('[data-delivery-input]'))
           .some(el => el.contains(target));
         if (!clickedInside) {
-          deliveryAutocomplete.clearSuggestions();
+          deliveryClearSuggestions();
           setActiveDeliveryId(null);
         }
       }
 
-      if (vehicleAutocomplete.showSuggestions) {
+      if (vehicleShowSuggestions) {
         const clickedInside = Array.from(document.querySelectorAll('[data-vehicle-input]'))
           .some(el => el.contains(target));
         if (!clickedInside) {
-          vehicleAutocomplete.clearSuggestions();
+          vehicleClearSuggestions();
           setActiveAddressField(null);
         }
       }
@@ -373,10 +381,10 @@ export default function AddressGeocoder() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [
-    deliveryAutocomplete.showSuggestions,
-    deliveryAutocomplete.clearSuggestions,
-    vehicleAutocomplete.showSuggestions,
-    vehicleAutocomplete.clearSuggestions,
+    deliveryShowSuggestions,
+    deliveryClearSuggestions,
+    vehicleShowSuggestions,
+    vehicleClearSuggestions,
   ]);
 
   return (
