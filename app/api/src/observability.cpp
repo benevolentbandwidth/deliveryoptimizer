@@ -209,6 +209,14 @@ void ObservabilityRegistry::SetSolverState(const std::size_t queue_depth,
   inflight_solves_.store(inflight_solves, std::memory_order_relaxed);
 }
 
+void ObservabilityRegistry::SetAsyncJobState(const std::size_t queued_jobs,
+                                             const std::size_t running_jobs,
+                                             const std::size_t healthy_workers) {
+  async_job_queue_depth_.store(queued_jobs, std::memory_order_relaxed);
+  async_job_running_.store(running_jobs, std::memory_order_relaxed);
+  async_job_workers_healthy_.store(healthy_workers, std::memory_order_relaxed);
+}
+
 void ObservabilityRegistry::ObserveQueueWait(const SteadyClock::duration duration) {
   queue_wait_histogram_->Observe(DurationToSeconds(duration));
 }
@@ -345,6 +353,15 @@ std::string ObservabilityRegistry::RenderPrometheusText() const {
               "Current number of inflight solver executions.", InflightSolves());
   AppendGauge(output, "deliveryoptimizer_solver_queue_depth",
               "Current number of queued solver requests.", QueueDepth());
+  AppendGauge(output, "deliveryoptimizer_async_job_queue_depth",
+              "Current number of queued optimization jobs.",
+              async_job_queue_depth_.load(std::memory_order_relaxed));
+  AppendGauge(output, "deliveryoptimizer_async_job_running",
+              "Current number of running optimization jobs.",
+              async_job_running_.load(std::memory_order_relaxed));
+  AppendGauge(output, "deliveryoptimizer_async_job_workers_healthy",
+              "Current number of healthy optimization job workers.",
+              async_job_workers_healthy_.load(std::memory_order_relaxed));
 
   append_histogram(output, "deliveryoptimizer_solver_queue_wait_seconds",
                    "Time spent waiting in the solver queue for accepted requests.",

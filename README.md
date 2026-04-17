@@ -1,6 +1,6 @@
 # Delivery Optimizer
 
-This branch introduces the C++ API runtime modules plus ARM routing stack assets (OSRM + VROOM) and an allowlisted OSRM proxy endpoint.
+This branch introduces the C++ API runtime modules plus ARM routing stack assets (OSRM + VROOM), a PostgreSQL-backed async optimization job API, and an allowlisted OSRM proxy endpoint.
 
 ## Contributor Docs
 
@@ -20,7 +20,10 @@ This branch introduces the C++ API runtime modules plus ARM routing stack assets
 - `GET /health`
 - `GET /metrics` when `DELIVERYOPTIMIZER_ENABLE_METRICS=1`
 - `GET /optimize?deliveries=<n>&vehicles=<n>`
-- `POST /api/v1/deliveries/optimize`
+- `POST /api/v1/optimization-jobs`
+- `GET /api/v1/optimization-jobs/:job_id`
+- `GET /api/v1/optimization-jobs/:job_id/result`
+- `POST /api/v1/deliveries/optimize` when `DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE=1`
 - `GET /api/v1/osrm/*` for allowlisted OSRM services
 
 `/metrics` is disabled by default because it shares the main API listener and has no auth guard.
@@ -29,7 +32,7 @@ Only enable it for trusted internal scrapers.
 Example:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/api/v1/deliveries/optimize \
+curl -X POST http://127.0.0.1:8080/api/v1/optimization-jobs \
   -H 'Content-Type: application/json' \
   --data-binary '{
     "depot": { "location": [-122.4194, 37.7749] },
@@ -38,7 +41,15 @@ curl -X POST http://127.0.0.1:8080/api/v1/deliveries/optimize \
   }'
 ```
 
+Then poll the submitted job:
+
+```bash
+curl http://127.0.0.1:8080/api/v1/optimization-jobs/<job-id>
+curl http://127.0.0.1:8080/api/v1/optimization-jobs/<job-id>/result
+```
+
 If `jobs[].demand` is omitted, the API defaults it to `1`. If `jobs[].service` is omitted, the API defaults it to `300` seconds.
+`POST /api/v1/deliveries/optimize` is now disabled by default and should only be re-enabled for internal/dev workflows with `DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE=1`.
 
 ## Build (C++)
 
@@ -94,6 +105,9 @@ Quick checks:
 
 ```bash
 curl -f http://127.0.0.1:8080/health
+curl -X POST http://127.0.0.1:8080/api/v1/optimization-jobs \
+  -H 'Content-Type: application/json' \
+  --data-binary '{"depot":{"location":[7.4236,43.7384]},"vehicles":[{"id":"van-1","capacity":8}],"jobs":[{"id":"order-1","location":[7.4212,43.7308],"demand":1}]}'
 ```
 
 ## UI

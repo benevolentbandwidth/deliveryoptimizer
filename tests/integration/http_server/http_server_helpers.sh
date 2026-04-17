@@ -69,6 +69,14 @@ http_server_init() {
 http_server_cleanup() {
   if [[ -n "${server_pid:-}" ]]; then
     kill "${server_pid}" >/dev/null 2>&1 || true
+    local attempts=50
+    while kill -0 "${server_pid}" >/dev/null 2>&1 && (( attempts > 0 )); do
+      sleep 0.1
+      attempts=$((attempts - 1))
+    done
+    if kill -0 "${server_pid}" >/dev/null 2>&1; then
+      kill -9 "${server_pid}" >/dev/null 2>&1 || true
+    fi
     wait "${server_pid}" >/dev/null 2>&1 || true
   fi
 
@@ -76,7 +84,10 @@ http_server_cleanup() {
 }
 
 http_server_start() {
-  env DELIVERYOPTIMIZER_PORT="${port}" "$@" "${server_bin}" >"${log_file}" 2>&1 &
+  # Legacy local integration tests still exercise the internal sync endpoint.
+  env DELIVERYOPTIMIZER_PORT="${port}" \
+    DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE="${DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE:-1}" \
+    "$@" "${server_bin}" >"${log_file}" 2>&1 &
   server_pid=$!
 }
 

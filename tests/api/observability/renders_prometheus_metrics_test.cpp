@@ -30,6 +30,7 @@ TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndB
   registry.RecordTimedOut();
   registry.RecordFailed();
   registry.SetSolverState(2U, 1U);
+  registry.SetAsyncJobState(3U, 1U, 2U);
   registry.ObserveQueueWait(std::chrono::milliseconds{250});
   registry.ObserveSolveDuration(std::chrono::milliseconds{500});
   registry.ObserveRequestDuration(std::chrono::milliseconds{1500});
@@ -50,6 +51,10 @@ TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndB
             std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_queue_depth 2"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_inflight 1"), std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_async_job_queue_depth 3"), std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_async_job_running 1"), std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_async_job_workers_healthy 2"),
+            std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_queue_wait_seconds_bucket{le=\"0.25\"} 1"),
             std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_queue_wait_seconds_bucket{le=\"+Inf\"} 1"),

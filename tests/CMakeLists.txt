@@ -59,9 +59,27 @@ gtest_discover_tests(
     LABELS "unit"
 )
 
+if(DEFINED BASH_PROGRAM AND NOT EXISTS "${BASH_PROGRAM}")
+  unset(BASH_PROGRAM CACHE)
+endif()
+if(DEFINED CURL_PROGRAM AND NOT EXISTS "${CURL_PROGRAM}")
+  unset(CURL_PROGRAM CACHE)
+endif()
+if(DEFINED PYTHON3_PROGRAM AND NOT EXISTS "${PYTHON3_PROGRAM}")
+  unset(PYTHON3_PROGRAM CACHE)
+endif()
+if(DEFINED INITDB_PROGRAM AND NOT EXISTS "${INITDB_PROGRAM}")
+  unset(INITDB_PROGRAM CACHE)
+endif()
+if(DEFINED PG_CTL_PROGRAM AND NOT EXISTS "${PG_CTL_PROGRAM}")
+  unset(PG_CTL_PROGRAM CACHE)
+endif()
+
 find_program(BASH_PROGRAM bash REQUIRED)
 find_program(CURL_PROGRAM curl REQUIRED)
 find_program(PYTHON3_PROGRAM python3 REQUIRED)
+find_program(INITDB_PROGRAM initdb)
+find_program(PG_CTL_PROGRAM pg_ctl)
 find_program(DOCKER_PROGRAM docker)
 
 set(DELIVERYOPTIMIZER_LOCAL_API_LABELS "integration;api;local")
@@ -88,6 +106,21 @@ function(deliveryoptimizer_add_local_http_test test_name script_name timeout_sec
     NAME ${test_name}
     COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/${script_name}"
             "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}"
+  )
+  set_tests_properties(
+    ${test_name}
+    PROPERTIES
+      TIMEOUT ${timeout_seconds}
+      LABELS "${labels}"
+  )
+endfunction()
+
+function(deliveryoptimizer_add_local_http_pg_test test_name script_name timeout_seconds labels)
+  add_test(
+    NAME ${test_name}
+    COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/${script_name}"
+            "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}" "${PYTHON3_PROGRAM}"
+            "${INITDB_PROGRAM}" "${PG_CTL_PROGRAM}"
   )
   set_tests_properties(
     ${test_name}
@@ -396,6 +429,16 @@ deliveryoptimizer_set_local_http_test_port(
   38300
 )
 deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeEndpointDisabledByDefault
+  deliveries_optimize_endpoint_disabled_by_default_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiValidationTest.DeliveriesOptimizeEndpointDisabledByDefault
+  38200
+)
+deliveryoptimizer_add_local_http_test(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve
   deliveries_optimize_accepts_small_sync_solve_test.sh
   30
@@ -436,6 +479,32 @@ deliveryoptimizer_set_local_http_test_port(
   49000
 )
 
+if(INITDB_PROGRAM AND PG_CTL_PROGRAM)
+  deliveryoptimizer_add_local_http_pg_test(
+    DeliveryOptimizerApiAsyncTest.OptimizationJobsEndToEnd
+    optimization_jobs_end_to_end_test.sh
+    60
+    "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+  )
+  deliveryoptimizer_set_local_http_test_port(
+    DeliveryOptimizerApiAsyncTest.OptimizationJobsEndToEnd
+    52000
+  )
+
+  deliveryoptimizer_add_local_http_pg_test(
+    DeliveryOptimizerApiAsyncTest.OptimizationJobResultReturnsConflictWhileRunning
+    optimization_job_result_conflict_while_running_test.sh
+    60
+    "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+  )
+  deliveryoptimizer_set_local_http_test_port(
+    DeliveryOptimizerApiAsyncTest.OptimizationJobResultReturnsConflictWhileRunning
+    53000
+  )
+else()
+  message(STATUS "Skipping local PostgreSQL-backed HTTP tests because initdb or pg_ctl was not found.")
+endif()
+
 if(DOCKER_PROGRAM)
   set(DELIVERYOPTIMIZER_E2E_ENV_FILE "${CMAKE_SOURCE_DIR}/tests/integration/e2e/e2e_stack.env")
   set(DELIVERYOPTIMIZER_E2E_COMPOSE_FILE "${CMAKE_SOURCE_DIR}/deploy/compose/docker-compose.arm64.yml")
@@ -462,6 +531,22 @@ if(DOCKER_PROGRAM)
       COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/e2e/${script_name}"
               "${DELIVERYOPTIMIZER_E2E_ENV_FILE}" "${DELIVERYOPTIMIZER_E2E_COMPOSE_FILE}"
               "${DOCKER_PROGRAM}" "${CURL_PROGRAM}"
+    )
+    set_tests_properties(
+      ${test_name}
+      PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT ${timeout_seconds}
+        LABELS "e2e;docker;api"
+    )
+  endfunction()
+
+  function(deliveryoptimizer_add_docker_api_e2e_python_test test_name script_name timeout_seconds)
+    add_test(
+      NAME ${test_name}
+      COMMAND "${BASH_PROGRAM}" "${CMAKE_CURRENT_SOURCE_DIR}/integration/e2e/${script_name}"
+              "${DELIVERYOPTIMIZER_E2E_ENV_FILE}" "${DELIVERYOPTIMIZER_E2E_COMPOSE_FILE}"
+              "${DOCKER_PROGRAM}" "${CURL_PROGRAM}" "${PYTHON3_PROGRAM}"
     )
     set_tests_properties(
       ${test_name}
@@ -517,19 +602,9 @@ if(DOCKER_PROGRAM)
     1800
   )
 
-  deliveryoptimizer_add_docker_api_e2e_test(
-    DeliveryOptimizerE2ETest.DeliveriesOptimizeValidPayloadReturnsRoutingResponse
-    deliveries_optimize_valid_payload_returns_routing_response_e2e_test.sh
-    2400
-  )
-  deliveryoptimizer_add_docker_api_e2e_test(
-    DeliveryOptimizerE2ETest.DeliveriesOptimizeInvalidPayloadReturnsValidationError
-    deliveries_optimize_invalid_payload_returns_validation_error_e2e_test.sh
-    2400
-  )
-  deliveryoptimizer_add_docker_api_e2e_test(
-    DeliveryOptimizerE2ETest.DeliveriesOptimizeMalformedJsonReturnsParseError
-    deliveries_optimize_malformed_json_returns_parse_error_e2e_test.sh
+  deliveryoptimizer_add_docker_api_e2e_python_test(
+    DeliveryOptimizerE2ETest.OptimizationJobValidPayloadReturnsRoutingResponse
+    optimization_job_valid_payload_returns_routing_response_e2e_test.sh
     2400
   )
   deliveryoptimizer_add_docker_api_e2e_test(
