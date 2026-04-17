@@ -125,6 +125,17 @@ TEST(ObservabilityRegistryTest, FinalizeAsyncAcceptanceDoesNotIncrementSucceeded
             std::string::npos);
 }
 
+TEST(ObservabilityRegistryTest, AsyncJobCompletionIncrementsSucceededCounter) {
+  deliveryoptimizer::api::ObservabilityRegistry registry;
+
+  registry.RecordAsyncJobCompletion(deliveryoptimizer::api::SolveRequestOutcome::kSucceeded);
+
+  const std::string rendered = registry.RenderPrometheusText();
+
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_succeeded_total 1"),
+            std::string::npos);
+}
+
 TEST(ObservabilityRegistryTest, FinalizeClientErrorsIncrementRejectedCounter) {
   constexpr std::array client_error_outcomes{
       deliveryoptimizer::api::SolveRequestOutcome::kInvalidJson,

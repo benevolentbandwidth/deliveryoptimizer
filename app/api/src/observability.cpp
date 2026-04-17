@@ -201,6 +201,29 @@ void ObservabilityRegistry::RecordFailed() {
   failed_requests_.fetch_add(1U, std::memory_order_relaxed);
 }
 
+void ObservabilityRegistry::RecordAsyncJobCompletion(const SolveRequestOutcome outcome) {
+  switch (outcome) {
+  case SolveRequestOutcome::kSucceeded:
+    RecordSucceeded();
+    break;
+  case SolveRequestOutcome::kQueueWaitTimedOut:
+  case SolveRequestOutcome::kSolveTimedOut:
+    RecordTimedOut();
+    break;
+  case SolveRequestOutcome::kFailed:
+    RecordFailed();
+    break;
+  case SolveRequestOutcome::kAcceptedAsync:
+  case SolveRequestOutcome::kRejectedTooManyJobs:
+  case SolveRequestOutcome::kRejectedTooManyVehicles:
+  case SolveRequestOutcome::kRejectedQueueFull:
+  case SolveRequestOutcome::kInvalidJson:
+  case SolveRequestOutcome::kValidationFailed:
+  case SolveRequestOutcome::kRequestTooLarge:
+    break;
+  }
+}
+
 void ObservabilityRegistry::RecordTrackerWriteFailure() {
   tracker_write_failures_.fetch_add(1U, std::memory_order_relaxed);
 }

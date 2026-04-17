@@ -89,6 +89,7 @@ public:
   void RecordRejected();
   void RecordTimedOut();
   void RecordFailed();
+  void RecordAsyncJobCompletion(SolveRequestOutcome outcome);
   void RecordTrackerWriteFailure();
 
   void SetSolverState(std::size_t queue_depth, std::size_t inflight_solves);
