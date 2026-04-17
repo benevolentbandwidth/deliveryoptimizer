@@ -73,7 +73,17 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     }
     const demandType = units[0] as CapacityUnit;
 
-    // 6. Geocode all vehicle start locations and delivery addresses, collecting every failure.
+    // 6. Total demand must not exceed total vehicle capacity.
+    const totalDemand = addresses.reduce((sum, a) => sum + a.deliveryQuantity, 0);
+    const totalCapacity = availableVehicles.reduce((sum, v) => sum + v.capacity, 0);
+    if (totalDemand > totalCapacity) {
+      setOptimizeError(
+        `Total delivery quantity (${totalDemand}) exceeds total vehicle capacity (${totalCapacity}). Add more vehicles or reduce quantities.`
+      );
+      return;
+    }
+
+    // 7. Geocode all vehicle start locations and delivery addresses, collecting every failure.
     setIsOptimizing(true);
     try {
       const vehicleLocations: Map<number, { lat: number; lng: number; state: string | null }> = new Map();
@@ -113,7 +123,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
       
-      // 7. Reject any address whose state falls outside CA, TX, or FL.
+      // 8. Reject any address whose state falls outside CA, TX, or FL.
       const badVehicleAddresses: { id: number; location: string }[] = [];
       for (const [id, loc] of vehicleLocations) {
         if (!loc.state || !SUPPORTED_STATES.has(loc.state)) {
@@ -144,7 +154,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 8. Map form data to API types.
+      // 9. Map form data to API types.
       const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -153,7 +163,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
       );
 
-      // 9. POST to /api/optimize.
+      // 10. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -177,7 +187,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 10. Transform, persist to sessionStorage, and navigate to results.
+      // 11. Transform, persist to sessionStorage, and navigate to results.
       const routes = vroomToRoutes(data as VroomResponse, lockedVehicles, addresses);
       sessionStorage.setItem("optimizeResults", JSON.stringify(routes));
       router.push("/results");
