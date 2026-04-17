@@ -66,8 +66,10 @@ export function addressCardToDeliveryInput(
   let timeWindow: [number, number] | undefined;
   if (start && end) {
     timeWindow = [timeToSeconds(start), timeToSeconds(end)];
-  } else if (start || end) {
-    timeWindow = [0, timeToSeconds(start || end)];
+  } else if (start) {
+    timeWindow = [timeToSeconds(start), 86400];
+  } else if (end) {
+    timeWindow = [0, timeToSeconds(end)];
   }
 
   return {
