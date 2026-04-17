@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import { mockRouteToRoute } from "./data/mockRouteLoader";
-import type { Route } from "./types";
+import type { PendingPinMove, Route } from "./types";
 import type { MockRouteJson } from "./data/mockRouteLoader";
 import mockRouteJson from "./data/mock_route.json";
 
@@ -15,6 +15,12 @@ export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
+  const [pendingPinMove, setPendingPinMove] = useState<PendingPinMove | null>(null);
+
+  const handleEditModeChange = useCallback((value: boolean) => { // handleEditModeChange is a function wrapped in useCallback that gets called by sidebar when user toggles edit mode either on or off
+    setIsEditMode(value); // Updates edit mode value as before using setIsEditMode but in addition, if the edit mode is turned off (value is false), setPendingPinMove is set to null to clear the temporary pin move data
+    if (!value) setPendingPinMove(null);
+  }, []);
 
   // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
   const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
@@ -28,6 +34,31 @@ export default function ResultsPage() {
       })
     );
   }, [setRoutes]);
+
+  // Before we had updateStopCoordinates which on every drag it called setRoutes so the official routes changes immediately, without any save or cancel. However, now the drag should only update the draft and save should be the moment the routes change (which is through onPendingMove)
+  const onPendingPinMove = useCallback((vehicleId: string, stopId: string, lat: number, lng: number) => { // Note: pendingPinMove is only one object, meaning if the user drags a different pin before Save, the earlier unsaved drag gets replaced (this is a known V2 #89 limitation)
+
+    setPendingPinMove({ vehicleId, stopId, lat, lng });
+  }, []);
+
+  const savePendingPinMove = useCallback(() => {
+    if (!pendingPinMove) return;
+    const { vehicleId, stopId, lat, lng } = pendingPinMove;
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.vehicleId !== vehicleId) return route;
+        return {
+          ...route,
+          stops: route.stops.map((s) => (s.id === stopId ? { ...s, lat, lng } : s)),
+        };
+      })
+    );
+    setPendingPinMove(null);
+  }, [pendingPinMove, setRoutes]);
+
+  const cancelPendingPinMove = useCallback(() => {
+    setPendingPinMove(null);
+  }, []);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
@@ -43,17 +74,40 @@ export default function ResultsPage() {
           </svg>
         </button>
         <h1 className="text-2xl font-semibold text-zinc-800">Results – Route map</h1> {/* Header title */}
+        {pendingPinMove && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cancelPendingPinMove}
+              className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={savePendingPinMove}
+              className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </header>
       <div className="flex flex-1 min-h-0">
         <div
           className={`shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // h-full so sidebar has a defined height for internal scrolling; overflow hidden so only the sidebar's scroll area scrolls
         >
-          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
+          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={handleEditModeChange} onUpdateStopNote={updateStopNote} />
         </div>
         {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 w-full overflow-hidden">
-            <MapComponent routes={routes} />
+            <MapComponent
+              routes={routes}
+              isEditMode={isEditMode}
+              pendingPinMove={pendingPinMove}
+              onPendingPinMove={onPendingPinMove}
+            />
           </div>
         </div>
       </div>
