@@ -105,6 +105,25 @@ ParseNonNegativeEpochSeconds(const Json::Value& value) {
   return std::nullopt;
 }
 
+[[nodiscard]] std::optional<std::uint64_t> ParsePositiveId(const Json::Value& value) {
+  if (value.isUInt64()) {
+    const Json::UInt64 parsed = value.asUInt64();
+    if (parsed > 0U) {
+      return static_cast<std::uint64_t>(parsed);
+    }
+    return std::nullopt;
+  }
+
+  if (value.isInt64()) {
+    const Json::Int64 parsed = value.asInt64();
+    if (parsed > 0) {
+      return static_cast<std::uint64_t>(parsed);
+    }
+  }
+
+  return std::nullopt;
+}
+
 [[nodiscard]] std::optional<deliveryoptimizer::api::TimeWindow>
 ParseTimeWindow(const Json::Value& value) {
   if (!value.isArray() || value.size() != 2U) {
@@ -413,9 +432,9 @@ void ApplyExternalIdsToRoutes(Json::Value& routes,
     if (!route.isObject()) {
       continue;
     }
-    const auto vehicle_id = route["vehicle"];
-    if (vehicle_id.isUInt64()) {
-      const auto vehicle_it = vehicle_map.find(vehicle_id.asUInt64());
+    const auto vehicle_id = ParsePositiveId(route["vehicle"]);
+    if (vehicle_id.has_value()) {
+      const auto vehicle_it = vehicle_map.find(*vehicle_id);
       if (vehicle_it != vehicle_map.end()) {
         route["vehicle_external_id"] = vehicle_it->second;
       }
@@ -431,12 +450,12 @@ void ApplyExternalIdsToRoutes(Json::Value& routes,
       if (!step.isObject()) {
         continue;
       }
-      const auto job_id = step["job"];
-      if (!job_id.isUInt64()) {
+      const auto job_id = ParsePositiveId(step["job"]);
+      if (!job_id.has_value()) {
         continue;
       }
 
-      const auto job_it = job_map.find(job_id.asUInt64());
+      const auto job_it = job_map.find(*job_id);
       if (job_it != job_map.end()) {
         step["job_external_id"] = job_it->second;
       }
@@ -451,12 +470,12 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
     if (!job.isObject()) {
       continue;
     }
-    const auto job_id = job["id"];
-    if (!job_id.isUInt64()) {
+    const auto job_id = ParsePositiveId(job["id"]);
+    if (!job_id.has_value()) {
       continue;
     }
 
-    const auto job_it = job_map.find(job_id.asUInt64());
+    const auto job_it = job_map.find(*job_id);
     if (job_it != job_map.end()) {
       job["job_external_id"] = job_it->second;
     }
