@@ -3,6 +3,7 @@
 #include "deliveryoptimizer/api/optimize_request.hpp"
 #include "deliveryoptimizer/api/solve_execution.hpp"
 
+#include <drogon/utils/Utilities.h>
 #include <json/json.h>
 
 #include <chrono>
@@ -26,6 +27,10 @@ namespace {
   return root;
 }
 
+[[nodiscard]] std::string BuildWorkerIdPrefix() {
+  return "opt-worker-" + drogon::utils::getUuid();
+}
+
 } // namespace
 
 namespace deliveryoptimizer::api {
@@ -47,9 +52,11 @@ OptimizationJobRuntime::OptimizationJobRuntime(std::shared_ptr<OptimizationJobSt
     return;
   }
 
+  const std::string worker_id_prefix = BuildWorkerIdPrefix();
   for (std::size_t index = 0U; index < options_.worker_count; ++index) {
     worker_states_.emplace_back();
-    worker_states_.back().worker_id = "opt-worker-" + std::to_string(index + 1U);
+    worker_states_.back().worker_id =
+        worker_id_prefix + "-" + std::to_string(index + 1U);
   }
 
   if (!options_.start_workers) {

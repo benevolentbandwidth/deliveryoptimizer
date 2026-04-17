@@ -535,6 +535,20 @@ if(INITDB_PROGRAM AND PG_CTL_PROGRAM)
       DeliveryOptimizerApiContractTest.HealthReportsSchemaBootstrapFailure
       55000
     )
+
+    add_test(
+      NAME DeliveryOptimizerApiAsyncTest.WorkersUseProcessUniqueIds
+      COMMAND "${BASH_PROGRAM}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/optimization_job_workers_use_process_unique_ids_test.sh"
+              "$<TARGET_FILE:deliveryoptimizer_api>" "${CURL_PROGRAM}" "${PYTHON3_PROGRAM}"
+              "${INITDB_PROGRAM}" "${PG_CTL_PROGRAM}" "${PSQL_PROGRAM}"
+    )
+    set_tests_properties(
+      DeliveryOptimizerApiAsyncTest.WorkersUseProcessUniqueIds
+      PROPERTIES
+        TIMEOUT 60
+        LABELS "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+    )
   else()
     message(STATUS "Skipping schema bootstrap health test because psql was not found.")
   endif()
