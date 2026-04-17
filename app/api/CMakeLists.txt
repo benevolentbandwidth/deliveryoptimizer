@@ -9,7 +9,6 @@ target_sources(
     src/endpoints/deliveries_optimize_endpoint.cpp
     src/endpoints/health_endpoint.cpp
     src/endpoints/optimize_endpoint.cpp
-    src/endpoints/osrm_proxy_endpoint.cpp
     src/observability.cpp
     src/optimize_request.cpp
     src/request_context.cpp
@@ -28,7 +27,6 @@ target_sources(
       include/deliveryoptimizer/api/endpoints/health_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/metrics_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
-      include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp
       include/deliveryoptimizer/api/observability.hpp
       include/deliveryoptimizer/api/optimize_request.hpp
       include/deliveryoptimizer/api/solve_admission.hpp

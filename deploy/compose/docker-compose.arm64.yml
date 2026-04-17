@@ -19,8 +19,6 @@ services:
       OSRM_PROFILE: ${OSRM_PROFILE:-/opt/osrm-backend/profiles/car.lua}
     volumes:
       - osrm-data:/data
-    ports:
-      - "${DELIVERYOPTIMIZER_OSRM_HOST_PORT:-5001}:${OSRM_INTERNAL_PORT:-5001}"
     healthcheck:
       test:
         [

@@ -21,7 +21,6 @@ This branch introduces the C++ API runtime modules plus ARM routing stack assets
 - `GET /metrics` when `DELIVERYOPTIMIZER_ENABLE_METRICS=1`
 - `GET /optimize?deliveries=<n>&vehicles=<n>`
 - `POST /api/v1/deliveries/optimize`
-- `GET /api/v1/osrm/*` (allowlisted OSRM services)
 
 `/metrics` is disabled by default because it shares the main API listener and has no auth guard.
 Only enable it for trusted internal scrapers.
@@ -94,7 +93,6 @@ Quick checks:
 
 ```bash
 curl -f http://127.0.0.1:8080/health
-curl -f "http://127.0.0.1:5001/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false"
 ```
 
 ## UI

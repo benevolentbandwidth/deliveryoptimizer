@@ -29,7 +29,6 @@ e2e_init() {
   project_name="deliveryoptimizer-e2e-$$_$(date +%s)-${RANDOM}"
   work_dir="$(mktemp -d)"
   api_port="$(e2e_resolve_env_value DELIVERYOPTIMIZER_HOST_PORT 8080)"
-  osrm_port="$(e2e_resolve_env_value DELIVERYOPTIMIZER_OSRM_HOST_PORT 5001)"
 
   trap e2e_cleanup EXIT
 }
@@ -66,29 +65,6 @@ e2e_dump_logs_and_fail() {
   e2e_compose ps >&2 || true
   e2e_compose logs >&2 || true
   exit 1
-}
-
-e2e_wait_for_osrm_nearest_ok() {
-  local output_file="$1"
-  local ready=false
-
-  for _ in $(seq 1 180); do
-    local http_code
-    http_code="$("${curl_bin}" -sS -o "${output_file}" -w "%{http_code}" \
-      "http://127.0.0.1:${osrm_port}/nearest/v1/driving/7.4236,43.7384?number=1&generate_hints=false")"
-
-    if [[ "${http_code}" == "200" ]] &&
-      grep -Eq '"code"[[:space:]]*:[[:space:]]*"Ok"' "${output_file}"; then
-      ready=true
-      break
-    fi
-
-    sleep 2
-  done
-
-  if [[ "${ready}" != "true" ]]; then
-    e2e_dump_logs_and_fail "OSRM nearest endpoint did not become ready on port ${osrm_port}"
-  fi
 }
 
 e2e_wait_for_api_health() {
