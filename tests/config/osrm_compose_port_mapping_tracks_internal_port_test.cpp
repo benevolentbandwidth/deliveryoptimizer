@@ -2,6 +2,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iterator>
+#include <sstream>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -13,18 +14,37 @@ TEST(DeployConfigTest, OsrmComposeKeepsOsrmInternalOnly) {
   ASSERT_TRUE(file.is_open()) << "Unable to read " << compose_path;
 
   const std::string content{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
-  const auto osrm_block_start = content.find("  osrm:\n");
-  ASSERT_NE(osrm_block_start, std::string::npos);
+  std::istringstream stream{content};
+  bool found_osrm_service = false;
+  bool osrm_declares_ports = false;
+  bool in_osrm_block = false;
+  std::string line;
+  while (std::getline(stream, line)) {
+    if (!found_osrm_service && line == "  osrm:") {
+      found_osrm_service = true;
+      in_osrm_block = true;
+      continue;
+    }
 
-  const auto http_server_block_start = content.find("\n  http-server:\n", osrm_block_start);
-  ASSERT_NE(http_server_block_start, std::string::npos);
+    if (!in_osrm_block) {
+      continue;
+    }
 
-  const std::string osrm_block =
-      content.substr(osrm_block_start, http_server_block_start - osrm_block_start);
+    if (line.rfind("  ", 0) == 0 && line.size() > 2U && line[2] != ' ') {
+      in_osrm_block = false;
+      continue;
+    }
 
+    if (line == "    ports:") {
+      osrm_declares_ports = true;
+      break;
+    }
+  }
+
+  ASSERT_TRUE(found_osrm_service);
   EXPECT_NE(content.find("OSRM_PORT: ${OSRM_INTERNAL_PORT:-5001}"), std::string::npos);
   EXPECT_EQ(content.find("DELIVERYOPTIMIZER_OSRM_HOST_PORT"), std::string::npos);
   EXPECT_NE(content.find("http://127.0.0.1:${OSRM_INTERNAL_PORT:-5001}/nearest"),
             std::string::npos);
-  EXPECT_EQ(osrm_block.find("\n    ports:\n"), std::string::npos);
+  EXPECT_FALSE(osrm_declares_ports);
 }
