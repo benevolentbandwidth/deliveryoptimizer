@@ -5,7 +5,7 @@ import type { Route, Stop } from "@/app/results/types";
 const METERS_TO_MILES = 0.000621371;
 
 /** Converts seconds-from-midnight to a "H:MM AM/PM" string (e.g. 32400 → "9:00 AM"). */
-function secondsToTimeString(seconds: number): string {
+export function secondsToTimeString(seconds: number): string {
   const totalMinutes = Math.floor(seconds / 60);
   const hours24 = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
