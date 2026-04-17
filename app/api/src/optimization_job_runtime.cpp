@@ -117,21 +117,24 @@ void OptimizationJobRuntime::WorkerLoop(const std::stop_token stop_token, const 
     const auto parsed_request =
         parsed_json.has_value() ? ParseAndValidateOptimizeRequest(*parsed_json, issues) : std::nullopt;
     if (!parsed_request.has_value()) {
-      (void)store_->CompleteJobFailure(claimed_job->record.job_id, OptimizationJobState::kFailed,
+      (void)store_->CompleteJobFailure(claimed_job->record.job_id, claimed_job->worker_id,
+                                       OptimizationJobState::kFailed,
                                        SolveRequestOutcome::kFailed, 500U,
                                        "Stored optimization request is invalid.");
     } else {
       const auto solve_result = BuildSolveExecutionResult(parsed_request->input,
                                                           runner_->Run(BuildVroomInput(parsed_request->input)));
       if (solve_result.response_body.has_value()) {
-        (void)store_->CompleteJobSuccess(claimed_job->record.job_id, *solve_result.response_body,
+        (void)store_->CompleteJobSuccess(claimed_job->record.job_id, claimed_job->worker_id,
+                                         *solve_result.response_body,
                                          solve_result.outcome, solve_result.http_status);
       } else {
         const OptimizationJobState final_state =
             solve_result.status == SolveExecutionStatus::kTimedOut
                 ? OptimizationJobState::kTimedOut
                 : OptimizationJobState::kFailed;
-        (void)store_->CompleteJobFailure(claimed_job->record.job_id, final_state,
+        (void)store_->CompleteJobFailure(claimed_job->record.job_id, claimed_job->worker_id,
+                                         final_state,
                                          solve_result.outcome, solve_result.http_status,
                                          solve_result.error_message);
       }

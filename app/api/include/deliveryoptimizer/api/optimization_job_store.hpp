@@ -82,11 +82,14 @@ public:
   [[nodiscard]] std::optional<ClaimedOptimizationJob> ClaimNextJob(const std::string& worker_id);
 
   [[nodiscard]] bool CompleteJobSuccess(const std::string& job_id,
+                                        const std::string& worker_id,
                                         const Json::Value& result_body,
                                         SolveRequestOutcome outcome,
                                         std::uint16_t http_status);
 
-  [[nodiscard]] bool CompleteJobFailure(const std::string& job_id, OptimizationJobState state,
+  [[nodiscard]] bool CompleteJobFailure(const std::string& job_id,
+                                        const std::string& worker_id,
+                                        OptimizationJobState state,
                                         SolveRequestOutcome outcome, std::uint16_t http_status,
                                         const std::string& error_message);
 

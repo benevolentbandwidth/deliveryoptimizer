@@ -360,7 +360,8 @@ std::optional<ClaimedOptimizationJob> OptimizationJobStore::ClaimNextJob(const s
   }
 }
 
-bool OptimizationJobStore::CompleteJobSuccess(const std::string& job_id, const Json::Value& result_body,
+bool OptimizationJobStore::CompleteJobSuccess(const std::string& job_id, const std::string& worker_id,
+                                              const Json::Value& result_body,
                                               const SolveRequestOutcome outcome,
                                               const std::uint16_t http_status) {
   if (!IsConfigured()) {
@@ -377,13 +378,13 @@ bool OptimizationJobStore::CompleteJobSuccess(const std::string& job_id, const J
         "    worker_id = null, "
         "    lease_expires_at = null, "
         "    last_heartbeat_at = null, "
-        "    expires_at = now() + (($2)::bigint * interval '1 second'), "
-        "    outcome = $3, "
-        "    http_status = $4, "
+        "    expires_at = now() + (($3)::bigint * interval '1 second'), "
+        "    outcome = $4, "
+        "    http_status = $5, "
         "    error_message = null, "
-        "    result_json = $5::jsonb "
-        "where id = $1",
-        job_id, static_cast<long long>(config_.result_ttl.count()),
+        "    result_json = $6::jsonb "
+        "where id = $1 and worker_id = $2 and status = 'running'",
+        job_id, worker_id, static_cast<long long>(config_.result_ttl.count()),
         std::string{ToOutcomeString(outcome)}, static_cast<int>(http_status), result_json);
     return result.affectedRows() == 1U;
   } catch (...) {
@@ -392,6 +393,7 @@ bool OptimizationJobStore::CompleteJobSuccess(const std::string& job_id, const J
 }
 
 bool OptimizationJobStore::CompleteJobFailure(const std::string& job_id,
+                                              const std::string& worker_id,
                                               const OptimizationJobState state,
                                               const SolveRequestOutcome outcome,
                                               const std::uint16_t http_status,
@@ -403,19 +405,19 @@ bool OptimizationJobStore::CompleteJobFailure(const std::string& job_id,
   try {
     const auto result = client_->execSqlSync(
         "update optimization_jobs "
-        "set status = $2, "
+        "set status = $3, "
         "    completed_at = now(), "
         "    updated_at = now(), "
         "    worker_id = null, "
         "    lease_expires_at = null, "
         "    last_heartbeat_at = null, "
-        "    expires_at = now() + (($3)::bigint * interval '1 second'), "
-        "    outcome = $4, "
-        "    http_status = $5, "
-        "    error_message = $6, "
+        "    expires_at = now() + (($4)::bigint * interval '1 second'), "
+        "    outcome = $5, "
+        "    http_status = $6, "
+        "    error_message = $7, "
         "    result_json = null "
-        "where id = $1",
-        job_id, std::string{ToOptimizationJobStateString(state)},
+        "where id = $1 and worker_id = $2 and status = 'running'",
+        job_id, worker_id, std::string{ToOptimizationJobStateString(state)},
         static_cast<long long>(config_.result_ttl.count()),
         std::string{ToOutcomeString(outcome)}, static_cast<int>(http_status), error_message);
     return result.affectedRows() == 1U;

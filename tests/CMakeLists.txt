@@ -501,6 +501,17 @@ if(INITDB_PROGRAM AND PG_CTL_PROGRAM)
     DeliveryOptimizerApiAsyncTest.OptimizationJobResultReturnsConflictWhileRunning
     53000
   )
+
+  deliveryoptimizer_add_local_http_pg_test(
+    DeliveryOptimizerApiAsyncTest.RetriedJobKeepsLatestWorkerResult
+    optimization_job_retried_worker_cannot_clobber_result_test.sh
+    60
+    "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+  )
+  deliveryoptimizer_set_local_http_test_port(
+    DeliveryOptimizerApiAsyncTest.RetriedJobKeepsLatestWorkerResult
+    54000
+  )
 else()
   message(STATUS "Skipping local PostgreSQL-backed HTTP tests because initdb or pg_ctl was not found.")
 endif()
