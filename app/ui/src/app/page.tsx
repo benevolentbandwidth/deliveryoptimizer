@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 import { useRouter } from "next/navigation";
-import ShellNavbar from "@/app/edit/components/ShellNavbar";
+import ShellNavbar from "@/app/components/ShellNavbar";
 
 /**
  * Entry point — asks the user whether they are a Route Manager or Driver.
