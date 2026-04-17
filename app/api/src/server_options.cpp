@@ -183,10 +183,9 @@ template <typename Integer>
   const std::size_t timeout_ms = ResolveNonNegativeSizeOption(
       kSolverQueueWaitMsEnv, static_cast<std::size_t>(kDefaultSolverQueueWaitMs),
       "solver queue wait timeout (ms)");
-  const auto max_queue_wait_timeout =
-      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::duration::max());
-  const std::uint64_t max_timeout_ms =
-      static_cast<std::uint64_t>(max_queue_wait_timeout.count());
+  const auto max_queue_wait_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::duration::max());
+  const std::uint64_t max_timeout_ms = static_cast<std::uint64_t>(max_queue_wait_timeout.count());
   if (static_cast<std::uint64_t>(timeout_ms) > max_timeout_ms) {
     std::cerr << "Capping " << kSolverQueueWaitMsEnv << "='" << timeout_ms << "' to "
               << max_timeout_ms << " because larger solver queue wait timeout (ms) values "

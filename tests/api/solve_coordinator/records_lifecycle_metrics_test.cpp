@@ -76,8 +76,8 @@ public:
   };
 }
 
-[[nodiscard]] std::shared_ptr<deliveryoptimizer::api::SolveLifecycle> BuildLifecycle(
-    const std::string& request_id) {
+[[nodiscard]] std::shared_ptr<deliveryoptimizer::api::SolveLifecycle>
+BuildLifecycle(const std::string& request_id) {
   auto lifecycle = std::make_shared<deliveryoptimizer::api::SolveLifecycle>();
   lifecycle->request_id = request_id;
   lifecycle->method = "POST";
@@ -91,25 +91,23 @@ public:
 TEST(SolveCoordinatorLifecycleTest, RecordsLifecycleAndGaugeTransitionsForSuccessfulSolve) {
   auto runner = std::make_shared<BlockingRunner>();
   auto observability = std::make_shared<deliveryoptimizer::api::ObservabilityRegistry>();
-  deliveryoptimizer::api::SolveCoordinator coordinator(BuildConfig(), runner, {},
-                                                       observability);
+  deliveryoptimizer::api::SolveCoordinator coordinator(BuildConfig(), runner, {}, observability);
 
   auto lifecycle = BuildLifecycle("req-success");
   std::promise<deliveryoptimizer::api::CoordinatedSolveResult> result_promise;
   auto result_future = result_promise.get_future();
 
-  ASSERT_EQ(
-      coordinator.Submit(
-          deliveryoptimizer::api::SolveRequestSize{
-              .jobs = 1U,
-              .vehicles = 1U,
-          },
-          [] { return Json::Value{Json::objectValue}; },
-          [&result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
-            result_promise.set_value(result);
-          },
-          lifecycle),
-      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+  ASSERT_EQ(coordinator.Submit(
+                deliveryoptimizer::api::SolveRequestSize{
+                    .jobs = 1U,
+                    .vehicles = 1U,
+                },
+                [] { return Json::Value{Json::objectValue}; },
+                [&result_promise](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+                  result_promise.set_value(result);
+                },
+                lifecycle),
+            deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
 
   runner->WaitUntilStarted();
 
@@ -133,31 +131,29 @@ TEST(SolveCoordinatorLifecycleTest, RecordsLifecycleAndGaugeTransitionsForSucces
 TEST(SolveCoordinatorLifecycleTest, RecordsAcceptedBeforeCompletionCallbackRuns) {
   auto runner = std::make_shared<ImmediateRunner>();
   auto observability = std::make_shared<deliveryoptimizer::api::ObservabilityRegistry>();
-  deliveryoptimizer::api::SolveCoordinator coordinator(BuildConfig(), runner, {},
-                                                       observability);
+  deliveryoptimizer::api::SolveCoordinator coordinator(BuildConfig(), runner, {}, observability);
 
   auto lifecycle = BuildLifecycle("req-accepted-metric");
   std::promise<std::string> metrics_promise;
   auto metrics_future = metrics_promise.get_future();
 
-  ASSERT_EQ(
-      coordinator.Submit(
-          deliveryoptimizer::api::SolveRequestSize{
-              .jobs = 1U,
-              .vehicles = 1U,
-          },
-          [] { return Json::Value{Json::objectValue}; },
-          [&metrics_promise,
-           observability](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
-            EXPECT_EQ(result.status, deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
-            metrics_promise.set_value(observability->RenderPrometheusText());
-          },
-          lifecycle),
-      deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
+  ASSERT_EQ(coordinator.Submit(
+                deliveryoptimizer::api::SolveRequestSize{
+                    .jobs = 1U,
+                    .vehicles = 1U,
+                },
+                [] { return Json::Value{Json::objectValue}; },
+                [&metrics_promise,
+                 observability](const deliveryoptimizer::api::CoordinatedSolveResult& result) {
+                  EXPECT_EQ(result.status,
+                            deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded);
+                  metrics_promise.set_value(observability->RenderPrometheusText());
+                },
+                lifecycle),
+            deliveryoptimizer::api::SolveAdmissionStatus::kAccepted);
 
   const std::string rendered = metrics_future.get();
-  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_accepted_total 1"),
-            std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_accepted_total 1"), std::string::npos);
 }
 
 TEST(SolveCoordinatorLifecycleTest, RecordsQueuedTimeoutAndQueueGaugeTransitions) {

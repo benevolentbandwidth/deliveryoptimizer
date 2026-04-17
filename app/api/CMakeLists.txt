@@ -11,9 +11,11 @@ target_sources(
     src/endpoints/optimize_endpoint.cpp
     src/endpoints/osrm_proxy_endpoint.cpp
     src/observability.cpp
+    src/optimize_request.cpp
     src/request_context.cpp
     src/solve_admission.cpp
     src/solve_coordinator.cpp
+    src/solve_execution.cpp
     src/server_options.cpp
     src/vroom_runner.cpp
   PUBLIC
@@ -28,8 +30,10 @@ target_sources(
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp
       include/deliveryoptimizer/api/observability.hpp
+      include/deliveryoptimizer/api/optimize_request.hpp
       include/deliveryoptimizer/api/solve_admission.hpp
       include/deliveryoptimizer/api/solve_coordinator.hpp
+      include/deliveryoptimizer/api/solve_execution.hpp
       include/deliveryoptimizer/api/server_options.hpp
       include/deliveryoptimizer/api/vroom_runner.hpp
 )

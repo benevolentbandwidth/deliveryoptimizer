@@ -1,5 +1,6 @@
 #include "deliveryoptimizer/api/endpoints/health_endpoint.hpp"
 
+#include "deliveryoptimizer/api/observability.hpp"
 #include "env_utils.hpp"
 
 #include <chrono>
@@ -76,16 +77,25 @@ struct OsrmProbeResult {
   return OsrmProbeResult{.ready = true, .detail = code_text};
 }
 
-[[nodiscard]] drogon::HttpResponsePtr BuildHealthResponse(const bool vroom_ready,
-                                                          const OsrmProbeResult& osrm_probe) {
+[[nodiscard]] drogon::HttpResponsePtr BuildHealthResponse(
+    const bool vroom_ready, const OsrmProbeResult& osrm_probe,
+    const std::shared_ptr<const deliveryoptimizer::api::ObservabilityRegistry>& observability,
+    const deliveryoptimizer::api::HealthExtensionProvider& extension) {
   Json::Value body{Json::objectValue};
-  const bool overall_ready = vroom_ready && osrm_probe.ready;
-  body["status"] = overall_ready ? "ok" : "degraded";
+  bool overall_ready = vroom_ready && osrm_probe.ready;
 
   Json::Value checks{Json::objectValue};
   checks["vroom_binary"] = vroom_ready ? "ok" : "missing";
   checks["osrm"] = osrm_probe.ready ? "ok" : "down";
   checks["osrm_detail"] = osrm_probe.detail;
+  if (observability != nullptr) {
+    checks["solver_queue_depth"] = static_cast<Json::UInt64>(observability->QueueDepth());
+    checks["solver_inflight"] = static_cast<Json::UInt64>(observability->InflightSolves());
+  }
+  if (extension) {
+    extension(checks, overall_ready);
+  }
+  body["status"] = overall_ready ? "ok" : "degraded";
   body["checks"] = checks;
 
   auto response = drogon::HttpResponse::newHttpJsonResponse(body);
@@ -138,13 +148,17 @@ void CacheOsrmProbe(const OsrmProbeResult& result) {
 
 namespace deliveryoptimizer::api {
 
-void RegisterHealthEndpoint(drogon::HttpAppFramework& app) {
+void RegisterHealthEndpoint(drogon::HttpAppFramework& app,
+                            std::shared_ptr<const ObservabilityRegistry> observability,
+                            HealthExtensionProvider extension) {
   app.registerHandler(
-      "/health", [](const drogon::HttpRequestPtr& /*request*/,
-                    std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
+      "/health", [observability = std::move(observability), extension = std::move(extension)](
+                     const drogon::HttpRequestPtr& /*request*/,
+                     std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
         const bool vroom_ready = IsVroomBinaryReady();
         if (const auto cached_probe = GetCachedOsrmProbe()) {
-          std::move(callback)(BuildHealthResponse(vroom_ready, *cached_probe));
+          std::move(callback)(
+              BuildHealthResponse(vroom_ready, *cached_probe, observability, extension));
           return;
         }
 
@@ -155,12 +169,14 @@ void RegisterHealthEndpoint(drogon::HttpAppFramework& app) {
 
         osrm_client->sendRequest(
             osrm_probe_request,
-            [osrm_client = std::move(osrm_client), vroom_ready, callback = std::move(callback)](
+            [osrm_client = std::move(osrm_client), vroom_ready, observability = observability,
+             extension = extension, callback = std::move(callback)](
                 const drogon::ReqResult result, const drogon::HttpResponsePtr& response) mutable {
               (void)osrm_client;
               const OsrmProbeResult osrm_probe = EvaluateOsrmProbe(result, response);
               CacheOsrmProbe(osrm_probe);
-              std::move(callback)(BuildHealthResponse(vroom_ready, osrm_probe));
+              std::move(callback)(
+                  BuildHealthResponse(vroom_ready, osrm_probe, observability, extension));
             },
             kOsrmProbeTimeoutSeconds);
       });

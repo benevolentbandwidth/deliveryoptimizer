@@ -51,8 +51,8 @@ http_code="$("${curl_bin}" -sS -D "${response_headers_file}" -o "${response_file
   --data-binary "@${payload_file}" \
   "$(http_server_url /api/v1/deliveries/optimize)")"
 
-if [[ "${http_code}" != "503" ]]; then
-  echo "expected HTTP 503 for an over-threshold solve before deep validation, got ${http_code}" >&2
+if [[ "${http_code}" != "422" ]]; then
+  echo "expected HTTP 422 for an over-threshold solve before deep validation, got ${http_code}" >&2
   cat "${response_file}" >&2 || true
   exit 1
 fi

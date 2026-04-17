@@ -1,9 +1,8 @@
 #include "deliveryoptimizer/api/observability.hpp"
 
+#include <chrono>
 #include <drogon/HttpRequest.h>
 #include <drogon/utils/Utilities.h>
-
-#include <chrono>
 #include <string>
 #include <utility>
 

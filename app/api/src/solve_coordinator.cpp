@@ -40,11 +40,11 @@ ToCoordinatedSolveResult(const deliveryoptimizer::api::VroomRunResult& result) {
   return accepted_solves < config.max_concurrency;
 }
 
-[[nodiscard]] std::chrono::steady_clock::time_point ResolveDeadline(
-    const std::chrono::steady_clock::time_point queued_at,
-    const std::chrono::milliseconds queue_wait) {
-  const auto max_queue_wait =
-      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::duration::max());
+[[nodiscard]] std::chrono::steady_clock::time_point
+ResolveDeadline(const std::chrono::steady_clock::time_point queued_at,
+                const std::chrono::milliseconds queue_wait) {
+  const auto max_queue_wait = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::duration::max());
   const auto clamped_queue_wait = std::min(queue_wait, max_queue_wait);
   const auto queue_wait_duration =
       std::chrono::duration_cast<std::chrono::steady_clock::duration>(clamped_queue_wait);
@@ -77,9 +77,7 @@ SolveCoordinator::SolveCoordinator(SolveAdmissionConfig config,
                                    std::shared_ptr<const VroomRunner> runner,
                                    SolveCoordinatorOptions options,
                                    std::shared_ptr<ObservabilityRegistry> observability)
-    : config_(config),
-      options_(options),
-      runner_(std::move(runner)),
+    : config_(config), options_(options), runner_(std::move(runner)),
       observability_(std::move(observability)) {
   if (observability_ == nullptr) {
     observability_ = std::make_shared<ObservabilityRegistry>(ObservabilityOptions{
@@ -142,8 +140,9 @@ SolveCoordinator::~SolveCoordinator() {
   completion_workers_.clear();
 }
 
-SolveAdmissionStatus SolveCoordinator::CheckAdmission(const SolveRequestSize& request_size,
-                                                      std::shared_ptr<SolveLifecycle> lifecycle) {
+SolveAdmissionStatus
+SolveCoordinator::CheckAdmission(const SolveRequestSize& request_size,
+                                 const std::shared_ptr<SolveLifecycle>& lifecycle) {
   std::lock_guard<std::mutex> lock(mutex_);
   return CheckAdmissionLocked(request_size, lifecycle);
 }
@@ -192,9 +191,9 @@ void SolveCoordinator::EnqueueCompletion(CompletionTask task) {
   completion_condition_.notify_one();
 }
 
-SolveAdmissionStatus SolveCoordinator::CheckAdmissionLocked(
-    const SolveRequestSize& request_size,
-    const std::shared_ptr<SolveLifecycle>& lifecycle) {
+SolveAdmissionStatus
+SolveCoordinator::CheckAdmissionLocked(const SolveRequestSize& request_size,
+                                       const std::shared_ptr<SolveLifecycle>& lifecycle) {
   UpdateLifecycleState(lifecycle, queue_.size(), active_solves_);
   if (shutting_down_) {
     return SolveAdmissionStatus::kRejectedQueueFull;
@@ -307,7 +306,8 @@ void SolveCoordinator::QueueTimerLoop() {
       }
 
       auto expired_request_it = find_earliest_deadline();
-      if (expired_request_it == queue_.end() || !HasQueueWaitExpired(expired_request_it->deadline)) {
+      if (expired_request_it == queue_.end() ||
+          !HasQueueWaitExpired(expired_request_it->deadline)) {
         continue;
       }
 

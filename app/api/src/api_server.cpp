@@ -8,9 +8,8 @@
 #include "deliveryoptimizer/api/observability.hpp"
 #include "deliveryoptimizer/api/server_options.hpp"
 
-#include <drogon/drogon.h>
-
 #include <chrono>
+#include <drogon/drogon.h>
 #include <type_traits>
 
 namespace {
@@ -50,16 +49,16 @@ int RunApiServer() {
     response->addHeader(std::string{kRequestIdHeader}, GenerateRequestId());
   });
   app.setCustomErrorHandler([default_error_handler](const drogon::HttpStatusCode code) {
-        auto response = InvokeErrorHandler(default_error_handler, code);
-        if (response == nullptr) {
-          return response;
-        }
+    auto response = InvokeErrorHandler(default_error_handler, code);
+    if (response == nullptr) {
+      return response;
+    }
 
-        if (response->getHeader(std::string{kRequestIdHeader}).empty()) {
-          response->addHeader(std::string{kRequestIdHeader}, GenerateRequestId());
-        }
-        return response;
-      });
+    if (response->getHeader(std::string{kRequestIdHeader}).empty()) {
+      response->addHeader(std::string{kRequestIdHeader}, GenerateRequestId());
+    }
+    return response;
+  });
   app.registerSyncAdvice([observability](const drogon::HttpRequestPtr& request) {
     EnsureRequestContext(request);
     if (request != nullptr && request->body().size() > kMaxRequestBodyBytes) {
@@ -79,22 +78,22 @@ int RunApiServer() {
     }
     return drogon::HttpResponsePtr{};
   });
-  app.registerPreSendingAdvice([](const drogon::HttpRequestPtr& request,
-                                  const drogon::HttpResponsePtr& response) {
-    if (request == nullptr || response == nullptr) {
-      return;
-    }
+  app.registerPreSendingAdvice(
+      [](const drogon::HttpRequestPtr& request, const drogon::HttpResponsePtr& response) {
+        if (request == nullptr || response == nullptr) {
+          return;
+        }
 
-    const auto context = GetRequestContext(request);
-    if (!context.has_value()) {
-      return;
-    }
+        const auto context = GetRequestContext(request);
+        if (!context.has_value()) {
+          return;
+        }
 
-    response->removeHeader(std::string{kRequestIdHeader});
-    response->addHeader(std::string{kRequestIdHeader}, context->request_id);
-  });
+        response->removeHeader(std::string{kRequestIdHeader});
+        response->addHeader(std::string{kRequestIdHeader}, context->request_id);
+      });
 
-  RegisterHealthEndpoint(app);
+  RegisterHealthEndpoint(app, observability);
   if (options.enable_metrics) {
     RegisterMetricsEndpoint(app, observability);
   }

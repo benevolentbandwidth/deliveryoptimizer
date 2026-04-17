@@ -27,6 +27,7 @@ target_sources(
   deliveryoptimizer_tests
   PRIVATE
     "${CMAKE_SOURCE_DIR}/app/api/src/observability.cpp"
+    "${CMAKE_SOURCE_DIR}/app/api/src/optimize_request.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/solve_admission.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/solve_coordinator.cpp"
     "${CMAKE_SOURCE_DIR}/app/api/src/server_options.cpp"
@@ -388,6 +389,16 @@ deliveryoptimizer_add_local_http_test(
 deliveryoptimizer_set_local_http_test_port(
   DeliveryOptimizerApiValidationTest.MetricsEndpointDisabledByDefault
   38100
+)
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeIgnoresMalformedVroomRouteEntries
+  deliveries_optimize_ignores_malformed_vroom_route_entries_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeIgnoresMalformedVroomRouteEntries
+  38300
 )
 deliveryoptimizer_add_local_http_test(
   DeliveryOptimizerApiRegressionTest.DeliveriesOptimizeAcceptsSmallSyncSolve

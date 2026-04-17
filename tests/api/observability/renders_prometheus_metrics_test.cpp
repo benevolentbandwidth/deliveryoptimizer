@@ -36,14 +36,15 @@ TEST(ObservabilityRegistryTest, RendersPrometheusMetricsWithExpectedFamiliesAndB
 
   const std::string rendered = registry.RenderPrometheusText();
 
-  EXPECT_NE(
-      rendered.find("# HELP deliveryoptimizer_solver_requests_accepted_total Count of solver requests accepted into the coordinator queue."),
-      std::string::npos);
+  EXPECT_NE(rendered.find("# HELP deliveryoptimizer_solver_requests_accepted_total Count of solver "
+                          "requests accepted into the coordinator queue."),
+            std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_accepted_total 1"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_succeeded_total 1"),
             std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_rejected_total 1"), std::string::npos);
-  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_timed_out_total 1"), std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_timed_out_total 1"),
+            std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_failed_total 1"), std::string::npos);
   EXPECT_NE(rendered.find("deliveryoptimizer_request_tracker_write_failures_total 0"),
             std::string::npos);
@@ -118,6 +119,5 @@ TEST(ObservabilityRegistryTest, FinalizeClientErrorsIncrementRejectedCounter) {
 
   const std::string rendered = observability->RenderPrometheusText();
 
-  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_rejected_total 3"),
-            std::string::npos);
+  EXPECT_NE(rendered.find("deliveryoptimizer_solver_requests_rejected_total 3"), std::string::npos);
 }
