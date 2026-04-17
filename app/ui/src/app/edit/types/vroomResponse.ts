@@ -5,7 +5,7 @@ export interface VroomStep {
   job?: number;
   job_external_id?: string;    // string form of AddressCard.id
   location: [number, number];  // [lng, lat] — GeoJSON order
-  arrival: number;             // seconds from epoch (or midnight, depending on backend config)
+  arrival: number;             // seconds from midnight (local day-start)
   service?: number;            // dwell time in seconds
   load?: number[];
 }
