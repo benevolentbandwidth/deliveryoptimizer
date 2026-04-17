@@ -94,7 +94,7 @@ int RunApiServer() {
     response->addHeader(std::string{kRequestIdHeader}, context->request_id);
   });
 
-  RegisterHealthEndpoint(app);
+  RegisterHealthEndpoint(app, observability);
   if (options.enable_metrics) {
     RegisterMetricsEndpoint(app, observability);
   }
