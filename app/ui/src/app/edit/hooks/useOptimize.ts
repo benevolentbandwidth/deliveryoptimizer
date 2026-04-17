@@ -64,7 +64,17 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     }
     const demandType = units[0] as CapacityUnit;
 
-    // 6. Geocode all vehicle start locations and delivery addresses, collecting every failure.
+    // 6. Total demand must not exceed total vehicle capacity.
+    const totalDemand = addresses.reduce((sum, a) => sum + a.deliveryQuantity, 0);
+    const totalCapacity = availableVehicles.reduce((sum, v) => sum + v.capacity, 0);
+    if (totalDemand > totalCapacity) {
+      setOptimizeError(
+        `Total delivery quantity (${totalDemand}) exceeds total vehicle capacity (${totalCapacity}). Add more vehicles or reduce quantities.`
+      );
+      return;
+    }
+
+    // 7. Geocode all vehicle start locations and delivery addresses, collecting every failure.
     setIsOptimizing(true);
     try {
       const vehicleLocations: Map<number, { lat: number; lng: number }> = new Map();
@@ -104,7 +114,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 7. Map form data to API types.
+      // 8. Map form data to API types.
       const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -113,7 +123,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
       ).filter((d) => d !== undefined);
 
-      // 8. POST to /api/optimize.
+      // 9. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,7 +147,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 9. Transform, persist to sessionStorage, and navigate to results.
+      // 10. Transform, persist to sessionStorage, and navigate to results.
       const routes = vroomToRoutes(data as VroomResponse, lockedVehicles, addresses);
       sessionStorage.setItem("optimizeResults", JSON.stringify(routes));
       router.push("/results");
