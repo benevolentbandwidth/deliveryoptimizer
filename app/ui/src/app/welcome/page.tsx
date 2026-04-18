@@ -1,160 +1,184 @@
 // app/welcome/page.tsx
 'use client';
 import { useRouter } from 'next/navigation';
-import ShellNavbar from '@/app/components/ShellNavbar';
 
-/**
- * Route Manager session type selector.
- * Only reachable via the Route Manager card on the landing page.
- * New       → /address-entry
- * Returning → /upload-save-point
- *
- * The ?type query param has been removed — this page owns the
- * new/returning decision directly, eliminating the need for
- * useSearchParams and the Suspense wrapper that it required.
- */
+// Route manager session type selector — no ShellNavbar, uses same
+// full-bleed gradient layout as the landing page.
 export default function WelcomePage() {
   const router = useRouter();
 
   return (
-    <div style={{ minHeight: '100vh', background: '#ffffff', fontFamily: "'DM Sans', sans-serif" }}>
-      <ShellNavbar />
+    <div style={{
+      minHeight: '100vh',
+      background: `
+        radial-gradient(ellipse 80% 60% at 100% 100%, rgba(74, 157, 127, 0.55) 0%, rgba(74, 157, 127, 0) 60%),
+        radial-gradient(ellipse 70% 50% at 0% 100%, rgba(120, 180, 155, 0.35) 0%, rgba(120, 180, 155, 0) 55%),
+        radial-gradient(ellipse 60% 50% at 100% 0%, rgba(168, 210, 192, 0.28) 0%, rgba(168, 210, 192, 0) 60%),
+        linear-gradient(135deg, #f7fbf9 0%, #eaf3ee 45%, #a8d2c0 100%)
+      `,
+      fontFamily: "'DM Sans', sans-serif",
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {/* Minimal top bar — brand name only, no border */}
+      <header style={{
+        background: '#ffffff',
+        padding: '16px 24px',
+        fontSize: '12px',
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        color: '#111',
+        textTransform: 'uppercase',
+      }}>
+        Delivery Optimizer
+      </header>
 
       <main style={{
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 'calc(100vh - 48px)',
         padding: '40px 24px',
       }}>
         <h1 style={{
-          fontSize: '2.25rem',
+          fontSize: '2.5rem',
           fontWeight: 700,
           color: '#111',
-          marginBottom: '12px',
+          marginBottom: '16px',
           textAlign: 'center',
           letterSpacing: '-0.02em',
+          lineHeight: 1.15,
         }}>
-          New or Returning?
+          New or returning user?
         </h1>
         <p style={{
           fontSize: '15px',
-          color: '#888',
+          color: '#555',
           marginBottom: '48px',
           textAlign: 'center',
+          maxWidth: '480px',
+          lineHeight: 1.6,
         }}>
-          Select how you&apos;d like to get started.
+          Transform your address lists into efficient, ordered routes to lower
+          operational costs and reduce your fleet&apos;s carbon emissions.
         </p>
 
         <div style={{
-          display: 'flex',
-          gap: '20px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px',
           width: '100%',
-          maxWidth: '720px',
+          maxWidth: '780px',
         }}>
-          {/* New session → address entry */}
-          <button
-            onClick={() => router.push('/address-entry')}
-            style={{
-              flex: '1 1 280px',
-              maxWidth: '340px',
-              padding: '40px 28px',
-              border: '1.5px solid #d4d2d0',
-              borderRadius: '16px',
-              background: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '16px',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-              textAlign: 'center',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#111';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#d4d2d0';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-            }}
-          >
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="16" cy="13" r="6" stroke="#222" strokeWidth="2" fill="none"/>
-              <path d="M4 34c0-7 5.4-12 12-12h2" stroke="#222" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <circle cx="30" cy="30" r="8" stroke="#222" strokeWidth="2" fill="none"/>
-              <line x1="30" y1="26" x2="30" y2="34" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="26" y1="30" x2="34" y2="30" stroke="#222" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <div>
-              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>New</p>
-              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>First time here? Start by entering your delivery addresses.</p>
-            </div>
-          </button>
-
-          {/* Returning session → upload save point */}
-          <button
-            onClick={() => router.push('/upload-save-point')}
-            style={{
-              flex: '1 1 280px',
-              maxWidth: '340px',
-              padding: '40px 28px',
-              border: '1.5px solid #d4d2d0',
-              borderRadius: '16px',
-              background: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '16px',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-              textAlign: 'center',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#111';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#d4d2d0';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-            }}
-          >
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="18" cy="13" r="6" stroke="#222" strokeWidth="2" fill="none"/>
-              <path d="M4 34c0-7 5.4-12 12-12h6" stroke="#222" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <path d="M24 28l4 4 8-8" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-            <div>
-              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>Returning</p>
-              <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.5 }}>Welcome back. Upload your save file to continue where you left off.</p>
-            </div>
-          </button>
-        </div>
-
-        <button
-          onClick={() => router.back()}
-          style={{
-            marginTop: '36px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
+          {/* New user → /edit directly */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '28px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '14px',
-            color: '#555',
-            fontFamily: 'inherit',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back
-        </button>
+            flexDirection: 'column',
+            gap: '12px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="9" cy="7" r="4" stroke="#4a9d7f" strokeWidth="1.8" fill="none" />
+              <path d="M2 21c0-4 3.1-7 7-7h1" stroke="#4a9d7f" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+              <path d="M16 11v6M13 14h6" stroke="#4a9d7f" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+                New user
+              </p>
+              <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>
+                Import routes, edit addresses, assign deliveries, monitor fleet
+                routes, and export delivery operations.
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => router.push('/edit')}
+                style={{
+                  background: '#4a9d7f',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 24px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#3d8a6d')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#4a9d7f')}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+
+          {/* Returning user → /upload-save-point */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '28px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="9" cy="7" r="4" stroke="#4a9d7f" strokeWidth="1.8" fill="none" />
+              <path d="M2 21c0-4 3.1-7 7-7h4" stroke="#4a9d7f" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+              <path d="M16 14l2 2 4-4" stroke="#4a9d7f" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '17px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+                Returning user
+              </p>
+              <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>
+                View your assigned route, navigate through addresses, update
+                delivery status, and import file from route manager.
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => router.push('/upload-save-point')}
+                style={{
+                  background: '#4a9d7f',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 24px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#3d8a6d')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#4a9d7f')}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
+
+      <footer style={{
+        background: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '20px 24px',
+      }}>
+        <img src="/logo.png" alt="b²" style={{ height: '32px', width: 'auto', display: 'block' }} />
+        <span style={{ fontSize: '12px', color: '#000' }}>
+          Built with ❤️ for Humanity. The Benevolent Bandwidth Foundation
+        </span>
+      </footer>
     </div>
   );
 }
