@@ -4,7 +4,13 @@ import { locationSchema, loadSchema, MAX_DEMAND, MAX_BUFFER_TIME } from "./commo
 export const deliverySchema = z.object({
   id: z.number().int().nonnegative(),
 
+  recipientName: z.string().min(1).optional(),
+
+  phoneNumber: z.string().min(7).optional(),
+
   address: z.string().optional(),
+
+  notes: z.string().optional(),
 
   location: locationSchema,
 
