@@ -17,9 +17,8 @@ export function useAddresses() {
       editingExisting: false,
       recipientAddress: "",
       timeBuffer: "",
-      deliveryTimeMode: "by",
-      deliveryBy: "",
-      deliveryBetween: "",
+      deliveryTimeStart: "",
+      deliveryTimeEnd: "",
       deliveryQuantity: 0,
       notes: "",
     },
@@ -111,9 +110,8 @@ export function useAddresses() {
           editingExisting: false,
           recipientAddress: "",
           timeBuffer: "",
-          deliveryTimeMode: "by",
-          deliveryBy: "",
-          deliveryBetween: "",
+          deliveryTimeStart: "",
+          deliveryTimeEnd: "",
           deliveryQuantity: 0,
           notes: "",
         },
@@ -157,7 +155,13 @@ export function useAddresses() {
     });
   }, []);
 
-  // Public API for the address section + pagination.
+  const importAddresses = useCallback((incoming: AddressCard[]) => {
+    if (incoming.length === 0) return;
+    setAddresses(incoming);
+    setAddressPage(1);
+    setAddressTouched(false);
+    _setSearchQuery("");
+  }, []);
   return {
     addresses,
     updateAddress,
@@ -165,6 +169,7 @@ export function useAddresses() {
     deleteAddress,
     unlockAddress,
     confirmAddress,
+    importAddresses,
     addressTouched,
     addressPage,
     setAddressPage,

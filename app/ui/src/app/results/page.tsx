@@ -3,16 +3,28 @@
 
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
-import { mockRouteToRoute } from "./data/mockRouteLoader";
 import type { Route } from "./types";
-import type { MockRouteJson } from "./data/mockRouteLoader";
-import mockRouteJson from "./data/mock_route.json";
 
 export default function ResultsPage() {
-  const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const stored = sessionStorage.getItem("optimizeResults");
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as Route[];
+      sessionStorage.removeItem("optimizeResults"); // consume once — prevents stale data on refresh
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRoutes(parsed);
+    } catch {
+      setError("Route data could not be loaded. Please go back and try again.");
+    }
+  }, []);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
 
@@ -30,7 +42,20 @@ export default function ResultsPage() {
   }, [setRoutes]);
 
   return (
-    <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
+    <main className="h-screen flex flex-col overflow-hidden">
+      {error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm w-80 space-y-4">
+            <p className="text-sm text-zinc-700">{error}</p>
+            <a
+              href="/edit"
+              className="inline-flex w-full items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500"
+            >
+              Go back to edit
+            </a>
+          </div>
+        </div>
+      )} {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
       <header className="flex items-center gap-2 p-4 shrink-0 border-b border-zinc-200 bg-white">
         <button
           type="button"

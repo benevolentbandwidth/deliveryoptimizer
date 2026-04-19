@@ -3,23 +3,24 @@
  */
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { geocodeAddress } from "@/app/components/AddressGeocoder/utils/nominatim";
 import { vehicleRowToVehicleInput, addressCardToDeliveryInput } from "../utils/optimizeMapper";
+import { vroomToRoutes } from "../utils/vroomToRoutes";
 import type { VehicleRow, AddressCard, LockedVehicleRow } from "../types/delivery";
 import type { CapacityUnit } from "../types/delivery";
+import type { VroomResponse } from "../types/vroomResponse";
 
 // ensure that vehicleType and capacityUnit are not empty
 function isLocked(v: VehicleRow): v is LockedVehicleRow {
   return v.locked && v.type !== "" && v.capacityUnit !== "";
 }
 export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
+  const router = useRouter();
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [geocodeFailedAddressIds, setGeocodeFailedAddressIds] = useState<number[]>([]);
   const [geocodeFailedVehicleIds, setGeocodeFailedVehicleIds] = useState<number[]>([]);
-
-  // TODO: Result will be updated to store the result of the optimize request
-  const [result, setResult] = useState<unknown>(null);
 
   const optimize = useCallback(async () => {
     setOptimizeError(null);
@@ -63,7 +64,17 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     }
     const demandType = units[0] as CapacityUnit;
 
-    // 6. Geocode all vehicle start locations and delivery addresses, collecting every failure.
+    // 6. Total demand must not exceed total vehicle capacity.
+    const totalDemand = addresses.reduce((sum, a) => sum + a.deliveryQuantity, 0);
+    const totalCapacity = availableVehicles.reduce((sum, v) => sum + v.capacity, 0);
+    if (totalDemand > totalCapacity) {
+      setOptimizeError(
+        `Total delivery quantity (${totalDemand}) exceeds total vehicle capacity (${totalCapacity}). Add more vehicles or reduce quantities.`
+      );
+      return;
+    }
+
+    // 7. Geocode all vehicle start locations and delivery addresses, collecting every failure.
     setIsOptimizing(true);
     try {
       const vehicleLocations: Map<number, { lat: number; lng: number }> = new Map();
@@ -103,7 +114,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 7. Map form data to API types.
+      // 8. Map form data to API types.
       const vehicleInputs = lockedVehicles.map((v) =>
         vehicleRowToVehicleInput(v, vehicleLocations.get(v.id)!)
       );
@@ -112,7 +123,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         addressCardToDeliveryInput(a, addressLocations.get(a.id)!, demandType)
       ).filter((d) => d !== undefined);
 
-      // 8. POST to /api/optimize.
+      // 9. POST to /api/optimize.
       const response = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,14 +147,16 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         return;
       }
 
-      // 9. Store result for the caller to consume.
-      setResult(data);
+      // 10. Transform, persist to sessionStorage, and navigate to results.
+      const routes = vroomToRoutes(data as VroomResponse, lockedVehicles, addresses);
+      sessionStorage.setItem("optimizeResults", JSON.stringify(routes));
+      router.push("/results");
     } catch {
       setOptimizeError("Network error. Please check your connection and try again.");
     } finally {
       setIsOptimizing(false);
     }
-  }, [vehicles, addresses]);
+  }, [vehicles, addresses, router]);
 
   // Only clears the error message; geocode failure highlights persist until the next optimize run.
   const clearOptimizeError = useCallback(() => {
@@ -157,6 +170,5 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
     clearOptimizeError,
     geocodeFailedAddressIds,
     geocodeFailedVehicleIds,
-    result,
   };
 }
