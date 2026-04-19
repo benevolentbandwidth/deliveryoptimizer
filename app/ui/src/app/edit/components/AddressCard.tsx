@@ -299,6 +299,7 @@ export default function AddressCard({
                     </div>
                   </div>
                   <div className="flex min-w-0 flex-col gap-1">
+                    <span className={MOBILE_FIELD_LABEL}>Delivery</span>
                     <div className={MOBILE_ADDRESS_LOCKED_ROW}>
                       <span className="text-sm text-black truncate">
                         {a.deliveryTimeStart && a.deliveryTimeEnd
@@ -368,6 +369,7 @@ export default function AddressCard({
                     </select>
                   </div>
                   <div className="flex min-w-0 flex-col gap-1.5">
+                    <span className={MOBILE_FIELD_LABEL}>Delivery</span>
                     <div className="flex items-center gap-1 w-full min-w-0">
                       <select
                         value={a.deliveryTimeStart}
