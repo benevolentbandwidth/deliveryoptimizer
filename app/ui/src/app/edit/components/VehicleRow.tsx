@@ -9,6 +9,7 @@
  */
 
 import { useRef, type ReactNode } from "react";
+import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { TIME_OPTIONS } from "../constants/timeOptions";
 import type { VehicleRow as VehicleRowType, VehicleType, CapacityUnit } from "../types/delivery";
 import { capitalize } from "../utils/deliveryHelpers";
@@ -66,6 +67,7 @@ type VehicleRowProps = {
   confirmVehicle: (id: number) => void;
   vehicleTouched: boolean;
   geocodeFailed: boolean;
+  outOfRegionFailed: boolean;
 };
 
 function MobileFieldLabel({ children }: { children: ReactNode }) {
@@ -160,6 +162,7 @@ export default function VehicleRow({
   confirmVehicle,
   vehicleTouched,
   geocodeFailed,
+  outOfRegionFailed,
 }: VehicleRowProps) {
   const nameInvalid = vehicleTouched && !v.name.trim();
   const startLocationInvalid = vehicleTouched && !(v.startLocation ?? "").trim();
@@ -180,7 +183,7 @@ export default function VehicleRow({
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.name}</span>
           </div>
           <MobileFieldLabel>Start Location</MobileFieldLabel>
-          <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+          <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
             <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.startLocation}</span>
           </div>
           <MobileFieldLabel>Type</MobileFieldLabel>
@@ -189,7 +192,7 @@ export default function VehicleRow({
           </div>
           <MobileFieldLabel>Capacity Unit</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
-            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
+            <span className={VEHICLE_MOBILE_LOCKED_TEXT}>{v.capacityUnit === "cubic_feet" ? "Cubic Feet" : capitalize(v.capacityUnit)}</span>
           </div>
           <MobileFieldLabel>Capacity</MobileFieldLabel>
           <div className={VEHICLE_LOCKED_CELL}>
@@ -238,12 +241,12 @@ export default function VehicleRow({
           aria-label="Vehicle name"
         />
         <MobileFieldLabel>Start Location</MobileFieldLabel>
-        <input
+        <AddressAutocompleteInput
           value={v.startLocation ?? ""}
-          onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
+          onChange={(val) => updateVehicle(v.id, "startLocation", val)}
           className={`${inputClass(startLocationInvalid || geocodeFailed)} bg-white`}
           placeholder="Address"
-          aria-label="Start location"
+          ariaLabel="Start location"
         />
         <MobileFieldLabel>Type</MobileFieldLabel>
         <select
@@ -350,14 +353,14 @@ export default function VehicleRow({
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.name}</span>
         </div>
-        <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
+        <div className={`${VEHICLE_LOCKED_CELL}${geocodeFailed || outOfRegionFailed ? ` ${GEOCODE_ERROR_LOCKED}` : ""}`}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.startLocation}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.type)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
-          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{capitalize(v.capacityUnit)}</span>
+          <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.capacityUnit === "cubic_feet" ? "Cubic Feet" : capitalize(v.capacityUnit)}</span>
         </div>
         <div className={VEHICLE_LOCKED_CELL}>
           <span className={VEHICLE_DESKTOP_LOCKED_TEXT}>{v.capacity}</span>
@@ -429,12 +432,12 @@ export default function VehicleRow({
         placeholder=""
         aria-label="Vehicle name"
       />
-      <input
+      <AddressAutocompleteInput
         value={v.startLocation ?? ""}
-        onChange={(e) => updateVehicle(v.id, "startLocation", e.target.value)}
+        onChange={(val) => updateVehicle(v.id, "startLocation", val)}
         className={`${VEHICLE_DESKTOP_WIDE_INPUT} ${fieldBorder(startLocationInvalid || geocodeFailed)}`}
         placeholder=""
-        aria-label="Start location"
+        ariaLabel="Start location"
       />
       <select
         value={v.type}

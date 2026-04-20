@@ -275,7 +275,7 @@ export const ADDRESS_EMPTY_STATE =
   "flex items-center justify-center py-16 text-sm text-zinc-400 xl:text-base";
 
 export const ADDRESS_LIST_WRAP =
-  "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-hidden";
+  "space-y-4 lg:space-y-0 lg:divide-y lg:divide-zinc-300 lg:border lg:border-zinc-300 lg:rounded-xl lg:overflow-visible";
 
 export const PAGINATION_ROW = "flex items-center justify-center gap-2 sm:gap-4 pb-4 md:pb-8 px-2";
 
