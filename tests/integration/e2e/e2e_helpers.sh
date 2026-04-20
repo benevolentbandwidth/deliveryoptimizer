@@ -92,7 +92,7 @@ e2e_wait_for_osrm_nearest_ok() {
 
   for _ in $(seq 1 180); do
     if e2e_compose exec -T osrm curl -fsS \
-      "http://127.0.0.1:${osrm_port}/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false" \
+      "http://127.0.0.1:${osrm_port}/nearest/v1/driving/7.4236,43.7384?number=1&generate_hints=false" \
       >"${output_file}" 2>/dev/null &&
       grep -Eq '"code"[[:space:]]*:[[:space:]]*"Ok"' "${output_file}"; then
       ready=true
