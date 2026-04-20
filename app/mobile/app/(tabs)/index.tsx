@@ -2,10 +2,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import React, { useState } from 'react';
 import {Alert,LayoutAnimation,Linking,Platform,SafeAreaView,ScrollView,StyleSheet,Text,TouchableOpacity,UIManager,View} from 'react-native';
 
-import DeliveryCard from '../../src/features/deliveries/DeliveryCard';
-import { loadSessionFromDocument } from '../../src/features/deliveries/importSession';
-import { transformSessionToDriverRoute } from '../../src/features/deliveries/transformSession';
-import type { DriverRoute, DeliveryStop } from '../../src/features/deliveries/types';
+import DeliveryCard from '@/src/features/deliveries/DeliveryCard';
+import { loadSessionFromDocument } from '@/src/features/deliveries/importSession';
+import { transformSessionToDriverRoute } from '@/src/features/deliveries/transformSession';
+import type { DriverRoute, DeliveryStop } from '@/src/features/deliveries/types';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -146,7 +146,7 @@ export default function HomeScreen() {
 
   const stops = route?.stops || [];
   const pendingStops = stops.filter((stop) => stop.status === 'pending');
-  const completedStops = stops.filter((stop) => stop.status !== 'pending');
+  const historyStops = stops.filter((stop) => stop.status !== 'pending');
 
   const remaining = pendingStops.length;
   const completed = stops.filter((stop) => stop.status === 'completed').length;
@@ -221,11 +221,11 @@ export default function HomeScreen() {
           />
         ))}
 
-        {completedStops.length > 0 && (
+        {historyStops.length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>History</Text>
 
-            {completedStops.map((stop) => (
+            {historyStops.map((stop) => (
               <DeliveryCard
                 key={stop.id}
                 stop={stop}

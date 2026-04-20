@@ -5,6 +5,12 @@ export function transformSessionToDriverRoute(input: OptimizeRequestLike): Drive
   const firstVehicle = input.vehicles?.[0];
 
   const stops: DeliveryStop[] = deliveries.map((delivery, index) => {
+    if (delivery.location == null) {
+      console.warn(
+        `Delivery ${delivery.id} is missing coordinates; navigation will fall back to (0, 0).`
+      );
+    }
+
     return {
       id: String(delivery.id),
       stopNumber: index + 1,
