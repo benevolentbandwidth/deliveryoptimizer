@@ -14,7 +14,6 @@ type UseCSVUploadArgs = {
 };
 
 export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
-  const [csvFileName, setCsvFileName] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
 
   const handleCSVUpload = useCallback(
@@ -22,7 +21,6 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      setCsvFileName(file.name);
       setCsvError(null);
 
       Papa.parse<Record<string, string>>(file, {
@@ -93,5 +91,5 @@ export function useCSVUpload({ importAddresses }: UseCSVUploadArgs) {
 
   const clearCsvError = useCallback(() => setCsvError(null), []);
 
-  return { handleCSVUpload, csvFileName, csvError, clearCsvError };
+  return { handleCSVUpload, csvError, clearCsvError };
 }
