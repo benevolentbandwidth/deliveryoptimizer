@@ -64,6 +64,7 @@ with open(payload_path, "w", encoding="utf-8") as handle:
 PY
 
 DELIVERYOPTIMIZER_PORT="${port}" \
+DELIVERYOPTIMIZER_ENABLE_METRICS=1 \
 VROOM_BIN="/usr/bin/true" \
 "${api_binary}" >"${tmpdir}/server.log" 2>&1 &
 server_pid=$!
@@ -75,7 +76,9 @@ if ! wait_for_local_optimize_ready "${curl_bin}" "${port}" 50 0.1; then
 fi
 
 response_file="${tmpdir}/response.json"
-status_code="$("${curl_bin}" -sS -o "${response_file}" -w "%{http_code}" \
+response_headers_file="${tmpdir}/response.headers"
+metrics_file="${tmpdir}/metrics.txt"
+status_code="$("${curl_bin}" -sS -D "${response_headers_file}" -o "${response_file}" -w "%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
   --data-binary "@${payload_file}" \
@@ -86,3 +89,45 @@ if [[ "${status_code}" != "413" ]]; then
   cat "${response_file}" >&2 || true
   exit 1
 fi
+
+request_id="$(awk 'tolower($1) == "x-request-id:" {gsub("\r", "", $2); print $2}' "${response_headers_file}")"
+if [[ -z "${request_id}" ]]; then
+  echo "expected oversized-body response to include X-Request-Id" >&2
+  cat "${response_headers_file}" >&2 || true
+  exit 1
+fi
+
+if ! grep -Fq "\"request_id\":\"${request_id}\"" "${tmpdir}/server.log"; then
+  echo "expected oversized-body response to appear in structured logs" >&2
+  cat "${tmpdir}/server.log" >&2 || true
+  exit 1
+fi
+
+if ! grep -Fq '"outcome":"request_too_large"' "${tmpdir}/server.log"; then
+  echo "expected oversized-body log line to identify the request-too-large outcome" >&2
+  cat "${tmpdir}/server.log" >&2 || true
+  exit 1
+fi
+
+metrics_http_code="$("${curl_bin}" -sS -o "${metrics_file}" -w "%{http_code}" \
+  "http://127.0.0.1:${port}/metrics")"
+
+if [[ "${metrics_http_code}" != "200" ]]; then
+  echo "expected /metrics to return HTTP 200 after oversized-body rejection, got ${metrics_http_code}" >&2
+  cat "${metrics_file}" >&2 || true
+  exit 1
+fi
+
+for expected in \
+  'deliveryoptimizer_solver_request_duration_seconds_count 1' \
+  'deliveryoptimizer_solver_requests_accepted_total 0' \
+  'deliveryoptimizer_solver_requests_succeeded_total 0' \
+  'deliveryoptimizer_solver_requests_rejected_total 1' \
+  'deliveryoptimizer_solver_requests_timed_out_total 0' \
+  'deliveryoptimizer_solver_requests_failed_total 0'; do
+  if ! grep -Fq "${expected}" "${metrics_file}"; then
+    echo "expected metrics output to contain '${expected}'" >&2
+    cat "${metrics_file}" >&2 || true
+    exit 1
+  fi
+done

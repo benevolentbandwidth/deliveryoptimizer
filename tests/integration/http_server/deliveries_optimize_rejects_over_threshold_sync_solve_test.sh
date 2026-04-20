@@ -6,10 +6,10 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/http_server_helpers.sh"
 
 http_server_init 47000 "$@"
-jobs_response_file="${work_dir}/jobs-response.json"
-jobs_payload_file="${work_dir}/jobs-payload.json"
-vehicles_response_file="${work_dir}/vehicles-response.json"
-vehicles_payload_file="${work_dir}/vehicles-payload.json"
+response_file="${work_dir}/response.json"
+response_headers_file="${work_dir}/response.headers"
+metrics_file="${work_dir}/metrics.txt"
+payload_file="${work_dir}/payload.json"
 vroom_called_file="${work_dir}/vroom-called.txt"
 stub_bin="${work_dir}/vroom-stub.sh"
 
@@ -27,11 +27,12 @@ chmod +x "${stub_bin}"
 http_server_start \
   VROOM_BIN="${stub_bin}" \
   VROOM_CALLED_FILE="${vroom_called_file}" \
+  DELIVERYOPTIMIZER_ENABLE_METRICS=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS=1 \
   DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES=2
 http_server_wait_until_ready
 
-cat >"${jobs_payload_file}" <<'JSON'
+cat >"${payload_file}" <<'JSON'
 {
   "depot": { "location": [7.4236, 43.7384] },
   "vehicles": [
@@ -39,69 +40,58 @@ cat >"${jobs_payload_file}" <<'JSON'
   ],
   "jobs": [
     { "id": "order-1", "location": [7.4212, 43.7308], "demand": 1 },
-    { "id": "order-2", "location": [7.4220, 43.7310], "demand": 1 }
+    { "id": "order-2", "location": ["bad", 43.7310], "demand": 1 }
   ]
 }
 JSON
 
-jobs_http_code="$("${curl_bin}" -sS -o "${jobs_response_file}" -w "%{http_code}" \
+http_code="$("${curl_bin}" -sS -D "${response_headers_file}" -o "${response_file}" -w "%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
-  --data-binary "@${jobs_payload_file}" \
+  --data-binary "@${payload_file}" \
   "$(http_server_url /api/v1/deliveries/optimize)")"
 
-if [[ "${jobs_http_code}" != "422" ]]; then
-  echo "expected HTTP 422 when jobs exceed the sync-solve limit, got ${jobs_http_code}" >&2
-  cat "${jobs_response_file}" >&2 || true
+if [[ "${http_code}" != "503" ]]; then
+  echo "expected HTTP 503 for an over-threshold solve before deep validation, got ${http_code}" >&2
+  cat "${response_file}" >&2 || true
   exit 1
 fi
 
 if [[ -f "${vroom_called_file}" ]]; then
   echo "expected over-threshold solve to be rejected before invoking VROOM" >&2
-  cat "${jobs_response_file}" >&2 || true
+  cat "${response_file}" >&2 || true
   exit 1
 fi
 
-if ! grep -Fq '"error":"Request exceeds the maximum supported job count for synchronous routing optimization."' "${jobs_response_file}"; then
-  echo "expected job-count-specific error message for an over-threshold sync solve" >&2
-  cat "${jobs_response_file}" >&2 || true
+request_id="$(awk 'tolower($1) == "x-request-id:" {gsub("\r", "", $2); print $2}' "${response_headers_file}")"
+if [[ -z "${request_id}" ]]; then
+  echo "expected rejected solve response to include X-Request-Id" >&2
+  cat "${response_headers_file}" >&2 || true
   exit 1
 fi
 
-cat >"${vehicles_payload_file}" <<'JSON'
-{
-  "depot": { "location": [7.4236, 43.7384] },
-  "vehicles": [
-    { "id": "van-1", "capacity": 8 },
-    { "id": "van-2", "capacity": 8 },
-    { "id": "van-3", "capacity": 8 }
-  ],
-  "jobs": [
-    { "id": "order-1", "location": [7.4212, 43.7308], "demand": 1 }
-  ]
-}
-JSON
-
-vehicles_http_code="$("${curl_bin}" -sS -o "${vehicles_response_file}" -w "%{http_code}" \
-  -X POST \
-  -H "Content-Type: application/json" \
-  --data-binary "@${vehicles_payload_file}" \
-  "$(http_server_url /api/v1/deliveries/optimize)")"
-
-if [[ "${vehicles_http_code}" != "422" ]]; then
-  echo "expected HTTP 422 when vehicles exceed the sync-solve limit, got ${vehicles_http_code}" >&2
-  cat "${vehicles_response_file}" >&2 || true
+if ! grep -Fq "\"request_id\":\"${request_id}\"" "${log_file}"; then
+  echo "expected rejection request id to appear in structured logs" >&2
+  cat "${log_file}" >&2 || true
   exit 1
 fi
 
-if [[ -f "${vroom_called_file}" ]]; then
-  echo "expected over-threshold vehicle solve to be rejected before invoking VROOM" >&2
-  cat "${vehicles_response_file}" >&2 || true
+metrics_http_code="$("${curl_bin}" -sS -o "${metrics_file}" -w "%{http_code}" \
+  "$(http_server_url /metrics)")"
+
+if [[ "${metrics_http_code}" != "200" ]]; then
+  echo "expected /metrics to return HTTP 200 after rejection, got ${metrics_http_code}" >&2
+  cat "${metrics_file}" >&2 || true
   exit 1
 fi
 
-if ! grep -Fq '"error":"Request exceeds the maximum supported vehicle count for synchronous routing optimization."' "${vehicles_response_file}"; then
-  echo "expected vehicle-count-specific error message for an over-threshold sync solve" >&2
-  cat "${vehicles_response_file}" >&2 || true
-  exit 1
-fi
+for expected in \
+  'deliveryoptimizer_solver_requests_accepted_total 0' \
+  'deliveryoptimizer_solver_requests_succeeded_total 0' \
+  'deliveryoptimizer_solver_requests_rejected_total 1'; do
+  if ! grep -Fq "${expected}" "${metrics_file}"; then
+    echo "expected metrics output to contain '${expected}'" >&2
+    cat "${metrics_file}" >&2 || true
+    exit 1
+  fi
+done

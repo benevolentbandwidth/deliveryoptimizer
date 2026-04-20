@@ -28,6 +28,11 @@ struct VroomRuntimeConfig {
 
 class VroomRunner {
 public:
+  VroomRunner() = default;
+  VroomRunner(const VroomRunner&) = default;
+  VroomRunner(VroomRunner&&) = default;
+  VroomRunner& operator=(const VroomRunner&) = default;
+  VroomRunner& operator=(VroomRunner&&) = default;
   virtual ~VroomRunner() = default;
 
   [[nodiscard]] virtual VroomRunResult Run(const Json::Value& input_payload) const = 0;

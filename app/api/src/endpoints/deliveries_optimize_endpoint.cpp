@@ -1,6 +1,7 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
 #include "deliveryoptimizer/api/deliveries_optimize_limits.hpp"
+#include "deliveryoptimizer/api/observability.hpp"
 #include "deliveryoptimizer/api/solve_coordinator.hpp"
 #include "deliveryoptimizer/api/vroom_runner.hpp"
 
@@ -28,7 +29,6 @@ constexpr double kMinLatitude = -90.0;
 constexpr double kMaxLatitude = 90.0;
 constexpr std::string_view kCoordinateValidationMessage =
     "must be an array [lon, lat] with longitude in [-180, 180] and latitude in [-90, 90].";
-constexpr auto k422UnprocessableEntity = static_cast<drogon::HttpStatusCode>(422);
 constexpr Json::ArrayIndex kMaxOptimizeVehicles =
     static_cast<Json::ArrayIndex>(deliveryoptimizer::api::kMaxDeliveriesOptimizeVehicles);
 constexpr Json::ArrayIndex kMaxOptimizeJobs =
@@ -66,6 +66,11 @@ struct OptimizeRequestInput {
   double depot_lat;
   std::vector<VehicleInput> vehicles;
   std::vector<JobInput> jobs;
+};
+
+struct CompletedResponse {
+  drogon::HttpResponsePtr response;
+  deliveryoptimizer::api::SolveRequestOutcome outcome;
 };
 
 void AddValidationIssue(Json::Value& issues, const std::string_view field,
@@ -431,6 +436,28 @@ void ParseJobs(const Json::Value& root, OptimizeRequestInput& parsed_input, Json
   return parsed_input;
 }
 
+[[nodiscard]] std::optional<deliveryoptimizer::api::SolveRequestSize>
+TryParseRequestSizeForAdmission(const Json::Value& root) {
+  if (!root.isObject()) {
+    return std::nullopt;
+  }
+
+  const Json::Value& vehicles = root["vehicles"];
+  const Json::Value& jobs = root["jobs"];
+  if (!vehicles.isArray() || !jobs.isArray()) {
+    return std::nullopt;
+  }
+
+  if (vehicles.size() > kMaxOptimizeVehicles || jobs.size() > kMaxOptimizeJobs) {
+    return std::nullopt;
+  }
+
+  return deliveryoptimizer::api::SolveRequestSize{
+      .jobs = static_cast<std::size_t>(jobs.size()),
+      .vehicles = static_cast<std::size_t>(vehicles.size()),
+  };
+}
+
 [[nodiscard]] Json::Value BuildLocation(const double lon, const double lat) {
   Json::Value location{Json::arrayValue};
   location.append(lon);
@@ -634,46 +661,70 @@ void ApplyExternalIdsToUnassigned(Json::Value& unassigned,
   return drogon::HttpResponse::newHttpJsonResponse(body);
 }
 
-[[nodiscard]] drogon::HttpResponsePtr
+[[nodiscard]] CompletedResponse
 BuildAdmissionRejectionResponse(const deliveryoptimizer::api::SolveAdmissionStatus status) {
   switch (status) {
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs:
-    return BuildErrorResponse(
-        k422UnprocessableEntity,
-        "Request exceeds the maximum supported job count for synchronous routing optimization.");
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyVehicles:
-    return BuildErrorResponse(
-        k422UnprocessableEntity,
-        "Request exceeds the maximum supported vehicle count for synchronous routing optimization.");
+    return CompletedResponse{
+        .response = BuildErrorResponse(
+            drogon::k503ServiceUnavailable,
+            "Routing optimization is unavailable for requests of this size."),
+        .outcome =
+            status == deliveryoptimizer::api::SolveAdmissionStatus::kRejectedTooManyJobs
+                ? deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyJobs
+                : deliveryoptimizer::api::SolveRequestOutcome::kRejectedTooManyVehicles,
+    };
   case deliveryoptimizer::api::SolveAdmissionStatus::kRejectedQueueFull:
-    return BuildErrorResponse(drogon::k503ServiceUnavailable,
-                              "Routing optimization is temporarily overloaded.");
+    return CompletedResponse{
+        .response = BuildErrorResponse(drogon::k503ServiceUnavailable,
+                                       "Routing optimization is temporarily overloaded."),
+        .outcome = deliveryoptimizer::api::SolveRequestOutcome::kRejectedQueueFull,
+    };
   case deliveryoptimizer::api::SolveAdmissionStatus::kAccepted:
     break;
   }
 
-  return BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed.");
+  return CompletedResponse{
+      .response = BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed."),
+      .outcome = deliveryoptimizer::api::SolveRequestOutcome::kFailed,
+  };
 }
 
-[[nodiscard]] drogon::HttpResponsePtr
+[[nodiscard]] CompletedResponse
 BuildSolveExecutionResponse(const OptimizeRequestInput& input,
                             const deliveryoptimizer::api::CoordinatedSolveResult& result) {
   switch (result.status) {
   case deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded:
     if (result.output.has_value()) {
-      return BuildSuccessResponse(input, *result.output);
+      return CompletedResponse{
+          .response = BuildSuccessResponse(input, *result.output),
+          .outcome = deliveryoptimizer::api::SolveRequestOutcome::kSucceeded,
+      };
     }
-    return BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed.");
+    return CompletedResponse{
+        .response = BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed."),
+        .outcome = deliveryoptimizer::api::SolveRequestOutcome::kFailed,
+    };
   case deliveryoptimizer::api::CoordinatedSolveStatus::kTimedOut:
-    return BuildErrorResponse(drogon::k504GatewayTimeout, "Routing optimization timed out.");
+    return CompletedResponse{
+        .response = BuildErrorResponse(drogon::k504GatewayTimeout, "Routing optimization timed out."),
+        .outcome = deliveryoptimizer::api::SolveRequestOutcome::kSolveTimedOut,
+    };
   case deliveryoptimizer::api::CoordinatedSolveStatus::kQueueWaitTimedOut:
-    return BuildErrorResponse(drogon::k503ServiceUnavailable,
-                              "Routing optimization queue wait timed out.");
+    return CompletedResponse{
+        .response = BuildErrorResponse(drogon::k503ServiceUnavailable,
+                                       "Routing optimization queue wait timed out."),
+        .outcome = deliveryoptimizer::api::SolveRequestOutcome::kQueueWaitTimedOut,
+    };
   case deliveryoptimizer::api::CoordinatedSolveStatus::kFailed:
     break;
   }
 
-  return BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed.");
+  return CompletedResponse{
+      .response = BuildErrorResponse(drogon::k502BadGateway, "Routing optimization failed."),
+      .outcome = deliveryoptimizer::api::SolveRequestOutcome::kFailed,
+  };
 }
 
 void DispatchResponse(
@@ -688,15 +739,19 @@ void DispatchResponse(
 namespace deliveryoptimizer::api {
 
 void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
-                                        const SolveAdmissionConfig& admission_config) {
+                                        const SolveAdmissionConfig& admission_config,
+                                        std::shared_ptr<ObservabilityRegistry> observability) {
   auto coordinator = std::make_shared<SolveCoordinator>(
-      admission_config, std::make_shared<ProcessVroomRunner>(ResolveVroomRuntimeConfigFromEnv()));
+      admission_config, std::make_shared<ProcessVroomRunner>(ResolveVroomRuntimeConfigFromEnv()),
+      SolveCoordinatorOptions{}, observability);
 
   app.registerHandler(
       "/api/v1/deliveries/optimize",
       [coordinator =
-           std::move(coordinator)](const drogon::HttpRequestPtr& request,
+           std::move(coordinator),
+       observability = std::move(observability)](const drogon::HttpRequestPtr& request,
                                    std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
+        auto lifecycle = std::make_shared<SolveLifecycle>(CreateSolveLifecycle(request));
         auto response_callback =
             std::make_shared<std::function<void(const drogon::HttpResponsePtr&)>>(
                 std::move(callback));
@@ -709,23 +764,50 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
                               response_loop](const drogon::HttpResponsePtr& response) {
           DispatchResponse(response_loop, response_callback, response);
         };
+        const auto respond_with_completion =
+            [respond, observability, lifecycle](const CompletedResponse& completed_response) {
+              FinalizeSolveRequest(observability, lifecycle, completed_response.outcome,
+                                   static_cast<std::uint16_t>(completed_response.response->getStatusCode()));
+              respond(completed_response.response);
+            };
 
         const auto& parsed_json = request->getJsonObject();
         if (!parsed_json) {
-          respond(BuildErrorResponse(drogon::k400BadRequest, "Request body must be valid JSON."));
+          respond_with_completion(CompletedResponse{
+              .response =
+                  BuildErrorResponse(drogon::k400BadRequest, "Request body must be valid JSON."),
+              .outcome = SolveRequestOutcome::kInvalidJson,
+          });
           return;
+        }
+
+        const auto early_request_size = TryParseRequestSizeForAdmission(*parsed_json);
+        if (early_request_size.has_value()) {
+          lifecycle->jobs = early_request_size->jobs;
+          lifecycle->vehicles = early_request_size->vehicles;
+          const SolveAdmissionStatus admission_status =
+              coordinator->CheckAdmission(*early_request_size, lifecycle);
+          if (admission_status != SolveAdmissionStatus::kAccepted) {
+            respond_with_completion(BuildAdmissionRejectionResponse(admission_status));
+            return;
+          }
         }
 
         Json::Value issues{Json::arrayValue};
         auto parsed_input = ParseAndValidateRequest(*parsed_json, issues);
         if (!parsed_input.has_value()) {
-          respond(BuildValidationResponse(issues));
+          respond_with_completion(CompletedResponse{
+              .response = BuildValidationResponse(issues),
+              .outcome = SolveRequestOutcome::kValidationFailed,
+          });
           return;
         }
 
         OptimizeRequestInput optimize_request = std::move(parsed_input.value());
         auto optimize_request_ptr =
             std::make_shared<OptimizeRequestInput>(std::move(optimize_request));
+        lifecycle->jobs = optimize_request_ptr->jobs.size();
+        lifecycle->vehicles = optimize_request_ptr->vehicles.size();
         const SolveRequestSize request_size{
             .jobs = optimize_request_ptr->jobs.size(),
             .vehicles = optimize_request_ptr->vehicles.size(),
@@ -733,11 +815,13 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
 
         const SolveAdmissionStatus admission_status = coordinator->Submit(
             request_size, [optimize_request_ptr] { return BuildVroomInput(*optimize_request_ptr); },
-            [optimize_request_ptr, respond](const CoordinatedSolveResult& result) mutable {
-              respond(BuildSolveExecutionResponse(*optimize_request_ptr, result));
-            });
+            [optimize_request_ptr, respond_with_completion](const CoordinatedSolveResult& result) mutable {
+              respond_with_completion(BuildSolveExecutionResponse(*optimize_request_ptr, result));
+            },
+            lifecycle);
         if (admission_status != SolveAdmissionStatus::kAccepted) {
-          respond(BuildAdmissionRejectionResponse(admission_status));
+          respond_with_completion(BuildAdmissionRejectionResponse(admission_status));
+          return;
         }
       },
       {drogon::Post});
