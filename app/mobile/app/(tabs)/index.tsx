@@ -105,10 +105,6 @@ export default function HomeScreen() {
     setFailureReason('');
   };
 
-  const handleNavigate = (stopId: string) => {
-    console.log('Navigate to stop:', stopId);
-  };
-
   const stops = route?.stops || [];
   const pendingStops = stops.filter((stop) => stop.status === 'pending');
   const completedStops = stops.filter((stop) => stop.status !== 'pending');
@@ -180,7 +176,6 @@ export default function HomeScreen() {
             onChangeNote={(value) => handleChangeNote(stop.id, value)}
             onComplete={() => handleComplete(stop.id)}
             onReport={() => handleReport(stop.id)}
-            onNavigate={() => handleNavigate(stop.id)}
             isReporting={reportingStopId === stop.id}
             failureReason={failureReason}
             onChangeFailureReason={setFailureReason}
@@ -201,7 +196,6 @@ export default function HomeScreen() {
                 onChangeNote={(value) => handleChangeNote(stop.id, value)}
                 onComplete={() => {}}
                 onReport={() => {}}
-                onNavigate={() => {}}
                 isReporting={false}
                 failureReason={''}
                 onChangeFailureReason={() => {}}
