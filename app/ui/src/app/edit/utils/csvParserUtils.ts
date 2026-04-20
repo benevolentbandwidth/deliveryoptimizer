@@ -33,19 +33,19 @@ export function normalizeTimeOption(raw: string): string {
 
   let totalMinutes: number;
   if (/^\d+$/.test(trimmed)) {
-      totalMinutes = Math.round(parseInt(trimmed, 10) / 60);
+    totalMinutes = Math.round(parseInt(trimmed, 10) / 60);
   } else {
-      const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (match) {
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match) {
       let h = parseInt(match[1], 10);
       const m = parseInt(match[2], 10);
       const isPM = match[3].toUpperCase() === "PM";
       if (h === 12) h = isPM ? 12 : 0;
       else if (isPM) h += 12;
       totalMinutes = h * 60 + m;
-      } else {
+    } else {
       return "";
-      }
+    } 
   }
 
   const snapped = Math.round(totalMinutes / 15) * 15;
