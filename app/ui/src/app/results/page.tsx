@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
 import { mockRouteToRoute } from "./data/mockRouteLoader";
-import type { PendingPinMove, Route } from "./types";
+import type { Route } from "./types";
 import type { MockRouteJson } from "./data/mockRouteLoader";
 import mockRouteJson from "./data/mock_route.json";
 
@@ -15,7 +15,6 @@ export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>(() => [mockRouteToRoute(mockRouteJson as MockRouteJson)]); // Lazy initializer: compute initial routes once so first render already has data (no empty flash, no extra re-render)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
   const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
-  const [pendingPinMove, setPendingPinMove] = useState<PendingPinMove | null>(null);
 
   // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
   const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
@@ -47,15 +46,6 @@ export default function ResultsPage() {
     [setRoutes]
   );
 
-  const onPendingPinMove = useCallback(
-    (vehicleId: string, stopId: string, lat: number, lng: number) => {
-      // In draggable-markers-2 we still commit the coordinate change immediately.
-      updateStopCoordinates(vehicleId, stopId, lat, lng);
-      setPendingPinMove(null);
-    },
-    [updateStopCoordinates]
-  );
-
   return (
     <main className="h-screen flex flex-col overflow-hidden"> {/* Map container switched to h-screen and added overflow hidden so the page is forced to be exactly one screen tall, whereas before the page was allowed to get taller than browser window leading to a long scroll */}
       <header className="flex items-center gap-2 p-4 shrink-0 border-b border-zinc-200 bg-white">
@@ -83,8 +73,7 @@ export default function ResultsPage() {
             <MapComponent // Passing the current list of routes, edit mode state (determine if pins can be dragged yes/no), and the callback function updateStopCoordinates to the Map component (so when user drags a pin, call this function to update stop with new lat/lng)
               routes={routes}
               isEditMode={isEditMode}
-              pendingPinMove={pendingPinMove}
-              onPendingPinMove={onPendingPinMove}
+              onUpdateStopCoordinates={updateStopCoordinates}
             />
           </div>
         </div>
