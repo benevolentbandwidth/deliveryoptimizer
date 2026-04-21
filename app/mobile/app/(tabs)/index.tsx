@@ -116,10 +116,11 @@ export default function HomeScreen() {
     }
 
     const destination = `${stop.lat},${stop.lng}`;
-    const googleMapsAppUrl = `comgooglemaps://?daddr=${destination}&directionsmode=driving`;
-    const appleMapsUrl = `http://maps.apple.com/?daddr=${destination}&dirflg=d`;
-    const geoUri = `geo:${destination}?q=${destination}`;
-    const googleMapsWebUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+    const encodedDestination = encodeURIComponent(destination);
+    const googleMapsAppUrl = `comgooglemaps://?daddr=${encodedDestination}&directionsmode=driving`;
+    const appleMapsUrl = `https://maps.apple.com/?daddr=${encodedDestination}&dirflg=d`;
+    const geoUri = `geo:${destination}?q=${encodedDestination}`;
+    const googleMapsWebUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedDestination}`;
 
     try {
       if (await Linking.canOpenURL(googleMapsAppUrl)) {
@@ -213,6 +214,7 @@ export default function HomeScreen() {
             isOpen={openId === stop.id}
             onToggle={() => handleToggle(stop.id)}
             onChangeNote={(value) => handleChangeNote(stop.id, value)}
+            onNavigate={() => handleNavigate(stop.id)}
             onComplete={() => handleComplete(stop.id)}
             onReport={() => handleReport(stop.id)}
             isReporting={reportingStopId === stop.id}
@@ -232,6 +234,7 @@ export default function HomeScreen() {
                 isOpen={openId === stop.id}
                 onToggle={() => handleToggle(stop.id)}
                 onChangeNote={(value) => handleChangeNote(stop.id, value)}
+                onNavigate={() => handleNavigate(stop.id)}
                 onComplete={() => {}}
                 onReport={() => {}}
                 isReporting={false}
