@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Addresses region: toolbar (find / add) and a stacked list of delivery cards for the current page.
+ * Addresses region: toolbar (find / add / import) and a stacked list of delivery cards for the current page.
  */
 
+import { useRef } from "react";
 import AddressCard from "./AddressCard";
 import type { AddressCard as AddressCardType } from "../types/delivery";
 import {
@@ -35,6 +36,7 @@ type AddressSectionProps = {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   outOfRegionIds: number[];
+  onCSVUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 export default function AddressSection({
@@ -52,14 +54,28 @@ export default function AddressSection({
   searchQuery,
   setSearchQuery,
   outOfRegionIds,
+  onCSVUpload,
 }: AddressSectionProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const addEnabled = allAddressesLocked || activeAddressIsValid;
 
   return (
     <section>
       <h2 className={ADDRESS_SECTION_TITLE}>Addresses</h2>
 
-      {/* Mobile: Add first, then search full-width */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        onChange={(e) => {
+          onCSVUpload(e);
+          e.target.value = "";
+        }}
+        className="hidden"
+        aria-hidden
+      />
+
+      {/* Mobile: Add first, then Import, then search full-width */}
       <div className={ADDRESS_TOOLBAR_MOBILE_WRAP}>
         <button
           type="button"
@@ -68,6 +84,13 @@ export default function AddressSection({
           className={addEnabled ? ADDRESS_ADD_PILL_MOBILE_ENABLED : ADDRESS_ADD_PILL_MOBILE_DISABLED}
         >
           Add new address
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className={ADDRESS_ADD_PILL_MOBILE_ENABLED}
+        >
+          Import
         </button>
         <input
           type="search"
@@ -90,6 +113,13 @@ export default function AddressSection({
           className={ADDRESS_SEARCH_INPUT_DESKTOP}
         />
         <div className="flex-1 min-w-0" />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className={ADDRESS_ADD_PILL_DESKTOP_ENABLED}
+        >
+          Import
+        </button>
         <button
           type="button"
           disabled={!addEnabled}

@@ -9,7 +9,6 @@ import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import {
   TIME_OPTIONS,
   TIME_BUFFER_OPTIONS,
-  DELIVERY_BETWEEN_OPTIONS,
 } from "../constants/timeOptions";
 import type { AddressCard as AddressCardType } from "../types/delivery";
 import {
@@ -21,7 +20,6 @@ import {
   ADDRESS_DESKTOP_FIELD,
   ADDRESS_DESKTOP_GRID_GAP,
   ADDRESS_DESKTOP_HDR,
-  ADDRESS_DESKTOP_MODE_SELECT,
   ADDRESS_DESKTOP_SELECT_BASE,
   ADDRESS_INPUT_DESKTOP_BASE,
   ADDRESS_LOCKED_SURFACE_MD,
@@ -40,7 +38,6 @@ import {
   MOBILE_ADDRESS_LOCKED_ROW,
   MOBILE_ADDRESS_NOTES_AREA,
   MOBILE_ADDRESS_NOTES_TEXTAREA,
-  MOBILE_ADDRESS_SELECT_MODE,
   MOBILE_DELETE_TEXT,
   MOBILE_FIELD_LABEL,
   PILL_ROW_HALF_DANGER,
@@ -115,12 +112,9 @@ export default function AddressCard({
               <div className={ADDRESS_DELIVERY_COLUMN}>
                 <div className={`${ADDRESS_LOCKED_SURFACE_MD} w-full`}>
                   <span className={`${ADDRESS_DESKTOP_FIELD} truncate`}>
-                    {a.deliveryTimeMode === "by" ? "Delivery by" : "Delivery between"}
-                  </span>
-                </div>
-                <div className={`${ADDRESS_LOCKED_SURFACE_MD} w-full`}>
-                  <span className={`${ADDRESS_DESKTOP_FIELD} truncate`}>
-                    {(a.deliveryTimeMode === "by" ? a.deliveryBy : a.deliveryBetween) || "—"}
+                    {a.deliveryTimeStart && a.deliveryTimeEnd
+                      ? `${a.deliveryTimeStart} – ${a.deliveryTimeEnd}`
+                      : a.deliveryTimeStart || a.deliveryTimeEnd || "—"}
                   </span>
                 </div>
               </div>
@@ -182,23 +176,12 @@ export default function AddressCard({
                 ))}
               </select>
               <div className={ADDRESS_DELIVERY_COLUMN}>
-                <select
-                  value={a.deliveryTimeMode}
-                  onChange={(e) =>
-                    updateAddress(a.id, "deliveryTimeMode", e.target.value as "by" | "between")
-                  }
-                  className={ADDRESS_DESKTOP_MODE_SELECT}
-                  aria-label="Delivery time type"
-                >
-                  <option value="by">Delivery by</option>
-                  <option value="between">Delivery between</option>
-                </select>
-                {a.deliveryTimeMode === "by" ? (
+                <div className="flex items-center gap-1 w-full min-w-0">
                   <select
-                    value={a.deliveryBy}
-                    onChange={(e) => updateAddress(a.id, "deliveryBy", e.target.value)}
-                    className={`${ADDRESS_DESKTOP_SELECT_BASE} bg-white ${fieldBorder(false)}`}
-                    aria-label="Delivery by time"
+                    value={a.deliveryTimeStart}
+                    onChange={(e) => updateAddress(a.id, "deliveryTimeStart", e.target.value)}
+                    className={`${ADDRESS_DESKTOP_SELECT_BASE} flex-1 min-w-0 bg-white ${fieldBorder(false)}`}
+                    aria-label="Delivery time start"
                   >
                     <option value="">None</option>
                     {TIME_OPTIONS.map((t) => (
@@ -207,21 +190,21 @@ export default function AddressCard({
                       </option>
                     ))}
                   </select>
-                ) : (
+                  <span className="shrink-0 text-zinc-400 text-xs" aria-hidden>–</span>
                   <select
-                    value={a.deliveryBetween}
-                    onChange={(e) => updateAddress(a.id, "deliveryBetween", e.target.value)}
-                    className={`${ADDRESS_DESKTOP_SELECT_BASE} bg-white ${fieldBorder(false)}`}
-                    aria-label="Delivery between window"
+                    value={a.deliveryTimeEnd}
+                    onChange={(e) => updateAddress(a.id, "deliveryTimeEnd", e.target.value)}
+                    className={`${ADDRESS_DESKTOP_SELECT_BASE} flex-1 min-w-0 bg-white ${fieldBorder(false)}`}
+                    aria-label="Delivery time end"
                   >
                     <option value="">None</option>
-                    {DELIVERY_BETWEEN_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
                       </option>
                     ))}
                   </select>
-                )}
+                </div>
               </div>
               <input
                 type="number"
@@ -319,14 +302,12 @@ export default function AddressCard({
                     </div>
                   </div>
                   <div className="flex min-w-0 flex-col gap-1">
+                    <span className={MOBILE_FIELD_LABEL}>Delivery</span>
                     <div className={MOBILE_ADDRESS_LOCKED_ROW}>
                       <span className="text-sm text-black truncate">
-                        {a.deliveryTimeMode === "by" ? "Delivery by" : "Delivery between"}
-                      </span>
-                    </div>
-                    <div className={MOBILE_ADDRESS_LOCKED_ROW}>
-                      <span className="text-sm text-black truncate">
-                        {(a.deliveryTimeMode === "by" ? a.deliveryBy : a.deliveryBetween) || "—"}
+                        {a.deliveryTimeStart && a.deliveryTimeEnd
+                          ? `${a.deliveryTimeStart} – ${a.deliveryTimeEnd}`
+                          : a.deliveryTimeStart || a.deliveryTimeEnd || "—"}
                       </span>
                     </div>
                   </div>
@@ -391,23 +372,13 @@ export default function AddressCard({
                     </select>
                   </div>
                   <div className="flex min-w-0 flex-col gap-1.5">
-                    <select
-                      value={a.deliveryTimeMode}
-                      onChange={(e) =>
-                        updateAddress(a.id, "deliveryTimeMode", e.target.value as "by" | "between")
-                      }
-                      className={`${MOBILE_ADDRESS_SELECT_MODE} ${fieldBorder(false, "mobile")}`}
-                      aria-label="Delivery time type"
-                    >
-                      <option value="by">Delivery by</option>
-                      <option value="between">Delivery between</option>
-                    </select>
-                    {a.deliveryTimeMode === "by" ? (
+                    <span className={MOBILE_FIELD_LABEL}>Delivery</span>
+                    <div className="flex items-center gap-1 w-full min-w-0">
                       <select
-                        value={a.deliveryBy}
-                        onChange={(e) => updateAddress(a.id, "deliveryBy", e.target.value)}
-                        className={mobileSelectClass(false)}
-                        aria-label="Delivery by time"
+                        value={a.deliveryTimeStart}
+                        onChange={(e) => updateAddress(a.id, "deliveryTimeStart", e.target.value)}
+                        className={`${mobileSelectClass(false)} flex-1 min-w-0`}
+                        aria-label="Delivery time start"
                       >
                         <option value="">None</option>
                         {TIME_OPTIONS.map((t) => (
@@ -416,21 +387,21 @@ export default function AddressCard({
                           </option>
                         ))}
                       </select>
-                    ) : (
+                      <span className="shrink-0 text-zinc-400 text-xs" aria-hidden>–</span>
                       <select
-                        value={a.deliveryBetween}
-                        onChange={(e) => updateAddress(a.id, "deliveryBetween", e.target.value)}
-                        className={mobileSelectClass(false)}
-                        aria-label="Delivery between window"
+                        value={a.deliveryTimeEnd}
+                        onChange={(e) => updateAddress(a.id, "deliveryTimeEnd", e.target.value)}
+                        className={`${mobileSelectClass(false)} flex-1 min-w-0`}
+                        aria-label="Delivery time end"
                       >
                         <option value="">None</option>
-                        {DELIVERY_BETWEEN_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
                           </option>
                         ))}
                       </select>
-                    )}
+                    </div>
                   </div>
                 </div>
                 <div>

@@ -5,13 +5,11 @@
 
 import type { AddressCard } from "../types/delivery";
 
-/** Returns true when the active delivery-time field has a value. */
+/** Returns true when at least one delivery-time field has a value. */
 export function deliveryTimeFilled(
-  a: Pick<AddressCard, "deliveryTimeMode" | "deliveryBy" | "deliveryBetween">
+  a: Pick<AddressCard, "deliveryTimeStart" | "deliveryTimeEnd">
 ): boolean {
-  return a.deliveryTimeMode === "by"
-    ? a.deliveryBy.trim() !== ""
-    : a.deliveryBetween.trim() !== "";
+  return (a.deliveryTimeStart?.trim() ?? "") !== "" || (a.deliveryTimeEnd?.trim() ?? "") !== "";
 }
 
 /** Capitalise the first letter of a string. Safe on empty strings. */

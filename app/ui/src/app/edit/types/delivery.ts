@@ -33,10 +33,8 @@ export type AddressCard = {
   editingExisting: boolean;
   recipientAddress: string;
   timeBuffer: string;
-  /** Which time control is shown: single "by" time or a "between" window. */
-  deliveryTimeMode: "by" | "between";
-  deliveryBy: string;
-  deliveryBetween: string;
+  deliveryTimeStart: string;
+  deliveryTimeEnd: string;
   deliveryQuantity: number;
   notes: string;
 };

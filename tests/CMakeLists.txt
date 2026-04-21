@@ -183,37 +183,32 @@ deliveryoptimizer_set_local_http_test_port(
   29100
 )
 
-deliveryoptimizer_add_local_http_test(
-  DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService
-  osrm_proxy_rejects_disallowed_service_test.sh
-  30
-  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
-)
-deliveryoptimizer_set_local_http_test_port(DeliveryOptimizerOsrmProxyTest.RejectsDisallowedService 34000)
-
-deliveryoptimizer_add_local_http_test(
-  DeliveryOptimizerOsrmProxyTest.RejectsTripService
-  osrm_proxy_rejects_trip_service_test.sh
-  30
-  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
-)
-deliveryoptimizer_set_local_http_test_port(DeliveryOptimizerOsrmProxyTest.RejectsTripService 35000)
-
 add_test(
-  NAME DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  NAME DeliveryOptimizerApiContractTest.OsrmProxyForwardsAllowedServiceWithQuery
   COMMAND "${BASH_PROGRAM}"
           "${CMAKE_CURRENT_SOURCE_DIR}/integration/http_server/osrm_proxy_forwards_allowed_service_with_query_test.sh"
           "$<TARGET_FILE:deliveryoptimizer_api>" "${PYTHON3_PROGRAM}" "${CURL_PROGRAM}"
 )
 set_tests_properties(
-  DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  DeliveryOptimizerApiContractTest.OsrmProxyForwardsAllowedServiceWithQuery
   PROPERTIES
     TIMEOUT 30
     LABELS "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
 )
 deliveryoptimizer_set_local_http_test_environment(
-  DeliveryOptimizerOsrmProxyTest.ForwardsAllowedServiceWithQueryString
+  DeliveryOptimizerApiContractTest.OsrmProxyForwardsAllowedServiceWithQuery
   "DELIVERYOPTIMIZER_TEST_PORT=36000;DELIVERYOPTIMIZER_OSRM_STUB_PORT=52000"
+)
+
+deliveryoptimizer_add_local_http_test(
+  DeliveryOptimizerApiContractTest.OsrmProxyRejectsDisallowedService
+  osrm_proxy_rejects_disallowed_service_test.sh
+  30
+  "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
+)
+deliveryoptimizer_set_local_http_test_port(
+  DeliveryOptimizerApiContractTest.OsrmProxyRejectsDisallowedService
+  34000
 )
 
 deliveryoptimizer_add_local_http_test(
@@ -497,11 +492,6 @@ if(DOCKER_PROGRAM)
   )
 
   deliveryoptimizer_add_docker_e2e_test(
-    DeliveryOptimizerE2ETest.OsrmNearestReturnsOk
-    osrm_nearest_returns_ok_e2e_test.sh
-    1800
-  )
-  deliveryoptimizer_add_docker_e2e_test(
     DeliveryOptimizerE2ETest.VroomHelpIsAvailable
     vroom_help_is_available_e2e_test.sh
     1800
@@ -528,16 +518,6 @@ if(DOCKER_PROGRAM)
   )
 
   deliveryoptimizer_add_docker_api_e2e_test(
-    DeliveryOptimizerE2ETest.OsrmProxyNearestReturnsOk
-    osrm_proxy_nearest_returns_ok_e2e_test.sh
-    2400
-  )
-  deliveryoptimizer_add_docker_api_e2e_test(
-    DeliveryOptimizerE2ETest.OsrmProxyBlocksTileService
-    osrm_proxy_blocks_tile_service_e2e_test.sh
-    2400
-  )
-  deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeValidPayloadReturnsRoutingResponse
     deliveries_optimize_valid_payload_returns_routing_response_e2e_test.sh
     2400
@@ -550,6 +530,16 @@ if(DOCKER_PROGRAM)
   deliveryoptimizer_add_docker_api_e2e_test(
     DeliveryOptimizerE2ETest.DeliveriesOptimizeMalformedJsonReturnsParseError
     deliveries_optimize_malformed_json_returns_parse_error_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_api_e2e_test(
+    DeliveryOptimizerE2ETest.OsrmProxyNearestReturnsOk
+    osrm_proxy_nearest_returns_ok_e2e_test.sh
+    2400
+  )
+  deliveryoptimizer_add_docker_api_e2e_test(
+    DeliveryOptimizerE2ETest.OsrmProxyBlocksTileService
+    osrm_proxy_blocks_tile_service_e2e_test.sh
     2400
   )
 endif()

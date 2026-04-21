@@ -2,12 +2,12 @@
 // Edit page input: addresses, time buffers, vehicle capacity, delivery times, notes.
 // VROOM/OSRM output: route order, coordinates, travel times.
 
-// Decipher between whether a delivery is a deadline (by) or an exact time (at)
-export type DeliveryTimeType = "by" | "at";
+// Decipher between whether a delivery is a deadline (by), an exact window (at), or an earliest arrival (from)
+export type DeliveryTimeType = "by" | "at" | "from";
 
 // Concatenate the delivery time type and the time
 export interface TimeWindow {
-  kind: DeliveryTimeType; // "by" or "at"
+  kind: DeliveryTimeType; // "by" | "at" | "from"
   time: string; // e.g. time is 11:00
 }
 

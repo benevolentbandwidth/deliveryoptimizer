@@ -34,12 +34,6 @@ Health check:
 curl -f http://localhost:8080/health
 ```
 
-OSRM check:
-
-```bash
-curl -f "http://localhost:5001/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false"
-```
-
 VROOM binary check:
 
 ```bash
@@ -47,6 +41,13 @@ docker compose \
   --env-file deploy/env/http-server.arm64.env \
   -f deploy/compose/docker-compose.arm64.yml \
   exec http-server vroom --help
+```
+
+Internal OSRM check:
+
+```bash
+docker compose --env-file deploy/env/http-server.arm64.env -f deploy/compose/docker-compose.arm64.yml \
+  exec osrm sh -c 'curl -f "http://127.0.0.1:${OSRM_PORT:-5001}/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false"'
 ```
 
 ## Build ARM image from non-ARM host

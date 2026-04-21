@@ -46,16 +46,17 @@ resolve_env_value() {
 }
 
 api_port="$(resolve_env_value DELIVERYOPTIMIZER_HOST_PORT 8080)"
-osrm_port="$(resolve_env_value DELIVERYOPTIMIZER_OSRM_HOST_PORT 5001)"
+osrm_internal_port="$(resolve_env_value OSRM_INTERNAL_PORT 5001)"
 
 "${docker_bin}" compose -p "${project_name}" --env-file "${env_file}" -f "${compose_file}" \
   up -d --build osrm http-server
 
 osrm_ready=false
 for _ in $(seq 1 180); do
-  if "${curl_bin}" -fsS \
-    "http://127.0.0.1:${osrm_port}/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false" \
-    >"${osrm_nearest_file}" 2>/dev/null &&
+  if "${docker_bin}" compose -p "${project_name}" --env-file "${env_file}" -f "${compose_file}" \
+    exec -T osrm curl -fsS \
+      "http://127.0.0.1:${osrm_internal_port}/nearest/v1/driving/-122.4194,37.7749?number=1&generate_hints=false" \
+      >"${osrm_nearest_file}" 2>/dev/null &&
     grep -Eq '"code"[[:space:]]*:[[:space:]]*"Ok"' "${osrm_nearest_file}"; then
     osrm_ready=true
     break
@@ -64,7 +65,7 @@ for _ in $(seq 1 180); do
 done
 
 if [[ "${osrm_ready}" != "true" ]]; then
-  echo "OSRM did not become ready on port ${osrm_port}" >&2
+  echo "OSRM did not become ready on internal port ${osrm_internal_port}" >&2
   "${docker_bin}" compose -p "${project_name}" --env-file "${env_file}" -f "${compose_file}" ps >&2 || true
   "${docker_bin}" compose -p "${project_name}" --env-file "${env_file}" -f "${compose_file}" logs osrm >&2 || true
   exit 1

@@ -15,12 +15,12 @@ export const timeToSeconds = (time: string): number => {
   if (timeUpper.includes('AM') || timeUpper.includes('PM')) {
     const isPM = timeUpper.includes('PM');
     const timePart = timeUpper.replace(/AM|PM/g, '').trim();
-    const [h, m] = timePart.split(':').map(s => parseInt(s.trim()) || 0);
+    const [h, m = 0] = timePart.split(':').map(s => parseInt(s.trim()) || 0);
     
     hours = h === 12 ? (isPM ? 12 : 0) : (isPM ? h + 12 : h);
     minutes = m;
   } else {
-    const [h, m] = time.split(':').map(s => parseInt(s.trim()) || 0);
+    const [h, m = 0] = time.split(':').map(s => parseInt(s.trim()) || 0);
     hours = h;
     minutes = m;
   }
