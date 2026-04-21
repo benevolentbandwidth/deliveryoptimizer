@@ -295,7 +295,10 @@ CreateOptimizationJobResult OptimizationJobStore::CreateJob(const std::string& r
                                                             const std::size_t jobs,
                                                             const std::size_t vehicles) {
   if (!IsConfigured()) {
-    return {.status = CreateOptimizationJobStatus::kError};
+    return {
+        .status = CreateOptimizationJobStatus::kError,
+        .record = std::nullopt,
+    };
   }
 
   const std::string job_id = drogon::utils::getUuid();
@@ -322,12 +325,18 @@ CreateOptimizationJobResult OptimizationJobStore::CreateJob(const std::string& r
         static_cast<long long>(vehicles), kCreateJobAdmissionLockId,
         static_cast<long long>(config_.max_queue_size));
     if (result.empty()) {
-      return {.status = CreateOptimizationJobStatus::kQueueFull};
+      return {
+          .status = CreateOptimizationJobStatus::kQueueFull,
+          .record = std::nullopt,
+      };
     }
 
     auto record = ReadJobRecord(result);
     if (!record.has_value()) {
-      return {.status = CreateOptimizationJobStatus::kError};
+      return {
+          .status = CreateOptimizationJobStatus::kError,
+          .record = std::nullopt,
+      };
     }
 
     return {
@@ -335,7 +344,10 @@ CreateOptimizationJobResult OptimizationJobStore::CreateJob(const std::string& r
         .record = std::move(record),
     };
   } catch (...) {
-    return {.status = CreateOptimizationJobStatus::kError};
+    return {
+        .status = CreateOptimizationJobStatus::kError,
+        .record = std::nullopt,
+    };
   }
 }
 

@@ -31,6 +31,29 @@ namespace {
   return "opt-worker-" + drogon::utils::getUuid();
 }
 
+[[nodiscard]] deliveryoptimizer::api::CoordinatedSolveResult
+ToCoordinatedSolveResult(const deliveryoptimizer::api::VroomRunResult& result) {
+  switch (result.status) {
+  case deliveryoptimizer::api::VroomRunStatus::kSuccess:
+    return deliveryoptimizer::api::CoordinatedSolveResult{
+        .status = deliveryoptimizer::api::CoordinatedSolveStatus::kSucceeded,
+        .output = result.output,
+    };
+  case deliveryoptimizer::api::VroomRunStatus::kTimedOut:
+    return deliveryoptimizer::api::CoordinatedSolveResult{
+        .status = deliveryoptimizer::api::CoordinatedSolveStatus::kTimedOut,
+        .output = std::nullopt,
+    };
+  case deliveryoptimizer::api::VroomRunStatus::kFailed:
+    break;
+  }
+
+  return deliveryoptimizer::api::CoordinatedSolveResult{
+      .status = deliveryoptimizer::api::CoordinatedSolveStatus::kFailed,
+      .output = std::nullopt,
+  };
+}
+
 } // namespace
 
 namespace deliveryoptimizer::api {
@@ -168,8 +191,9 @@ void OptimizationJobRuntime::WorkerLoop(const std::stop_token stop_token, const 
         }
       }
     } else {
-      const auto solve_result = BuildSolveExecutionResult(parsed_request->input,
-                                                          runner_->Run(BuildVroomInput(parsed_request->input)));
+      const auto solve_result = BuildSolveExecutionResult(
+          parsed_request->input,
+          ToCoordinatedSolveResult(runner_->Run(BuildVroomInput(parsed_request->input))));
       if (solve_result.response_body.has_value()) {
         if (store_->CompleteJobSuccess(claimed_job->record.job_id, claimed_job->worker_id,
                                        *solve_result.response_body,
@@ -180,7 +204,8 @@ void OptimizationJobRuntime::WorkerLoop(const std::stop_token stop_token, const 
         }
       } else {
         const OptimizationJobState final_state =
-            solve_result.status == SolveExecutionStatus::kTimedOut
+            (solve_result.outcome == SolveRequestOutcome::kSolveTimedOut ||
+             solve_result.outcome == SolveRequestOutcome::kQueueWaitTimedOut)
                 ? OptimizationJobState::kTimedOut
                 : OptimizationJobState::kFailed;
         if (store_->CompleteJobFailure(claimed_job->record.job_id, claimed_job->worker_id,
