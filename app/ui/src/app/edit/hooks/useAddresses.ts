@@ -173,7 +173,7 @@ export function useAddresses() {
     if (incoming.length === 0) return;
     setAddresses(incoming);
     setAddressPage(1);
-    setAddressTouched(false);
+    setTouchedIds(new Set());
     _setSearchQuery("");
   }, []);
   return {
