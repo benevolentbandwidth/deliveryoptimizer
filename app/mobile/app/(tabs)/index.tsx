@@ -60,6 +60,9 @@ export default function HomeScreen() {
 
   const handleToggle = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (openId === id) {
+      setReportingStopId(null);
+    }
     setOpenId(openId === id ? null : id);
   };
 
@@ -81,6 +84,10 @@ export default function HomeScreen() {
   const handleReport = (stopId: string) => {
     setReportingStopId(stopId);
     setOpenId(stopId);
+  };
+
+  const handleCancelReport = () => {
+    setReportingStopId(null);
   };
 
   const handleSubmitFailure = (stopId: string, reason: string) => {
@@ -174,6 +181,7 @@ export default function HomeScreen() {
             onComplete={() => handleComplete(stop.id)}
             onReport={() => handleReport(stop.id)}
             isReporting={reportingStopId === stop.id}
+            onCancelReport={handleCancelReport}
             onSubmitFailure={(reason) => handleSubmitFailure(stop.id, reason)}
           />
         ))}
@@ -192,6 +200,7 @@ export default function HomeScreen() {
                 onComplete={() => {}}
                 onReport={() => {}}
                 isReporting={false}
+                onCancelReport={() => {}}
                 onSubmitFailure={() => {}}
               />
             ))}

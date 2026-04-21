@@ -10,6 +10,7 @@ type Props = {
   onComplete: () => void;
   onReport: () => void;
   isReporting: boolean;
+  onCancelReport: () => void;
   onSubmitFailure: (reason: string) => void;
 };
 
@@ -21,6 +22,7 @@ export default function DeliveryCard({
   onComplete,
   onReport,
   isReporting,
+  onCancelReport,
   onSubmitFailure,
 }: Props) {
   const [failureReason, setFailureReason] = useState('');
@@ -109,23 +111,28 @@ export default function DeliveryCard({
                 placeholder="Enter failure reason"
                 multiline
               />
-              <Pressable
-                style={[
-                  styles.actionButton,
-                  !canSubmitFailure && styles.disabledButton,
-                ]}
-                disabled={!canSubmitFailure}
-                onPress={() => onSubmitFailure(failureReason)}
-              >
-                <Text
+              <View style={styles.buttonRow}>
+                <Pressable style={styles.actionButton} onPress={onCancelReport}>
+                  <Text style={styles.actionText}>Cancel</Text>
+                </Pressable>
+                <Pressable
                   style={[
-                    styles.actionText,
-                    !canSubmitFailure && styles.disabledText,
+                    styles.actionButton,
+                    !canSubmitFailure && styles.disabledButton,
                   ]}
+                  disabled={!canSubmitFailure}
+                  onPress={() => onSubmitFailure(failureReason)}
                 >
-                  Mark as Failed
-                </Text>
-              </Pressable>
+                  <Text
+                    style={[
+                      styles.actionText,
+                      !canSubmitFailure && styles.disabledText,
+                    ]}
+                  >
+                    Mark as Failed
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>
