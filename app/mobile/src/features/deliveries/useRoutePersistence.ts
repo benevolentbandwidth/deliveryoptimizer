@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -15,10 +16,27 @@ type RouteSetter = SetStateAction<DriverRoute | null>;
 export function useRoutePersistence() {
   const [route, setRouteState] = useState<DriverRoute | null>(null);
   const [isRestored, setIsRestored] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(true);
 
   useEffect(() => {
-    setRouteState(loadPersistedRoute());
-    setIsRestored(true);
+    let isMounted = true;
+
+    const restoreRoute = async () => {
+      const persistedRoute = await loadPersistedRoute(setStorageAvailable);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setRouteState(persistedRoute);
+      setIsRestored(true);
+    };
+
+    void restoreRoute();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -26,11 +44,11 @@ export function useRoutePersistence() {
       return;
     }
 
-    persistRoute(route);
+    void persistRoute(route, setStorageAvailable);
   }, [isRestored, route]);
 
   const clearRoute = () => {
-    clearPersistedRoute();
+    void clearPersistedRoute(setStorageAvailable);
     setRouteState(null);
   };
 
@@ -39,16 +57,23 @@ export function useRoutePersistence() {
     setRoute: setRouteState as Dispatch<RouteSetter>,
     clearRoute,
     isRestored,
-    storageAvailable: canUseLocalStorage(),
+    storageAvailable,
   };
 }
 
-function loadPersistedRoute(): DriverRoute | null {
-  if (!canUseLocalStorage()) {
+async function loadPersistedRoute(
+  setStorageAvailable: Dispatch<SetStateAction<boolean>>
+): Promise<DriverRoute | null> {
+  let savedValue: string | null;
+
+  try {
+    savedValue = await AsyncStorage.getItem(ROUTE_STORAGE_KEY);
+    setStorageAvailable(true);
+  } catch {
+    setStorageAvailable(false);
     return null;
   }
 
-  const savedValue = window.localStorage.getItem(ROUTE_STORAGE_KEY);
   if (!savedValue) {
     return null;
   }
@@ -59,40 +84,42 @@ function loadPersistedRoute(): DriverRoute | null {
     const savedAt = new Date(persistedRoute.savedAt).getTime();
 
     if (Number.isNaN(savedAt) || Date.now() - savedAt > MAX_ROUTE_AGE_MS) {
-      clearPersistedRoute();
+      await clearPersistedRoute(setStorageAvailable);
       return null;
     }
 
     return persistedRoute.route;
   } catch {
-    clearPersistedRoute();
+    await clearPersistedRoute(setStorageAvailable);
     return null;
   }
 }
 
-function persistRoute(route: DriverRoute | null) {
-  if (!canUseLocalStorage()) {
-    return;
+async function persistRoute(
+  nextRoute: DriverRoute | null,
+  setStorageAvailable: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    if (!nextRoute) {
+      await clearPersistedRoute(setStorageAvailable);
+      return;
+    }
+
+    const payload = JSON.stringify(createPersistedRouteState(nextRoute));
+    await AsyncStorage.setItem(ROUTE_STORAGE_KEY, payload);
+    setStorageAvailable(true);
+  } catch {
+    setStorageAvailable(false);
   }
-
-  if (!route) {
-    clearPersistedRoute();
-    return;
-  }
-
-  const payload = JSON.stringify(createPersistedRouteState(route));
-
-  window.localStorage.setItem(ROUTE_STORAGE_KEY, payload);
 }
 
-function clearPersistedRoute() {
-  if (!canUseLocalStorage()) {
-    return;
+async function clearPersistedRoute(
+  setStorageAvailable: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    await AsyncStorage.removeItem(ROUTE_STORAGE_KEY);
+    setStorageAvailable(true);
+  } catch {
+    setStorageAvailable(false);
   }
-
-  window.localStorage.removeItem(ROUTE_STORAGE_KEY);
-}
-
-function canUseLocalStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }

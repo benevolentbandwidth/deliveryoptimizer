@@ -20,8 +20,8 @@ export function transformSessionToDriverRoute(input: OptimizeRequestLike): Drive
       packageCount: delivery.demand?.value || 1,
       notes: delivery.notes || '',
       status: 'pending',
-      lat: delivery.location?.lat || 0,
-      lng: delivery.location?.lng || 0,
+      lat: delivery.location?.lat ?? 0,
+      lng: delivery.location?.lng ?? 0,
       completedAt: undefined,
       failureReason: undefined,
     };

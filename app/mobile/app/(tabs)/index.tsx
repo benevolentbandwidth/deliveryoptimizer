@@ -190,7 +190,6 @@ export default function HomeScreen() {
       Alert.alert('Navigation failed', 'We could not open a navigation app for this stop.');
     }
   };
-
   const handleFinishRoute = () => {
     if (!route) {
       return;
@@ -231,7 +230,7 @@ export default function HomeScreen() {
 
   const stops = route?.stops || [];
   const pendingStops = stops.filter((stop) => stop.status === 'pending');
-  const historyStops = stops.filter((stop) => stop.status !== 'pending');
+  const historicalStops = stops.filter((stop) => stop.status !== 'pending');
   const completedCount = stops.filter((stop) => stop.status === 'completed').length;
   const failedCount = stops.filter((stop) => stop.status === 'failed').length;
   const progress = stops.length > 0 ? completedCount / stops.length : 0;
@@ -324,11 +323,11 @@ export default function HomeScreen() {
           />
         ))}
 
-        {historyStops.length > 0 && (
+        {historicalStops.length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>History</Text>
 
-            {historyStops.map((stop) => (
+            {historicalStops.map((stop) => (
               <DeliveryCard
                 key={stop.id}
                 stop={stop}

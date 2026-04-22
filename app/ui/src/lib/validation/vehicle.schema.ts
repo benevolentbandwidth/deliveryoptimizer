@@ -29,17 +29,11 @@ export const vehicleSchema = z.object({
   (data) =>
     (data.departureTime == null && data.returnTime == null) ||
     (data.departureTime != null && data.returnTime != null),
-  {
-    message: "departureTime and returnTime must both be provided or both be omitted"
-  }
 ).refine(
   (data) =>
     data.departureTime == null ||
     data.returnTime == null ||
     data.returnTime > data.departureTime,
-  {
-    message: "returnTime must be after departureTime"
-  }
 )
 
 /**
