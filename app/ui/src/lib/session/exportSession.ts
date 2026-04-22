@@ -16,6 +16,7 @@ function filenameTimestamp(date: Date) {
   const min = String(date.getUTCMinutes()).padStart(2, "0");
   const ss = String(date.getUTCSeconds()).padStart(2, "0");
 
+  // Validate the serialized payload before downloading it.
   return `date_${yyyy}-${mm}-${dd}_time_${hh}-${min}-${ss}`;
 }
 
@@ -29,6 +30,7 @@ export function buildSessionSave(
     data: state,
   } as const;
 
+  // Validate the serialized payload before downloading it.
   return sessionSaveSchema.parse(saveFile);
 }
 
