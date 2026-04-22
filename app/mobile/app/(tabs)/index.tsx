@@ -60,9 +60,7 @@ export default function HomeScreen() {
 
   const handleToggle = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (openId === id) {
-      setReportingStopId(null);
-    }
+    setReportingStopId(null);
     setOpenId(openId === id ? null : id);
   };
 
