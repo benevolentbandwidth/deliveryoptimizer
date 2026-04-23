@@ -10,7 +10,7 @@ export default function WelcomePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
 
         .welcome-root {
           min-height: 100vh;
@@ -20,6 +20,17 @@ export default function WelcomePage() {
           font-family: 'DM Sans', sans-serif;
           position: relative;
           overflow: hidden;
+        }
+
+        /* Subtle gradient: warm off-white bottom-left → soft sage green top-right */
+        .welcome-bg {
+          position: fixed;
+          inset: 0;
+          background:
+            radial-gradient(ellipse at 100% 0%,   #8dbfb0 0%, rgba(141,191,176,0) 55%),
+            radial-gradient(ellipse at 0%   100%, #8dbfb0 0%, rgba(141,191,176,0) 55%),
+            #f2f0ea;
+          z-index: 0;
         }
 
         .welcome-content {
@@ -34,9 +45,9 @@ export default function WelcomePage() {
         }
 
         .welcome-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: 2.4rem;
-          font-weight: 400;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 2rem;
+          font-weight: 500;
           color: #111;
           margin-bottom: 12px;
           text-align: center;
@@ -45,11 +56,11 @@ export default function WelcomePage() {
 
         .welcome-subtitle {
           font-size: 14px;
-          color: #555;
+          color: #4a6358;
           margin-bottom: 48px;
           text-align: center;
-          max-width: 480px;
-          line-height: 1.6;
+          max-width: 500px;
+          line-height: 1.5;
         }
 
         .welcome-cards {
@@ -117,7 +128,7 @@ export default function WelcomePage() {
           margin-top: 16px;
           align-self: flex-end;
           background: #4a8c7a;
-          color: #fff;
+          color: #111;
           border-radius: 999px;
           padding: 10px 24px;
           font-size: 14px;
@@ -150,9 +161,25 @@ export default function WelcomePage() {
         .welcome-back:hover {
           color: #111;
         }
+
+        .welcome-root footer,
+        .welcome-root [class*="footer"],
+        .welcome-root [class*="Footer"] {
+          background: #ffffff !important;
+          position: relative;
+          z-index: 1;
+        }
+
+        .welcome-root footer svg,
+        .welcome-root [class*="footer"] svg,
+        .welcome-root [class*="Footer"] svg {
+          color: #1a4d40 !important;
+          fill: #1a4d40 !important;
+        }
       `}</style>
 
       <div className="welcome-root">
+        <div className="welcome-bg" />
         <GradientBlobs />
         <ShellNavbar />
 
@@ -213,7 +240,6 @@ export default function WelcomePage() {
                 </svg>
               </div>
               <p className="welcome-card-title">Returning user</p>
-              {/* Fixed: was copy-pasted Driver copy. Now correctly describes resuming from a save point. */}
               <p className="welcome-card-desc">
                 Pick up where you left off! Upload your save point to resume editing addresses and continue your delivery operations.
               </p>

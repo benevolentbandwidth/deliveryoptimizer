@@ -2,7 +2,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import ShellNavbar from "./components/ShellNavbar";
-import { GradientBlobs, PageFooter } from "./utils/routeUtils";
+import { PageFooter } from "./utils/routeUtils";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -10,16 +10,34 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
 
         .landing-root {
           min-height: 100vh;
-          background: #f7f7f5;
           display: flex;
           flex-direction: column;
           font-family: 'DM Sans', sans-serif;
           position: relative;
-          overflow: hidden;
+        }
+
+        /* Subtle gradient: warm off-white bottom-left → soft sage green top-right */
+        .landing-bg {
+          position: fixed;
+          inset: 0;
+          background:
+            radial-gradient(ellipse at 100% 0%,   #8dbfb0 0%, rgba(141,191,176,0) 55%),
+            radial-gradient(ellipse at 0%   100%, #8dbfb0 0%, rgba(141,191,176,0) 55%),
+            #f2f0ea;
+          z-index: 0;
+        }
+
+        /* Navbar override — pure white */
+        .landing-root :global(.shell-navbar),
+        .landing-navbar-wrap {
+          position: relative;
+          z-index: 10;
+          background: #ffffff;
+          border-bottom: 1px solid rgba(0,0,0,0.08);
         }
 
         .landing-content {
@@ -34,9 +52,9 @@ export default function LandingPage() {
         }
 
         .landing-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: 2.6rem;
-          font-weight: 400;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 2rem;
+          font-weight: 500;
           color: #111;
           margin-bottom: 12px;
           text-align: center;
@@ -45,11 +63,11 @@ export default function LandingPage() {
 
         .landing-subtitle {
           font-size: 14px;
-          color: #555;
+          color: #4a6358;
           margin-bottom: 48px;
           text-align: center;
-          max-width: 480px;
-          line-height: 1.6;
+          max-width: 520px;
+          line-height: 1.65;
         }
 
         .landing-cards {
@@ -61,16 +79,10 @@ export default function LandingPage() {
           max-width: 860px;
         }
 
-        /*
-         * Accessibility fix: the entire card is now the interactive element.
-         * role="button" + tabIndex={0} + onKeyDown are set on the outer div so
-         * keyboard and screen-reader users can activate the whole card, not just
-         * the inline Continue label.
-         */
         .landing-card {
           background: #ffffff;
           border-radius: 16px;
-          border: 1px solid rgba(0,0,0,0.08);
+          border: 1px solid rgba(0,0,0,0.07);
           padding: 32px 28px 28px;
           display: flex;
           flex-direction: column;
@@ -78,15 +90,16 @@ export default function LandingPage() {
           gap: 12px;
           width: 340px;
           box-sizing: border-box;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-          transition: box-shadow 0.2s, border-color 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
           cursor: pointer;
         }
 
         .landing-card:hover,
         .landing-card:focus-visible {
-          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-          border-color: rgba(0,0,0,0.14);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+          border-color: rgba(0,0,0,0.12);
+          transform: translateY(-2px);
         }
 
         .landing-card:focus-visible {
@@ -114,16 +127,12 @@ export default function LandingPage() {
           flex: 1;
         }
 
-        /*
-         * The "Continue" pill is now a presentational <span> (aria-hidden) because
-         * the card div is the single interactive element. pointer-events:none
-         * ensures it never swallows clicks intended for the card.
-         */
+        /* Presentational pill — aria-hidden, pointer-events:none */
         .landing-card-cta {
           margin-top: 16px;
           align-self: flex-end;
           background: #4a8c7a;
-          color: #fff;
+          color: #111;
           border-radius: 999px;
           padding: 10px 24px;
           font-size: 14px;
@@ -137,11 +146,31 @@ export default function LandingPage() {
         .landing-card:focus-visible .landing-card-cta {
           background: #3d7a6a;
         }
+
+        .landing-root footer,
+        .landing-root [class*="footer"],
+        .landing-root [class*="Footer"] {
+          background: #ffffff !important;
+          position: relative;
+          z-index: 1;
+        }
+
+        .landing-root footer svg,
+        .landing-root [class*="footer"] svg,
+        .landing-root [class*="Footer"] svg {
+          color: #1a4d40 !important;
+          fill: #1a4d40 !important;
+        }
       `}</style>
 
       <div className="landing-root">
-        <GradientBlobs />
-        <ShellNavbar />
+        {/* Full-page gradient background */}
+        <div className="landing-bg" />
+
+        {/* Navbar wrapped in a white div so it overrides any inherited background */}
+        <div className="landing-navbar-wrap" style={{ background: "#ffffff", borderBottom: "1px solid rgba(0,0,0,0.08)", position: "relative", zIndex: 10 }}>
+          <ShellNavbar />
+        </div>
 
         <div className="landing-content">
           <h1 className="landing-title">Delivery Optimizer</h1>
