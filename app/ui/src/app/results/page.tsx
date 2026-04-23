@@ -5,12 +5,12 @@
 import { useCallback, useEffect, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
-import type { Route } from "./types";
+import type { PendingPinMove, Route } from "./types";
 
 export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const stored = sessionStorage.getItem("optimizeResults");
     if (!stored) return;
@@ -24,8 +24,9 @@ export default function ResultsPage() {
     }
   }, []);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
-  const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [pendingPinMove, setPendingPinMove] = useState<PendingPinMove | null>(null);
 
   const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
     setRoutes((prev) =>
@@ -39,22 +40,31 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
-  const updateStopCoordinates = useCallback(
-    (routeId: string, stopId: string, lat: number, lng: number) => {
-      setRoutes((prev) =>
-        prev.map((route) => {
-          if (route.vehicleId !== routeId) return route;
-          return {
-            ...route,
-            stops: route.stops.map((s) =>
-              s.id === stopId ? { ...s, lat, lng } : s
-            ),
-          };
-        })
-      );
-    },
-    [setRoutes]
-  );
+  const handleEditModeChange = useCallback((value: boolean) => {
+    setIsEditMode(value);
+    if (!value) setPendingPinMove(null);
+  }, []);
+
+  const savePendingPinMove = useCallback(() => {
+    if (!pendingPinMove) return;
+    setRoutes((prev) =>
+      prev.map((route) =>
+        route.vehicleId !== pendingPinMove.vehicleId
+          ? route
+          : {
+              ...route,
+              stops: route.stops.map((s) =>
+                s.id !== pendingPinMove.stopId
+                  ? s
+                  : { ...s, lat: pendingPinMove.lat, lng: pendingPinMove.lng }
+              ),
+            }
+      )
+    );
+    setPendingPinMove(null);
+  }, [pendingPinMove]);
+
+  const cancelPendingPinMove = useCallback(() => setPendingPinMove(null), []);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden">
@@ -83,6 +93,24 @@ export default function ResultsPage() {
           </svg>
         </button>
         <h1 className="text-2xl font-semibold text-zinc-800">Results – Route map</h1>
+        {pendingPinMove != null && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cancelPendingPinMove}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={savePendingPinMove}
+              className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </header>
       <div className="flex flex-1 min-h-0">
         <div
@@ -91,7 +119,7 @@ export default function ResultsPage() {
           <Sidebar
             routes={routes}
             isEditMode={isEditMode}
-            onEditModeChange={setIsEditMode}
+            onEditModeChange={handleEditModeChange}
             onUpdateStopNote={updateStopNote}
           />
         </div>
@@ -100,7 +128,10 @@ export default function ResultsPage() {
             <MapComponent
               routes={routes}
               isEditMode={isEditMode}
-              onUpdateStopCoordinates={updateStopCoordinates}
+              pendingPinMove={pendingPinMove}
+              onPendingPinMove={(vehicleId, stopId, lat, lng) =>
+                setPendingPinMove({ vehicleId, stopId, lat, lng })
+              }
             />
           </div>
         </div>
