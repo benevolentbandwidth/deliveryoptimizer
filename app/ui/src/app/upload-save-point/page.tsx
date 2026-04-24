@@ -3,13 +3,12 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ShellNavbar from "@/app/components/ShellNavbar";
+import { formatSize } from "@/app/utils/routeUtils";
 
 export default function UploadSavePointPage() {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  // Tracks drag enter/leave depth to prevent flicker when cursor
-  // moves over child elements inside the drop zone.
   const dragDepth = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,118 +38,192 @@ export default function UploadSavePointPage() {
 
   const handleContinue = async () => {
     if (!file) return;
-    // Serialise the file into sessionStorage so the editor can read it
-    // after navigation — local state is dropped on router.push().
-    // Routes to /edit directly: returning users land in the editor with
-    // their save data pre-loaded, bypassing the address-entry upload flow
-    // which is only for new sessions.
     const text = await file.text();
-    sessionStorage.setItem(
-      "savePointFile",
-      JSON.stringify({ name: file.name, content: text }),
-    );
+    sessionStorage.setItem("savePointFile", JSON.stringify({ name: file.name, content: text }));
     router.push("/edit");
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f4f2",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-    >
-      <ShellNavbar />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap');
 
-      <main
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "calc(100vh - 48px)",
-          padding: "40px 24px",
-        }}
-      >
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "20px",
-            padding: "40px",
-            width: "100%",
-            maxWidth: "480px",
-            boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "1.4rem",
-              fontWeight: 700,
-              color: "#111",
-              marginBottom: "8px",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Upload Save Point
-          </h2>
-          <p style={{ fontSize: "14px", color: "#999", marginBottom: "24px" }}>
-            Upload your previously exported save file to continue editing your
-            route.
-          </p>
+        .upload-root {
+          min-height: 100vh;
+          background: #f7f7f5;
+          display: flex;
+          flex-direction: column;
+          font-family: 'DM Sans', sans-serif;
+        }
 
-          <p
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#333",
-              marginBottom: "10px",
-            }}
-          >
-            Save file in .json
-          </p>
+        .upload-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px 24px;
+        }
+
+        .upload-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: 2rem;
+          font-weight: 400;
+          color: #111;
+          margin-bottom: 8px;
+          text-align: center;
+          letter-spacing: -0.01em;
+        }
+
+        .upload-subtitle {
+          font-size: 14px;
+          color: #888;
+          margin-bottom: 32px;
+          text-align: center;
+        }
+
+        .upload-dropzone {
+          width: 100%;
+          max-width: 580px;
+          border: 1.5px dashed #ccc;
+          border-radius: 12px;
+          padding: 52px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          background: #f9f9f8;
+          transition: border-color 0.15s, background 0.15s;
+          margin-bottom: 16px;
+        }
+
+        .upload-dropzone.dragging {
+          border-color: #4a8c7a;
+          background: #f0f7f5;
+        }
+
+        .upload-dropzone-icon { color: #555; margin-bottom: 4px; }
+
+        .upload-dropzone-text {
+          font-size: 14px;
+          color: #333;
+          text-align: center;
+        }
+
+        .upload-dropzone-browse {
+          font-size: 14px;
+          color: #4a8c7a;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .upload-file-row {
+          width: 100%;
+          max-width: 580px;
+          background: #eef5f3;
+          border: 1px solid #d0e5df;
+          border-radius: 8px;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 24px;
+        }
+
+        .upload-file-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: #111;
+          flex: 1;
+        }
+
+        .upload-file-size { font-size: 12px; color: #666; }
+
+        .upload-file-remove {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #555;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .upload-actions {
+          width: 100%;
+          max-width: 580px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 8px;
+        }
+
+        .upload-back-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 14px;
+          color: #555;
+          font-family: 'DM Sans', sans-serif;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0;
+        }
+
+        .upload-back-btn:hover { color: #111; }
+
+        .upload-continue-btn {
+          background: #4a8c7a;
+          color: #fff;
+          border: none;
+          border-radius: 999px;
+          padding: 10px 28px;
+          font-size: 14px;
+          font-weight: 500;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          transition: background 0.15s, opacity 0.15s;
+        }
+
+        .upload-continue-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .upload-continue-btn:not(:disabled):hover {
+          background: #3d7a6a;
+        }
+      `}</style>
+
+      <div className="upload-root">
+        <ShellNavbar />
+
+        <div className="upload-content">
+          <h2 className="upload-title">Upload your save point</h2>
+          <p className="upload-subtitle">Continue editing from where you left off.</p>
 
           <div
+            className={`upload-dropzone${isDragging ? " dragging" : ""}`}
             onClick={() => inputRef.current?.click()}
             onDragEnter={handleDragEnter}
             onDragOver={(e) => e.preventDefault()}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            style={{
-              border: `2px dashed ${isDragging ? "#111" : "#ccc"}`,
-              borderRadius: "12px",
-              padding: "36px 20px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "10px",
-              cursor: "pointer",
-              background: isDragging ? "#f9f9f9" : "#fafafa",
-              transition: "all 0.15s",
-              marginBottom: "24px",
-            }}
           >
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                border: "2px solid #333",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "11px",
-                fontWeight: 700,
-                color: "#333",
-                letterSpacing: "0.02em",
-              }}
-            >
-              JSON
+            <div className="upload-dropzone-icon">
+              <svg width="32" height="36" viewBox="0 0 32 36" fill="none">
+                <path d="M18 2H6a2 2 0 00-2 2v28a2 2 0 002 2h20a2 2 0 002-2V14L18 2z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M18 2v12h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M16 22v-6M13 19l3-3 3 3" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-            <p style={{ fontSize: "13px", color: "#777", textAlign: "center" }}>
-              {file ? file.name : "Click to upload save file"}
-            </p>
-            <p style={{ fontSize: "12px", color: "#bbb", textAlign: "center" }}>
-              Accepts .json files containing a save point
-            </p>
+            {/* Fixed: label now says ".json files" to match accept=".json" */}
+            <p className="upload-dropzone-text">Drag and drop .json files here, or</p>
+            <p className="upload-dropzone-browse">Browse files</p>
             <input
               ref={inputRef}
               type="file"
@@ -163,56 +236,40 @@ export default function UploadSavePointPage() {
             />
           </div>
 
-          <button
-            onClick={handleContinue}
-            disabled={!file}
-            style={{
-              width: "100%",
-              padding: "14px",
-              borderRadius: "10px",
-              background: file ? "#1a1a1a" : "#e0dedd",
-              color: file ? "#fff" : "#aaa",
-              border: "none",
-              cursor: file ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: 600,
-              fontFamily: "inherit",
-              marginBottom: "16px",
-              transition: "background 0.15s",
-            }}
-          >
-            Continue Editing Addresses
-          </button>
+          {file && (
+            <div className="upload-file-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#4a8c7a", flexShrink: 0 }}>
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="upload-file-name">{file.name}</span>
+              <span className="upload-file-size">{formatSize(file.size)}</span>
+              <button
+                className="upload-file-remove"
+                onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                aria-label="Remove file"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
-          <div style={{ textAlign: "center" }}>
-            <button
-              onClick={() => router.back()}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "14px",
-                color: "#555",
-                fontFamily: "inherit",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M10 3L5 8L10 13"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+          <div className="upload-actions">
+            <button className="upload-back-btn" onClick={() => router.back()}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Back
             </button>
+            <button
+              className="upload-continue-btn"
+              onClick={handleContinue}
+              disabled={!file}
+            >
+              Continue
+            </button>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
