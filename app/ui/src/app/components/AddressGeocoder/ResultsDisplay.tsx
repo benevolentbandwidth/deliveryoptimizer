@@ -1,7 +1,6 @@
 // app/components/AddressGeocoder/ResultsDisplay.tsx
 
 import React from 'react';
-import Link from 'next/link';
 import type { OptimizedResponse } from '@/app/types/geocoding';
 
 interface ResultsDisplayProps {
@@ -15,12 +14,6 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, onDownl
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-900">✅ Results Ready</h2>
         <div className="flex gap-3">
-          <Link
-            href="/results"
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-          >
-            🗺️ View Route Map
-          </Link>
           <button
             onClick={onDownload}
             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
@@ -68,7 +61,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, onDownl
 
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
         <p className="text-green-800 font-medium">
-          ✓ Geocoding complete! Download the JSON or view the route map above.
+          ✓ Geocoding complete! Download the JSON to continue.
         </p>
       </div>
     </div>

@@ -126,6 +126,15 @@ TEST(ServerOptionsTest, MetricsAreDisabledByDefault) {
   EXPECT_FALSE(options.enable_metrics);
 }
 
+TEST(ServerOptionsTest, SyncOptimizeIsDisabledByDefault) {
+  ScopedEnvVar enable_sync_optimize("DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE");
+  enable_sync_optimize.Unset();
+
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+
+  EXPECT_FALSE(options.enable_sync_optimize);
+}
+
 TEST(ServerOptionsTest, InvalidMetricsFlagFallsBackToDisabledAndLogsWarning) {
   ScopedEnvVar enable_metrics("DELIVERYOPTIMIZER_ENABLE_METRICS");
   enable_metrics.Set("maybe");
@@ -190,4 +199,49 @@ TEST(ServerOptionsTest, ClampsSolverAdmissionSyncLimitsToSupportedParserCaps) {
   EXPECT_EQ(options.solve_admission.max_sync_vehicles, 2000U);
   EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS"), std::string::npos);
   EXPECT_NE(stderr_output.find("DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES"), std::string::npos);
+}
+
+TEST(ServerOptionsTest, ReadsOptimizationJobOptionsFromEnv) {
+  ScopedEnvVar enable_sync_optimize("DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE");
+  ScopedEnvVar pg_dsn("DELIVERYOPTIMIZER_PG_DSN");
+  ScopedEnvVar job_db_connections("DELIVERYOPTIMIZER_JOB_DB_CONNECTIONS");
+  ScopedEnvVar job_workers("DELIVERYOPTIMIZER_JOB_WORKERS");
+  ScopedEnvVar job_max_queue_size("DELIVERYOPTIMIZER_JOB_MAX_QUEUE_SIZE");
+  ScopedEnvVar job_max_attempts("DELIVERYOPTIMIZER_JOB_MAX_ATTEMPTS");
+  ScopedEnvVar job_poll_ms("DELIVERYOPTIMIZER_JOB_POLL_MS");
+  ScopedEnvVar job_heartbeat_ms("DELIVERYOPTIMIZER_JOB_HEARTBEAT_MS");
+  ScopedEnvVar job_sweep_ms("DELIVERYOPTIMIZER_JOB_SWEEP_MS");
+  ScopedEnvVar job_lease_ms("DELIVERYOPTIMIZER_JOB_LEASE_MS");
+  ScopedEnvVar job_result_ttl_seconds("DELIVERYOPTIMIZER_JOB_RESULT_TTL_SECONDS");
+  ScopedEnvVar job_worker_health_ms("DELIVERYOPTIMIZER_JOB_WORKER_HEALTH_MS");
+  enable_sync_optimize.Set("1");
+  pg_dsn.Set("host=postgres port=5432 dbname=deliveryoptimizer user=deliveryoptimizer");
+  job_db_connections.Set("7");
+  job_workers.Set("5");
+  job_max_queue_size.Set("21");
+  job_max_attempts.Set("6");
+  job_poll_ms.Set("125");
+  job_heartbeat_ms.Set("750");
+  job_sweep_ms.Set("2000");
+  job_lease_ms.Set("9000");
+  job_result_ttl_seconds.Set("120");
+  job_worker_health_ms.Set("4500");
+
+  const auto options = deliveryoptimizer::api::LoadServerOptionsFromEnv();
+
+  EXPECT_TRUE(options.enable_sync_optimize);
+  EXPECT_EQ(options.optimization_jobs.connection_string,
+            "host=postgres port=5432 dbname=deliveryoptimizer user=deliveryoptimizer");
+  EXPECT_EQ(options.optimization_jobs.connection_count, 7U);
+  EXPECT_EQ(options.optimization_jobs.max_queue_size, 21U);
+  EXPECT_EQ(options.optimization_jobs.max_attempts, 6U);
+  EXPECT_EQ(options.optimization_jobs.lease_duration, std::chrono::milliseconds{9000});
+  EXPECT_EQ(options.optimization_jobs.result_ttl, std::chrono::seconds{120});
+  EXPECT_EQ(options.optimization_job_runtime.worker_count, 5U);
+  EXPECT_EQ(options.optimization_job_runtime.poll_interval, std::chrono::milliseconds{125});
+  EXPECT_EQ(options.optimization_job_runtime.heartbeat_interval, std::chrono::milliseconds{750});
+  EXPECT_EQ(options.optimization_job_runtime.sweep_interval, std::chrono::milliseconds{2000});
+  EXPECT_EQ(options.optimization_job_runtime.worker_health_timeout,
+            std::chrono::milliseconds{4500});
+  EXPECT_TRUE(options.optimization_job_runtime.start_workers);
 }

@@ -2,27 +2,26 @@ import type { Delivery } from "@/lib/types/delivery.types"
 import type { Vehicle } from "@/lib/types/vehicle.types"
 import {
   relativeDayWindowToEpoch,
-  type CppDeliveriesOptimizeRequest,
+  type OptimizationJobRequestPayload,
 } from "@/lib/solver/vroomMapping"
 
-export type { CppDeliveriesOptimizeRequest }
+export type { OptimizationJobRequestPayload }
 
 /**
- * Maps normalized UI models to the POST /api/v1/deliveries/optimize JSON contract.
- * Depot defaults to the first vehicle's start location.
+ * Maps normalized UI models to the async optimization job request contract.
  */
-export function buildCppDeliveriesOptimizePayload(
+export function buildOptimizationJobPayload(
   deliveries: Delivery[],
   vehicles: Vehicle[]
-): CppDeliveriesOptimizeRequest {
+): OptimizationJobRequestPayload {
   if (vehicles.length === 0) {
-    throw new Error("buildCppDeliveriesOptimizePayload requires at least one vehicle")
+    throw new Error("buildOptimizationJobPayload requires at least one vehicle")
   }
 
   const depot = vehicles[0].start
 
   const jobs = deliveries.map((d) => {
-    const job: CppDeliveriesOptimizeRequest["jobs"][0] = {
+    const job: OptimizationJobRequestPayload["jobs"][0] = {
       id: String(d.id),
       location: d.location,
       demand: d.deliverySize[0],
@@ -37,7 +36,7 @@ export function buildCppDeliveriesOptimizePayload(
   })
 
   const cppVehicles = vehicles.map((v) => {
-    const row: CppDeliveriesOptimizeRequest["vehicles"][0] = {
+    const row: OptimizationJobRequestPayload["vehicles"][0] = {
       id: String(v.id),
       capacity: v.capacity[0],
       start: v.start,

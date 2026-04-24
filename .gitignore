@@ -64,8 +64,8 @@ lcov.info
 .direnv/
 
 # Nix outputs
-result
-result-*
+/result
+/result-*
 
 # Frontend artifacts
 app/ui/node_modules/

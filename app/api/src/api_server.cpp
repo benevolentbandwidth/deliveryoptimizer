@@ -3,10 +3,14 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 #include "deliveryoptimizer/api/endpoints/health_endpoint.hpp"
 #include "deliveryoptimizer/api/endpoints/metrics_endpoint.hpp"
+#include "deliveryoptimizer/api/endpoints/optimization_jobs_endpoint.hpp"
 #include "deliveryoptimizer/api/endpoints/optimize_endpoint.hpp"
 #include "deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp"
+#include "deliveryoptimizer/api/optimization_job_runtime.hpp"
+#include "deliveryoptimizer/api/optimization_job_store.hpp"
 #include "deliveryoptimizer/api/observability.hpp"
 #include "deliveryoptimizer/api/server_options.hpp"
+#include "deliveryoptimizer/api/vroom_runner.hpp"
 
 #include <chrono>
 #include <drogon/drogon.h>
@@ -39,6 +43,10 @@ int RunApiServer() {
   auto& app = drogon::app();
   const auto options = LoadServerOptionsFromEnv();
   auto observability = std::make_shared<ObservabilityRegistry>();
+  auto job_store = std::make_shared<OptimizationJobStore>(options.optimization_jobs);
+  auto job_runtime = std::make_shared<OptimizationJobRuntime>(
+      job_store, std::make_shared<ProcessVroomRunner>(ResolveVroomRuntimeConfigFromEnv()),
+      observability, options.optimization_job_runtime);
   const auto default_error_handler = app.getCustomErrorHandler();
 
   app.registerHttpResponseCreationAdvice([](const drogon::HttpResponsePtr& response) {
@@ -69,7 +77,8 @@ int RunApiServer() {
         response->addHeader(std::string{kRequestIdHeader}, context->request_id);
       }
       if (request->getMethod() == drogon::Post &&
-          request->path() == "/api/v1/deliveries/optimize") {
+          (request->path() == "/api/v1/deliveries/optimize" ||
+           request->path() == "/api/v1/optimization-jobs")) {
         auto lifecycle = std::make_shared<SolveLifecycle>(CreateSolveLifecycle(request));
         FinalizeSolveRequest(observability, lifecycle, SolveRequestOutcome::kRequestTooLarge,
                              static_cast<std::uint16_t>(response->getStatusCode()));
@@ -93,12 +102,52 @@ int RunApiServer() {
         response->addHeader(std::string{kRequestIdHeader}, context->request_id);
       });
 
-  RegisterHealthEndpoint(app, observability);
+  RegisterHealthEndpoint(
+      app, observability,
+      [job_store, job_runtime](Json::Value& checks, bool& overall_ready) {
+        if (job_store == nullptr || !job_store->IsConfigured()) {
+          checks["optimization_jobs_db"] = "missing";
+          checks["optimization_jobs_db_detail"] = "missing database connection string";
+          checks["optimization_job_workers_expected"] =
+              static_cast<Json::UInt64>(job_runtime == nullptr ? 0U : job_runtime->ExpectedWorkerCount());
+          checks["optimization_job_workers_healthy"] = 0U;
+          overall_ready = false;
+          return;
+        }
+
+        std::string detail;
+        const bool db_ready = job_store->Ping(&detail);
+        const auto stats = job_runtime == nullptr ? OptimizationJobStoreStats{}
+                                                  : job_runtime->CurrentStats();
+        const std::size_t expected_workers =
+            job_runtime == nullptr ? 0U : job_runtime->ExpectedWorkerCount();
+        const std::size_t healthy_workers =
+            job_runtime == nullptr ? 0U : job_runtime->HealthyWorkerCount();
+        const bool schema_ready = job_runtime != nullptr && job_runtime->IsSchemaReady();
+        const std::string schema_detail =
+            job_runtime == nullptr ? "missing optimization job runtime"
+                                   : job_runtime->SchemaStatusDetail();
+        checks["optimization_jobs_db"] = db_ready ? "ok" : "down";
+        checks["optimization_jobs_db_detail"] = detail;
+        checks["optimization_jobs_schema"] = schema_ready ? "ok" : "down";
+        checks["optimization_jobs_schema_detail"] = schema_detail;
+        checks["optimization_job_workers_expected"] = static_cast<Json::UInt64>(expected_workers);
+        checks["optimization_job_workers_healthy"] = static_cast<Json::UInt64>(healthy_workers);
+        checks["optimization_job_queue_depth"] = static_cast<Json::UInt64>(stats.queued_jobs);
+        checks["optimization_job_running"] = static_cast<Json::UInt64>(stats.running_jobs);
+        if (!db_ready || !schema_ready ||
+            (expected_workers > 0U && healthy_workers < expected_workers)) {
+          overall_ready = false;
+        }
+      });
   if (options.enable_metrics) {
     RegisterMetricsEndpoint(app, observability);
   }
   RegisterOptimizeEndpoint(app);
-  RegisterDeliveriesOptimizeEndpoint(app, options.solve_admission, observability);
+  RegisterOptimizationJobsEndpoints(app, job_store, job_runtime, observability);
+  if (options.enable_sync_optimize) {
+    RegisterDeliveriesOptimizeEndpoint(app, options.solve_admission, observability);
+  }
   RegisterOsrmProxyEndpoint(app);
 
   app.addListener("0.0.0.0", options.listen_port);

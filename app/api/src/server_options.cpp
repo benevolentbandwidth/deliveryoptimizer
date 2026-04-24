@@ -20,16 +20,38 @@ constexpr std::size_t kMaxWorkerThreads = 64U;
 constexpr std::string_view kListenPortEnv = "DELIVERYOPTIMIZER_PORT";
 constexpr std::string_view kThreadCountEnv = "DELIVERYOPTIMIZER_THREADS";
 constexpr std::string_view kEnableMetricsEnv = "DELIVERYOPTIMIZER_ENABLE_METRICS";
+constexpr std::string_view kEnableSyncOptimizeEnv = "DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE";
 constexpr std::string_view kSolverMaxConcurrencyEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_CONCURRENCY";
 constexpr std::string_view kSolverMaxQueueSizeEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_QUEUE_SIZE";
 constexpr std::string_view kSolverQueueWaitMsEnv = "DELIVERYOPTIMIZER_SOLVER_QUEUE_WAIT_MS";
 constexpr std::string_view kSolverMaxSyncJobsEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_JOBS";
 constexpr std::string_view kSolverMaxSyncVehiclesEnv = "DELIVERYOPTIMIZER_SOLVER_MAX_SYNC_VEHICLES";
+constexpr std::string_view kPgDsnEnv = "DELIVERYOPTIMIZER_PG_DSN";
+constexpr std::string_view kJobDbConnectionsEnv = "DELIVERYOPTIMIZER_JOB_DB_CONNECTIONS";
+constexpr std::string_view kJobWorkersEnv = "DELIVERYOPTIMIZER_JOB_WORKERS";
+constexpr std::string_view kJobMaxQueueSizeEnv = "DELIVERYOPTIMIZER_JOB_MAX_QUEUE_SIZE";
+constexpr std::string_view kJobMaxAttemptsEnv = "DELIVERYOPTIMIZER_JOB_MAX_ATTEMPTS";
+constexpr std::string_view kJobPollMsEnv = "DELIVERYOPTIMIZER_JOB_POLL_MS";
+constexpr std::string_view kJobHeartbeatMsEnv = "DELIVERYOPTIMIZER_JOB_HEARTBEAT_MS";
+constexpr std::string_view kJobSweepMsEnv = "DELIVERYOPTIMIZER_JOB_SWEEP_MS";
+constexpr std::string_view kJobLeaseMsEnv = "DELIVERYOPTIMIZER_JOB_LEASE_MS";
+constexpr std::string_view kJobResultTtlSecondsEnv = "DELIVERYOPTIMIZER_JOB_RESULT_TTL_SECONDS";
+constexpr std::string_view kJobWorkerHealthMsEnv = "DELIVERYOPTIMIZER_JOB_WORKER_HEALTH_MS";
 constexpr std::size_t kDefaultSolverMaxConcurrencyCap = 4U;
 constexpr std::size_t kDefaultSolverQueueSizePerWorker = 4U;
 constexpr std::uint64_t kDefaultSolverQueueWaitMs = 1000U;
 constexpr std::size_t kDefaultSolverMaxSyncJobs = 10000U;
 constexpr std::size_t kDefaultSolverMaxSyncVehicles = 2000U;
+constexpr std::size_t kDefaultJobDbConnections = 4U;
+constexpr std::size_t kDefaultJobWorkers = 2U;
+constexpr std::size_t kDefaultJobQueueSizePerWorker = 4U;
+constexpr std::size_t kDefaultJobMaxAttempts = 3U;
+constexpr std::uint64_t kDefaultJobPollMs = 250U;
+constexpr std::uint64_t kDefaultJobHeartbeatMs = 1000U;
+constexpr std::uint64_t kDefaultJobSweepMs = 1000U;
+constexpr std::uint64_t kDefaultJobLeaseMs = 90000U;
+constexpr std::uint64_t kDefaultJobResultTtlSeconds = 86400U;
+constexpr std::uint64_t kDefaultJobWorkerHealthMs = 5000U;
 
 template <typename Integer>
 [[nodiscard]] std::optional<Integer> ParsePositiveIntegerEnv(const char* raw_value) {
@@ -127,6 +149,31 @@ template <typename Integer>
   return *parsed_value == 1U;
 }
 
+[[nodiscard]] bool ResolveBooleanFlag(const std::string_view env_name, const bool default_value) {
+  const char* raw_value = std::getenv(env_name.data());
+  if (raw_value == nullptr || *raw_value == '\0') {
+    return default_value;
+  }
+
+  const auto parsed_value = ParseNonNegativeIntegerEnv<unsigned int>(raw_value);
+  if (!parsed_value.has_value() || *parsed_value > 1U) {
+    std::cerr << "Ignoring invalid " << env_name << "='" << raw_value << "'. Using default "
+              << (default_value ? "enabled" : "disabled") << " value.\n";
+    return default_value;
+  }
+
+  return *parsed_value == 1U;
+}
+
+[[nodiscard]] std::string ResolveStringOption(const std::string_view env_name) {
+  const char* raw_value = std::getenv(env_name.data());
+  if (raw_value == nullptr) {
+    return {};
+  }
+
+  return raw_value;
+}
+
 [[nodiscard]] std::size_t ResolvePositiveSizeOption(const std::string_view env_name,
                                                     const std::size_t default_value,
                                                     const std::string_view description) {
@@ -177,6 +224,49 @@ template <typename Integer>
   }
 
   return *parsed_value;
+}
+
+[[nodiscard]] deliveryoptimizer::api::OptimizationJobStoreConfig
+ResolveOptimizationJobStoreConfig(const std::size_t worker_count) {
+  const std::size_t default_max_queue_size = worker_count * kDefaultJobQueueSizePerWorker;
+  return deliveryoptimizer::api::OptimizationJobStoreConfig{
+      .connection_string = ResolveStringOption(kPgDsnEnv),
+      .connection_count = ResolvePositiveSizeOption(kJobDbConnectionsEnv, kDefaultJobDbConnections,
+                                                    "job database connection count"),
+      .max_queue_size = ResolvePositiveSizeOption(kJobMaxQueueSizeEnv, default_max_queue_size,
+                                                  "optimization job queue size"),
+      .max_attempts = ResolvePositiveSizeOption(kJobMaxAttemptsEnv, kDefaultJobMaxAttempts,
+                                                "optimization job max attempts"),
+      .lease_duration = std::chrono::milliseconds{
+          static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
+              kJobLeaseMsEnv, kDefaultJobLeaseMs, "job lease timeout (ms)"))},
+      .result_ttl = std::chrono::seconds{
+          static_cast<std::chrono::seconds::rep>(ResolvePositiveSizeOption(
+              kJobResultTtlSecondsEnv, kDefaultJobResultTtlSeconds, "job result ttl (seconds)"))},
+  };
+}
+
+[[nodiscard]] deliveryoptimizer::api::OptimizationJobRuntimeOptions
+ResolveOptimizationJobRuntimeOptions() {
+  return deliveryoptimizer::api::OptimizationJobRuntimeOptions{
+      .worker_count = ResolvePositiveSizeOption(kJobWorkersEnv, kDefaultJobWorkers,
+                                                "optimization job worker count"),
+      .poll_interval = std::chrono::milliseconds{
+          static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
+              kJobPollMsEnv, kDefaultJobPollMs, "optimization job poll interval (ms)"))},
+      .heartbeat_interval = std::chrono::milliseconds{
+          static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
+              kJobHeartbeatMsEnv, kDefaultJobHeartbeatMs,
+              "optimization job heartbeat interval (ms)"))},
+      .sweep_interval = std::chrono::milliseconds{
+          static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
+              kJobSweepMsEnv, kDefaultJobSweepMs, "optimization job sweep interval (ms)"))},
+      .worker_health_timeout = std::chrono::milliseconds{
+          static_cast<std::chrono::milliseconds::rep>(ResolvePositiveSizeOption(
+              kJobWorkerHealthMsEnv, kDefaultJobWorkerHealthMs,
+              "optimization job worker health timeout (ms)"))},
+      .start_workers = true,
+  };
 }
 
 [[nodiscard]] std::chrono::milliseconds ResolveQueueWaitTimeout() {
@@ -238,11 +328,17 @@ namespace deliveryoptimizer::api {
 
 ServerOptions LoadServerOptionsFromEnv() {
   const std::size_t worker_threads = ResolveThreadCount();
+  const auto optimization_job_runtime = ResolveOptimizationJobRuntimeOptions();
+  const auto optimization_jobs =
+      ResolveOptimizationJobStoreConfig(optimization_job_runtime.worker_count);
   return ServerOptions{
       .listen_port = ResolveListenPort(),
       .worker_threads = worker_threads,
       .enable_metrics = ResolveMetricsEnabled(),
+      .enable_sync_optimize = ResolveBooleanFlag(kEnableSyncOptimizeEnv, false),
       .solve_admission = ResolveSolveAdmissionConfig(worker_threads),
+      .optimization_jobs = optimization_jobs,
+      .optimization_job_runtime = optimization_job_runtime,
   };
 }
 

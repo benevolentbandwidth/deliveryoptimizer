@@ -51,7 +51,7 @@ e2e_compose() {
 }
 
 e2e_stack_up() {
-  e2e_compose up -d --build osrm http-server
+  e2e_compose up -d --build
 }
 
 e2e_cleanup() {

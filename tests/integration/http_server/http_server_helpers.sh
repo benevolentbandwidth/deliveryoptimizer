@@ -9,6 +9,8 @@ log_file=""
 server_pid=""
 HTTP_SERVER_LAST_HTTP_CODE=""
 readonly HTTP_SERVER_MAX_PORT=65535
+readonly HTTP_SERVER_SAFE_MIN_PORT=10000
+readonly HTTP_SERVER_SAFE_MAX_PORT=32767
 
 http_server_usage() {
   echo "usage: $0 <server-binary> [curl-binary]" >&2
@@ -29,6 +31,25 @@ http_server_require_valid_port() {
   fi
 }
 
+http_server_map_to_safe_bind_port() {
+  local port_seed="$1"
+
+  http_server_require_valid_port "${port_seed}" "port_seed" || return 1
+
+  if (( port_seed >= HTTP_SERVER_SAFE_MIN_PORT && port_seed <= HTTP_SERVER_SAFE_MAX_PORT )); then
+    echo "${port_seed}"
+    return
+  fi
+
+  local bind_window="$((HTTP_SERVER_SAFE_MAX_PORT - HTTP_SERVER_SAFE_MIN_PORT + 1))"
+  local offset="$(((port_seed - HTTP_SERVER_SAFE_MIN_PORT) % bind_window))"
+  if (( offset < 0 )); then
+    offset="$((offset + bind_window))"
+  fi
+
+  echo "$((HTTP_SERVER_SAFE_MIN_PORT + offset))"
+}
+
 http_server_compute_default_port() {
   local default_port_base="$1"
   local process_id="${2:-$$}"
@@ -39,9 +60,13 @@ http_server_compute_default_port() {
     return 1
   fi
 
-  local offset_window="$((HTTP_SERVER_MAX_PORT - default_port_base + 1))"
-  local offset="$((process_id % offset_window))"
-  echo "$((default_port_base + offset))"
+  local bind_window="$((HTTP_SERVER_SAFE_MAX_PORT - HTTP_SERVER_SAFE_MIN_PORT + 1))"
+  local offset="$(((default_port_base - HTTP_SERVER_SAFE_MIN_PORT + process_id) % bind_window))"
+  if (( offset < 0 )); then
+    offset="$((offset + bind_window))"
+  fi
+
+  echo "$((HTTP_SERVER_SAFE_MIN_PORT + offset))"
 }
 
 http_server_init() {
@@ -69,6 +94,14 @@ http_server_init() {
 http_server_cleanup() {
   if [[ -n "${server_pid:-}" ]]; then
     kill "${server_pid}" >/dev/null 2>&1 || true
+    local attempts=50
+    while kill -0 "${server_pid}" >/dev/null 2>&1 && (( attempts > 0 )); do
+      sleep 0.1
+      attempts=$((attempts - 1))
+    done
+    if kill -0 "${server_pid}" >/dev/null 2>&1; then
+      kill -9 "${server_pid}" >/dev/null 2>&1 || true
+    fi
     wait "${server_pid}" >/dev/null 2>&1 || true
   fi
 
@@ -76,7 +109,10 @@ http_server_cleanup() {
 }
 
 http_server_start() {
-  env DELIVERYOPTIMIZER_PORT="${port}" "$@" "${server_bin}" >"${log_file}" 2>&1 &
+  # Legacy local integration tests still exercise the internal sync endpoint.
+  env DELIVERYOPTIMIZER_PORT="${port}" \
+    DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE="${DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE:-1}" \
+    "$@" "${server_bin}" >"${log_file}" 2>&1 &
   server_pid=$!
 }
 

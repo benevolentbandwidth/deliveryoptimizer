@@ -47,6 +47,7 @@ struct SolveLifecycle {
 class ObservabilityRegistry;
 
 enum class SolveRequestOutcome : std::uint8_t {
+  kAcceptedAsync,
   kSucceeded,
   kRejectedTooManyJobs,
   kRejectedTooManyVehicles,
@@ -88,9 +89,12 @@ public:
   void RecordRejected();
   void RecordTimedOut();
   void RecordFailed();
+  void RecordAsyncJobCompletion(SolveRequestOutcome outcome);
   void RecordTrackerWriteFailure();
 
   void SetSolverState(std::size_t queue_depth, std::size_t inflight_solves);
+  void SetAsyncJobState(std::size_t queued_jobs, std::size_t running_jobs,
+                        std::size_t healthy_workers);
   void ObserveQueueWait(std::chrono::steady_clock::duration duration);
   void ObserveSolveDuration(std::chrono::steady_clock::duration duration);
   void ObserveRequestDuration(std::chrono::steady_clock::duration duration);
@@ -113,6 +117,9 @@ private:
   std::atomic<std::uint64_t> tracker_write_failures_{0U};
   std::atomic<std::uint64_t> queue_depth_{0U};
   std::atomic<std::uint64_t> inflight_solves_{0U};
+  std::atomic<std::uint64_t> async_job_queue_depth_{0U};
+  std::atomic<std::uint64_t> async_job_running_{0U};
+  std::atomic<std::uint64_t> async_job_workers_healthy_{0U};
   std::size_t max_pending_log_lines_{0U};
   std::unique_ptr<Histogram> queue_wait_histogram_;
   std::unique_ptr<Histogram> solve_duration_histogram_;

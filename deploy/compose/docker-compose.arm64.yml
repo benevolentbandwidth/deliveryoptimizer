@@ -1,6 +1,26 @@
 name: deliveryoptimizer
 
 services:
+  postgres:
+    image: ${DELIVERYOPTIMIZER_POSTGRES_IMAGE:-postgres:16-alpine}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-deliveryoptimizer}
+      POSTGRES_USER: ${POSTGRES_USER:-deliveryoptimizer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deliveryoptimizer}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-deliveryoptimizer} -d ${POSTGRES_DB:-deliveryoptimizer}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   osrm:
     platform: ${DELIVERYOPTIMIZER_PLATFORM:-linux/arm64}
     image: ${DELIVERYOPTIMIZER_OSRM_IMAGE:-deliveryoptimizer-osrm:arm64}
@@ -39,7 +59,7 @@ services:
       dockerfile: deploy/services/http-server.Dockerfile
       args:
         UBUNTU_VERSION: ${UBUNTU_VERSION:-24.04}
-        CONAN_VERSION: ${CONAN_VERSION:-2.9.2}
+        CONAN_VERSION: ${CONAN_VERSION:-2.18.1}
         VROOM_REF: ${VROOM_REF:-v1.14.0}
         VROOM_COMMIT: ${VROOM_COMMIT:-1fd711bc8c20326dd8e9538e2c7e4cb1ebd67bdb}
         VROOM_BUILD_JOBS: ${VROOM_BUILD_JOBS:-2}
@@ -51,7 +71,21 @@ services:
       VROOM_PORT: ${OSRM_INTERNAL_PORT:-5001}
       VROOM_TIMEOUT_SECONDS: ${VROOM_TIMEOUT_SECONDS:-30}
       DELIVERYOPTIMIZER_ENABLE_METRICS: ${DELIVERYOPTIMIZER_ENABLE_METRICS:-0}
+      DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE: ${DELIVERYOPTIMIZER_ENABLE_SYNC_OPTIMIZE:-0}
+      DELIVERYOPTIMIZER_PG_DSN: ${DELIVERYOPTIMIZER_PG_DSN:-host=postgres port=5432 dbname=deliveryoptimizer user=deliveryoptimizer password=deliveryoptimizer}
+      DELIVERYOPTIMIZER_JOB_DB_CONNECTIONS: ${DELIVERYOPTIMIZER_JOB_DB_CONNECTIONS:-4}
+      DELIVERYOPTIMIZER_JOB_WORKERS: ${DELIVERYOPTIMIZER_JOB_WORKERS:-2}
+      DELIVERYOPTIMIZER_JOB_MAX_QUEUE_SIZE: ${DELIVERYOPTIMIZER_JOB_MAX_QUEUE_SIZE:-8}
+      DELIVERYOPTIMIZER_JOB_MAX_ATTEMPTS: ${DELIVERYOPTIMIZER_JOB_MAX_ATTEMPTS:-3}
+      DELIVERYOPTIMIZER_JOB_POLL_MS: ${DELIVERYOPTIMIZER_JOB_POLL_MS:-250}
+      DELIVERYOPTIMIZER_JOB_HEARTBEAT_MS: ${DELIVERYOPTIMIZER_JOB_HEARTBEAT_MS:-1000}
+      DELIVERYOPTIMIZER_JOB_SWEEP_MS: ${DELIVERYOPTIMIZER_JOB_SWEEP_MS:-1000}
+      DELIVERYOPTIMIZER_JOB_LEASE_MS: ${DELIVERYOPTIMIZER_JOB_LEASE_MS:-90000}
+      DELIVERYOPTIMIZER_JOB_RESULT_TTL_SECONDS: ${DELIVERYOPTIMIZER_JOB_RESULT_TTL_SECONDS:-86400}
+      DELIVERYOPTIMIZER_JOB_WORKER_HEALTH_MS: ${DELIVERYOPTIMIZER_JOB_WORKER_HEALTH_MS:-5000}
     depends_on:
+      postgres:
+        condition: service_healthy
       osrm:
         condition: service_healthy
     ports:
@@ -60,3 +94,4 @@ services:
 
 volumes:
   osrm-data:
+  postgres-data:

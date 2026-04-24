@@ -89,9 +89,8 @@ function latLngFromMarkerPosition(
 type MapComponentProps = {
   routes: Route[];
   isEditMode: boolean;
-  pendingPinMove?: PendingPinMove | null;
-  onPendingPinMove?: (vehicleId: string, stopId: string, lat: number, lng: number) => void;
-  onUpdateStopCoordinates?: (routeId: string, stopId: string, lat: number, lng: number) => void;
+  pendingPinMove: PendingPinMove | null;
+  onPendingPinMove: (vehicleId: string, stopId: string, lat: number, lng: number) => void;
 };
 
 type AdvancedMarkersProps = {
@@ -211,9 +210,8 @@ function AdvancedMarkers({
 export default function MapComponent({
   routes,
   isEditMode,
-  pendingPinMove = null,
+  pendingPinMove,
   onPendingPinMove,
-  onUpdateStopCoordinates,
 }: MapComponentProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined;
@@ -233,17 +231,6 @@ export default function MapComponent({
   );
 
   const onUnmount = useCallback(() => setMap(null), []);
-  const notifyPinMove = useCallback(
-    (vehicleId: string, stopId: string, lat: number, lng: number) => {
-      if (onPendingPinMove) {
-        onPendingPinMove(vehicleId, stopId, lat, lng);
-        return;
-      }
-      onUpdateStopCoordinates?.(vehicleId, stopId, lat, lng);
-    },
-    [onPendingPinMove, onUpdateStopCoordinates]
-  );
-
   useEffect(() => {
     if (!map || typeof google === "undefined") return;
     const handleResize = () => {
@@ -290,7 +277,7 @@ export default function MapComponent({
               routes={routes}
               isEditMode={isEditMode}
               pendingPinMove={pendingPinMove}
-              onPendingPinMove={notifyPinMove}
+              onPendingPinMove={onPendingPinMove}
             />
           )}
           {!mapId &&
@@ -315,7 +302,7 @@ export default function MapComponent({
                         onDragEnd={(e) => {
                           const latLng = e.latLng;
                           if (!latLng) return;
-                          notifyPinMove(
+                          onPendingPinMove(
                             route.vehicleId,
                             stop.id,
                             latLng.lat(),
