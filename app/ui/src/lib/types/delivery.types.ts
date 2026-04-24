@@ -4,7 +4,7 @@ export type DeliveryInput = {
   id: number
   recipientName?: string
   phoneNumber?: string
-  address?: string  // Not required for VROOM
+  address?: string // Not required for VROOM
   notes?: string
   location: Location
   bufferTime?: number
