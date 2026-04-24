@@ -150,7 +150,6 @@ void OptimizationJobRuntime::WorkerLoop(const std::stop_token stop_token, const 
       if (store_->TouchWorker(worker_state.worker_id, std::nullopt)) {
         MarkWorkerHeartbeat(worker_state);
       }
-      RefreshObservability();
       std::this_thread::sleep_for(options_.poll_interval);
       continue;
     }
@@ -222,7 +221,6 @@ void OptimizationJobRuntime::HeartbeatLoop(const std::stop_token stop_token) {
         (void)store_->ExtendJobLease(*current_job_id, worker_state.worker_id);
       }
     }
-    RefreshObservability();
     std::this_thread::sleep_for(options_.heartbeat_interval);
   }
 }
