@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { DeliveryStop } from './types';
 
@@ -7,9 +7,12 @@ type Props = {
   isOpen: boolean;
   onToggle: () => void;
   onChangeNote: (value: string) => void;
+  onNavigate: () => void;
   onComplete: () => void;
-  onReport?: () => void;
-  onNavigate?: () => void;
+  onReport: () => void;
+  isReporting: boolean;
+  onCancelReport: () => void;
+  onSubmitFailure: (reason: string) => void;
 };
 
 export default function DeliveryCard({
@@ -17,16 +20,27 @@ export default function DeliveryCard({
   isOpen,
   onToggle,
   onChangeNote,
+  onNavigate,
   onComplete,
   onReport,
-  onNavigate,
+  isReporting,
+  onCancelReport,
+  onSubmitFailure,
 }: Props) {
+  const [failureReason, setFailureReason] = useState('');
   const isCompleted = stop.status === 'completed';
   const isFailed = stop.status === 'failed';
   const isDone = isCompleted || isFailed;
+  const canSubmitFailure = failureReason.trim().length > 0;
   const completedAtText = stop.completedAt
     ? new Date(stop.completedAt).toLocaleString()
     : null;
+
+  useEffect(() => {
+    if (isReporting) {
+      setFailureReason('');
+    }
+  }, [isReporting]);
 
   return (
     <Pressable
@@ -78,27 +92,53 @@ export default function DeliveryCard({
             <Text style={styles.statusText}>Failure reason: {stop.failureReason}</Text>
           ) : null}
 
-          {!isDone && (
+          {!isDone && !isReporting && (
             <View style={styles.buttonRow}>
+              <Pressable style={styles.actionButton} onPress={onNavigate}>
+                <Text style={styles.actionText}>Navigate</Text>
+              </Pressable>
+
               <Pressable style={styles.actionButton} onPress={onComplete}>
                 <Text style={styles.actionText}>Complete</Text>
               </Pressable>
 
-              {onNavigate && (
-                <Pressable style={styles.actionButton} onPress={onNavigate}>
-                  <Text style={styles.actionText}>Navigate</Text>
-                </Pressable>
-              )}
+              <Pressable style={styles.actionButton} onPress={onReport}>
+                <Text style={styles.actionText}>Report</Text>
+              </Pressable>
+            </View>
+          )}
 
-              {onReport ? (
-                <Pressable style={styles.actionButton} onPress={onReport}>
-                  <Text style={styles.actionText}>Report</Text>
+          {isReporting && (
+            <View>
+              <TextInput
+                style={styles.noteInput}
+                value={failureReason}
+                onChangeText={setFailureReason}
+                placeholder="Enter failure reason"
+                multiline
+              />
+              <View style={styles.buttonRow}>
+                <Pressable style={styles.actionButton} onPress={onCancelReport}>
+                  <Text style={styles.actionText}>Cancel</Text>
                 </Pressable>
-              ) : (
-                <View style={[styles.actionButton, styles.disabledButton]}>
-                  <Text style={[styles.actionText, styles.disabledText]}>Report</Text>
-                </View>
-              )}
+                <Pressable
+                  style={[
+                    styles.actionButton,
+                    !canSubmitFailure && styles.disabledButton,
+                  ]}
+                  disabled={!canSubmitFailure}
+                  onPress={() => onSubmitFailure(failureReason)}
+                >
+                  <Text
+                    style={[
+                      styles.actionText,
+                      !canSubmitFailure && styles.disabledText,
+                    ]}
+                  >
+                    Mark as Failed
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>

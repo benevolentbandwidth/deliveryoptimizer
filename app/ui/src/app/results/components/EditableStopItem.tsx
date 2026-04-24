@@ -1,5 +1,5 @@
-// A component that displays a single stop row in the route card showing the stop number, address, and notes, the stop's note
-// If the note is in read only mode, it displays as a static text, otherwise it provides a text area and save button
+// One stop row in an expanded route card (read-only or note edit)
+
 "use client";
 
 import { useState } from "react";
@@ -11,9 +11,8 @@ type EditableStopItemProps = {
   onSaveNote: (note: string) => void;
 };
 
-// Declaring the component with props (the stop data, whether we're in edit mode, and function to call when user saves)
 export default function EditableStopItem({ stop, isEditMode, onSaveNote }: EditableStopItemProps) {
-  const [draft, setDraft] = useState(stop.note ?? ""); // draft is the note text in the text area; key on parent <li> resets this when the stop changes
+  const [draft, setDraft] = useState(stop.note ?? "");
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 shadow-sm">
@@ -52,7 +51,7 @@ export default function EditableStopItem({ stop, isEditMode, onSaveNote }: Edita
           <div className="mt-2 flex justify-end">
             <button
               type="button"
-              onClick={() => onSaveNote(draft)} // when the user clicks save, we call onSaveNote and send the current text up. The page runs updateStopNote; key on parent <li> resets draft when the stop changes.
+              onClick={() => onSaveNote(draft)}
               className="inline-flex items-center rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500"
             >
               Save
