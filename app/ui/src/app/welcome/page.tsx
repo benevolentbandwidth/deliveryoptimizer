@@ -186,7 +186,8 @@ export default function WelcomePage() {
         <div className="welcome-content">
           <h1 className="welcome-title">New or returning user?</h1>
           <p className="welcome-subtitle">
-            Transform your address lists into efficient, ordered routes to lower operational costs and reduce your fleet's carbon emissions.
+            Transform your address lists into efficient, ordered routes to lower
+            operational costs and reduce your fleet&apos;s carbon emissions.
           </p>
 
           <div className="welcome-cards">

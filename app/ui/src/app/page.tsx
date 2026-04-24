@@ -175,7 +175,8 @@ export default function LandingPage() {
         <div className="landing-content">
           <h1 className="landing-title">Delivery Optimizer</h1>
           <p className="landing-subtitle">
-            Transform your address lists into efficient, ordered routes to lower operational costs and reduce your fleet's carbon emissions.
+            Transform your address lists into efficient, ordered routes to lower
+            operational costs and reduce your fleet&apos;s carbon emissions.
           </p>
 
           <div className="landing-cards">

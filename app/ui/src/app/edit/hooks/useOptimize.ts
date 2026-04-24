@@ -27,7 +27,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
   const [outOfRegionVehicleIds, setOutOfRegionVehicleIds] = useState<number[]>([]);
 
   // TODO: Result will be updated to store the result of the optimize request
-  const [result, setResult] = useState<unknown>(null);
+  const [result] = useState<unknown>(null);
 
   const optimize = useCallback(async () => {
     setOptimizeError(null);
@@ -56,7 +56,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
       setOptimizeError("At least one delivery address is required.");
       return;
     }
-    
+
     // 4. Check that all vehicles are locked and have a type and capacity unit.
     const lockedVehicles = availableVehicles.filter(isLocked);
 
@@ -122,7 +122,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         setOptimizeError(`Could not geocode: ${list}${suffix}. Try more specific addresses.`);
         return;
       }
-      
+
       // 8. Reject any address whose state falls outside CA, TX, or FL.
       const badVehicleAddresses: { id: number; location: string }[] = [];
       for (const [id, loc] of vehicleLocations) {
@@ -149,7 +149,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         const shown = allBad.slice(0, 3);
         const overflow = allBad.length - shown.length;
         const list = shown.map((s) => `"${s}"`).join(", ");
-        const suffix =  overflow > 0 ? `, and ${overflow} more` : ""; 
+        const suffix = overflow > 0 ? `, and ${overflow} more` : "";
         setOptimizeError(`Unsupported region(s): ${list}${suffix}. We currently only support CA, TX, and FL.`);
         return;
       }
@@ -177,7 +177,7 @@ export function useOptimize(vehicles: VehicleRow[], addresses: AddressCard[]) {
         setOptimizeError("Received invalid response from server.");
         return;
       }
-      
+
       if (!response.ok) {
         const message =
           data && typeof data === "object" && "error" in data && typeof (data as { error: unknown }).error === "string"
