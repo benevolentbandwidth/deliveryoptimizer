@@ -88,12 +88,37 @@ find_program(DOCKER_PROGRAM docker)
 
 set(DELIVERYOPTIMIZER_LOCAL_API_LABELS "integration;api;local")
 set(DELIVERYOPTIMIZER_LOCAL_API_REGRESSION_LABELS "integration;api;local;regression")
+set(DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MIN_PORT 10000)
+set(DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MAX_PORT 32767)
+
+function(deliveryoptimizer_resolve_local_http_test_port output_var port)
+  if(NOT "${port}" MATCHES "^[0-9]+$" OR "${port}" LESS 1 OR "${port}" GREATER 65535)
+    message(FATAL_ERROR "Invalid local HTTP test port '${port}'")
+  endif()
+
+  if("${port}" GREATER_EQUAL "${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MIN_PORT}"
+     AND "${port}" LESS_EQUAL "${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MAX_PORT}")
+    set(${output_var} "${port}" PARENT_SCOPE)
+    return()
+  endif()
+
+  math(EXPR safe_port_window
+       "${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MAX_PORT} - ${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MIN_PORT} + 1")
+  math(EXPR safe_port_offset
+       "(${port} - ${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MIN_PORT}) % ${safe_port_window}")
+  if(safe_port_offset LESS 0)
+    math(EXPR safe_port_offset "${safe_port_offset} + ${safe_port_window}")
+  endif()
+  math(EXPR safe_port "${DELIVERYOPTIMIZER_LOCAL_HTTP_SAFE_MIN_PORT} + ${safe_port_offset}")
+  set(${output_var} "${safe_port}" PARENT_SCOPE)
+endfunction()
 
 function(deliveryoptimizer_set_local_http_test_port test_name port)
+  deliveryoptimizer_resolve_local_http_test_port(safe_port "${port}")
   set_tests_properties(
     ${test_name}
     PROPERTIES
-      ENVIRONMENT "DELIVERYOPTIMIZER_TEST_PORT=${port}"
+      ENVIRONMENT "DELIVERYOPTIMIZER_TEST_PORT=${safe_port}"
   )
 endfunction()
 
@@ -232,9 +257,11 @@ set_tests_properties(
     TIMEOUT 30
     LABELS "${DELIVERYOPTIMIZER_LOCAL_API_LABELS}"
 )
+deliveryoptimizer_resolve_local_http_test_port(osrm_proxy_test_port 36000)
+deliveryoptimizer_resolve_local_http_test_port(osrm_stub_test_port 52100)
 deliveryoptimizer_set_local_http_test_environment(
   DeliveryOptimizerApiContractTest.OsrmProxyForwardsAllowedServiceWithQuery
-  "DELIVERYOPTIMIZER_TEST_PORT=36000;DELIVERYOPTIMIZER_OSRM_STUB_PORT=52000"
+  "DELIVERYOPTIMIZER_TEST_PORT=${osrm_proxy_test_port};DELIVERYOPTIMIZER_OSRM_STUB_PORT=${osrm_stub_test_port}"
 )
 
 deliveryoptimizer_add_local_http_test(
@@ -598,7 +625,7 @@ if(INITDB_PROGRAM AND PG_CTL_PROGRAM)
     )
     deliveryoptimizer_set_local_http_test_port(
       DeliveryOptimizerApiContractTest.HealthIgnoresForeignWorkers
-      59000
+      60000
     )
   else()
     message(STATUS "Skipping schema bootstrap health test because psql was not found.")

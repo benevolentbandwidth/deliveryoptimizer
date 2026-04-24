@@ -6,14 +6,14 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/http_server_helpers.sh"
 
 computed_port="$(http_server_compute_default_port 46000 19999)"
-expected_port="$((46000 + (19999 % (HTTP_SERVER_MAX_PORT - 46000 + 1))))"
+expected_port="$((HTTP_SERVER_SAFE_MIN_PORT + ((46000 - HTTP_SERVER_SAFE_MIN_PORT + 19999) % (HTTP_SERVER_SAFE_MAX_PORT - HTTP_SERVER_SAFE_MIN_PORT + 1))))"
 
 if [[ "${computed_port}" != "${expected_port}" ]]; then
   echo "expected bounded port ${expected_port}, got ${computed_port}" >&2
   exit 1
 fi
 
-if (( computed_port < 46000 || computed_port > HTTP_SERVER_MAX_PORT )); then
+if (( computed_port < HTTP_SERVER_SAFE_MIN_PORT || computed_port > HTTP_SERVER_SAFE_MAX_PORT )); then
   echo "computed port ${computed_port} fell outside the valid range" >&2
   exit 1
 fi

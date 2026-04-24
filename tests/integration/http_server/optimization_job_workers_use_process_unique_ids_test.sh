@@ -6,6 +6,10 @@ if [[ $# -lt 6 ]]; then
   exit 2
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/integration/http_server/http_server_helpers.sh
+source "${script_dir}/http_server_helpers.sh"
+
 server_bin="$1"
 curl_bin="$2"
 python3_bin="$3"
@@ -19,9 +23,9 @@ log_file_two="${work_dir}/server-two.log"
 pg_data_dir="${work_dir}/pgdata"
 pg_log_file="${work_dir}/postgres.log"
 stub_bin="${work_dir}/vroom-stub.sh"
-port_one=56000
-port_two=56001
-pg_port=56100
+port_one="$(http_server_map_to_safe_bind_port 56000)"
+port_two="$(http_server_map_to_safe_bind_port 56001)"
+pg_port="$(http_server_map_to_safe_bind_port 56100)"
 pg_dsn="host=127.0.0.1 port=${pg_port} dbname=postgres user=postgres"
 server_pid_one=""
 server_pid_two=""
