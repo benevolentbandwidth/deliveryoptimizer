@@ -11,8 +11,8 @@ const POLYLINE_COLOR = "#2563eb";
 
 const ROUTE_POLYLINE_OPTIONS: google.maps.PolylineOptions = {
   strokeColor: POLYLINE_COLOR,
-  strokeWeight: 5,
-  strokeOpacity: 0.9,
+  strokeWeight: 4,
+  strokeOpacity: 0.75,
 };
 
 function buildRoutePath(
@@ -42,25 +42,68 @@ function RoutePolylinesOverlay({
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || typeof google === "undefined") return;
 
     polylinesRef.current.forEach((p) => {
       p.setMap(null);
     });
     polylinesRef.current = [];
 
-    routes.forEach((route) => {
-      const path = buildRoutePath(route, pendingPinMove);
-      if (path.length < 2) return;
-      const poly = new google.maps.Polyline({
+    let cancelled = false;
+    const directionsService = new google.maps.DirectionsService();
+
+    const drawFallback = (route: Route) => {
+      const fallbackPath = buildRoutePath(route, pendingPinMove);
+      if (fallbackPath.length < 2) return;
+      const fallbackPoly = new google.maps.Polyline({
         map,
-        path,
+        path: fallbackPath,
         ...ROUTE_POLYLINE_OPTIONS,
       });
-      polylinesRef.current.push(poly);
-    });
+      polylinesRef.current.push(fallbackPoly);
+    };
+
+    (async () => {
+      for (const route of routes) {
+        const path = buildRoutePath(route, pendingPinMove);
+        if (path.length < 2) continue;
+        const origin = path[0];
+        const destination = path[path.length - 1];
+        if (!origin || !destination) continue;
+
+        const waypoints = path.slice(1, -1).map((location) => ({ location, stopover: true }));
+
+        try {
+          const result = await directionsService.route({
+            origin,
+            destination,
+            waypoints,
+            optimizeWaypoints: false,
+            travelMode: google.maps.TravelMode.DRIVING,
+          });
+          if (cancelled) return;
+
+          const roadPath = result.routes[0]?.overview_path;
+          if (!roadPath || roadPath.length < 2) {
+            drawFallback(route);
+            continue;
+          }
+
+          const roadPoly = new google.maps.Polyline({
+            map,
+            path: roadPath,
+            ...ROUTE_POLYLINE_OPTIONS,
+          });
+          polylinesRef.current.push(roadPoly);
+        } catch {
+          if (cancelled) return;
+          drawFallback(route);
+        }
+      }
+    })();
 
     return () => {
+      cancelled = true;
       polylinesRef.current.forEach((p) => {
         p.setMap(null);
       });
