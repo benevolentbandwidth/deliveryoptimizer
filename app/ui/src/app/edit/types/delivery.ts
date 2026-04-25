@@ -4,6 +4,12 @@ export type VehicleType = "truck" | "car" | "bicycle";
 /** Unit of measurement for vehicle capacity. */
 export type CapacityUnit = "units" | "lbs" | "kgs" | "cubic_feet";
 
+type CachedLocation = {
+  lat: number;
+  lng: number;
+  state?: string | null;
+};
+
 /** A VehicleRow that has passed validation and been locked. */
 export type LockedVehicleRow = VehicleRow & {
   type: VehicleType;
@@ -17,6 +23,7 @@ export type VehicleRow = {
   editingExisting: boolean;
   name: string;
   startLocation: string;
+  cachedLocation?: CachedLocation;
   /** Empty string represents "not yet selected". */
   type: VehicleType | "";
   /** Empty string represents "not yet selected". */
@@ -32,6 +39,7 @@ export type AddressCard = {
   locked: boolean;
   editingExisting: boolean;
   recipientAddress: string;
+  cachedLocation?: CachedLocation;
   timeBuffer: string;
   deliveryTimeStart: string;
   deliveryTimeEnd: string;

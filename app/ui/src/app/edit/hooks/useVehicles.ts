@@ -24,6 +24,7 @@ export function useVehicles() {
       editingExisting: false,
       name: "",
       startLocation: "",
+      cachedLocation: undefined,
       type: "",
       capacityUnit: "",
       capacity: 0,
@@ -45,7 +46,15 @@ export function useVehicles() {
     value: VehicleRow[K]
   ) => {
     setVehicles((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, [key]: value } : v))
+      prev.map((v) =>
+        v.id === id
+          ? {
+              ...v,
+              [key]: value,
+              ...(key === "startLocation" ? { cachedLocation: undefined } : {}),
+            }
+          : v
+      )
     );
   }, []);
 
@@ -70,6 +79,7 @@ export function useVehicles() {
           editingExisting: false,
           name: "",
           startLocation: "",
+          cachedLocation: undefined,
           type: "",
           capacityUnit: "",
           capacity: 0,
@@ -127,6 +137,20 @@ export function useVehicles() {
     });
   }, []);
 
+  const importVehicles = useCallback((incoming: VehicleRow[]) => {
+    if (incoming.length === 0) return;
+    setVehicles(incoming);
+    setTouchedIds(new Set());
+  }, []);
+
+  const cacheVehicleLocation = useCallback((id: number, lat: number, lng: number, state?: string | null) => {
+    setVehicles((prev) =>
+      prev.map((vehicle) =>
+        vehicle.id === id ? { ...vehicle, cachedLocation: { lat, lng, state } } : vehicle
+      )
+    );
+  }, []);
+
   return {
     vehicles,
     updateVehicle,
@@ -134,8 +158,10 @@ export function useVehicles() {
     deleteVehicle,
     unlockVehicle,
     confirmVehicle,
+    importVehicles,
     touchedIds,
     activeVehicleIsValid,
     allVehiclesLocked,
+    cacheVehicleLocation,
   };
 }

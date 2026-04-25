@@ -16,6 +16,7 @@ export function useAddresses() {
       locked: false,
       editingExisting: false,
       recipientAddress: "",
+      cachedLocation: undefined,
       timeBuffer: "",
       deliveryTimeStart: "",
       deliveryTimeEnd: "",
@@ -76,7 +77,15 @@ export function useAddresses() {
     value: AddressCard[K]
   ) => {
     setAddresses((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, [key]: value } : a))
+      prev.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              [key]: value,
+              ...(key === "recipientAddress" ? { cachedLocation: undefined } : {}),
+            }
+          : a
+      )
     );
   }, []);
 
@@ -109,6 +118,7 @@ export function useAddresses() {
           locked: false,
           editingExisting: false,
           recipientAddress: "",
+          cachedLocation: undefined,
           timeBuffer: "",
           deliveryTimeStart: "",
           deliveryTimeEnd: "",
@@ -176,6 +186,14 @@ export function useAddresses() {
     setTouchedIds(new Set());
     _setSearchQuery("");
   }, []);
+
+  const cacheAddressLocation = useCallback((id: number, lat: number, lng: number, state?: string | null) => {
+    setAddresses((prev) =>
+      prev.map((address) =>
+        address.id === id ? { ...address, cachedLocation: { lat, lng, state } } : address
+      )
+    );
+  }, []);
   return {
     addresses,
     updateAddress,
@@ -195,5 +213,6 @@ export function useAddresses() {
     searchQuery,
     setSearchQuery,
     isSearchActive,
+    cacheAddressLocation,
   };
 }

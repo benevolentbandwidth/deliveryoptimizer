@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { addressCardToDeliveryInput } from "@/app/edit/utils/optimizeMapper";
+import {
+  addressCardToDeliveryInput,
+  vehicleRowToVehicleInput,
+} from "@/app/edit/utils/optimizeMapper";
 import type { AddressCard } from "@/app/edit/types/delivery";
 import type { Location } from "@/lib/types/common.types";
 
@@ -70,5 +73,37 @@ describe("addressCardToDeliveryInput", () => {
 
   it("location passed through", () => {
     expect(addressCardToDeliveryInput(makeAddress(), LOC, "units").location).toEqual(LOC);
+  });
+
+  it("notes are preserved when present", () => {
+    expect(
+      addressCardToDeliveryInput(makeAddress({ notes: "Leave at side door" }), LOC, "units").notes
+    ).toBe("Leave at side door");
+  });
+
+  it("blank notes are omitted", () => {
+    expect(addressCardToDeliveryInput(makeAddress({ notes: "   " }), LOC, "units").notes).toBeUndefined();
+  });
+});
+
+describe("vehicleRowToVehicleInput", () => {
+  it("preserves driver name on export", () => {
+    expect(
+      vehicleRowToVehicleInput(
+        {
+          id: 1,
+          locked: true,
+          editingExisting: false,
+          name: "Driver 1",
+          startLocation: "123 Depot St",
+          type: "car",
+          capacityUnit: "units",
+          capacity: 10,
+          available: true,
+          departureTime: "9:00 AM",
+        },
+        LOC
+      ).driverName
+    ).toBe("Driver 1");
   });
 });
