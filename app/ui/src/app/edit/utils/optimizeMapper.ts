@@ -1,6 +1,6 @@
 /**
  * Pure functions that transform edit-page form state into the shapes
- * expected by /api/optimize (VehicleInput, DeliveryInput).
+ * expected by the optimization jobs submit route.
  */
 
 import { timeToSeconds } from "@/app/components/AddressGeocoder/utils/timeConversion";

@@ -39,7 +39,6 @@ export const deliverySchema = z.object({
       )
     )
     .optional()
-
 })
 
 /**
@@ -62,4 +61,3 @@ export const deliveriesSchema = z
       seen.add(delivery.id)
     })
   })
-  

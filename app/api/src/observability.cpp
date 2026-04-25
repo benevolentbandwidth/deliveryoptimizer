@@ -133,6 +133,8 @@ struct ObservabilityRegistry::Histogram {
 
 std::string_view ToOutcomeString(const SolveRequestOutcome outcome) {
   switch (outcome) {
+  case SolveRequestOutcome::kAcceptedAsync:
+    return "accepted_async";
   case SolveRequestOutcome::kSucceeded:
     return "succeeded";
   case SolveRequestOutcome::kRejectedTooManyJobs:
@@ -199,6 +201,29 @@ void ObservabilityRegistry::RecordFailed() {
   failed_requests_.fetch_add(1U, std::memory_order_relaxed);
 }
 
+void ObservabilityRegistry::RecordAsyncJobCompletion(const SolveRequestOutcome outcome) {
+  switch (outcome) {
+  case SolveRequestOutcome::kSucceeded:
+    RecordSucceeded();
+    break;
+  case SolveRequestOutcome::kQueueWaitTimedOut:
+  case SolveRequestOutcome::kSolveTimedOut:
+    RecordTimedOut();
+    break;
+  case SolveRequestOutcome::kFailed:
+    RecordFailed();
+    break;
+  case SolveRequestOutcome::kAcceptedAsync:
+  case SolveRequestOutcome::kRejectedTooManyJobs:
+  case SolveRequestOutcome::kRejectedTooManyVehicles:
+  case SolveRequestOutcome::kRejectedQueueFull:
+  case SolveRequestOutcome::kInvalidJson:
+  case SolveRequestOutcome::kValidationFailed:
+  case SolveRequestOutcome::kRequestTooLarge:
+    break;
+  }
+}
+
 void ObservabilityRegistry::RecordTrackerWriteFailure() {
   tracker_write_failures_.fetch_add(1U, std::memory_order_relaxed);
 }
@@ -207,6 +232,14 @@ void ObservabilityRegistry::SetSolverState(const std::size_t queue_depth,
                                            const std::size_t inflight_solves) {
   queue_depth_.store(queue_depth, std::memory_order_relaxed);
   inflight_solves_.store(inflight_solves, std::memory_order_relaxed);
+}
+
+void ObservabilityRegistry::SetAsyncJobState(const std::size_t queued_jobs,
+                                             const std::size_t running_jobs,
+                                             const std::size_t healthy_workers) {
+  async_job_queue_depth_.store(queued_jobs, std::memory_order_relaxed);
+  async_job_running_.store(running_jobs, std::memory_order_relaxed);
+  async_job_workers_healthy_.store(healthy_workers, std::memory_order_relaxed);
 }
 
 void ObservabilityRegistry::ObserveQueueWait(const SteadyClock::duration duration) {
@@ -249,6 +282,8 @@ void FinalizeSolveRequest(const std::shared_ptr<ObservabilityRegistry>& observab
   }
 
   switch (outcome) {
+  case SolveRequestOutcome::kAcceptedAsync:
+    break;
   case SolveRequestOutcome::kSucceeded:
     observability->RecordSucceeded();
     break;
@@ -345,6 +380,15 @@ std::string ObservabilityRegistry::RenderPrometheusText() const {
               "Current number of inflight solver executions.", InflightSolves());
   AppendGauge(output, "deliveryoptimizer_solver_queue_depth",
               "Current number of queued solver requests.", QueueDepth());
+  AppendGauge(output, "deliveryoptimizer_async_job_queue_depth",
+              "Current number of queued optimization jobs.",
+              async_job_queue_depth_.load(std::memory_order_relaxed));
+  AppendGauge(output, "deliveryoptimizer_async_job_running",
+              "Current number of running optimization jobs.",
+              async_job_running_.load(std::memory_order_relaxed));
+  AppendGauge(output, "deliveryoptimizer_async_job_workers_healthy",
+              "Current number of healthy optimization job workers.",
+              async_job_workers_healthy_.load(std::memory_order_relaxed));
 
   append_histogram(output, "deliveryoptimizer_solver_queue_wait_seconds",
                    "Time spent waiting in the solver queue for accepted requests.",

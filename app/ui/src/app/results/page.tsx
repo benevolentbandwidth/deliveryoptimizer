@@ -1,17 +1,16 @@
-// Results page: holds route in state, renders sidebar (route list) and map
-// Sidebar is collapsible via hamburger toggle
+// Results page: route list + map
 
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import MapComponent from "./components/Map";
 import Sidebar from "./components/Sidebar";
-import type { Route } from "./types";
+import type { PendingPinMove, Route } from "./types";
 
 export default function ResultsPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const stored = sessionStorage.getItem("optimizeResults");
     if (!stored) return;
@@ -25,10 +24,10 @@ export default function ResultsPage() {
     }
   }, []);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // initial state for sidebar is open
-  const [isEditMode, setIsEditMode] = useState(false); // initial state for edit mode is off (false = view only, true = editing)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [pendingPinMove, setPendingPinMove] = useState<PendingPinMove | null>(null);
 
-  // Updates one stop's note in routes state. Page owns routes, so only the page can change it; Sidebar and EditableStopItem send the new note up via the callback.
   const updateStopNote = useCallback((routeId: string, stopId: string, note: string) => {
     setRoutes((prev) =>
       prev.map((route) => {
@@ -41,22 +40,38 @@ export default function ResultsPage() {
     );
   }, [setRoutes]);
 
-  const updateStopCoordinates = useCallback(
-    (routeId: string, stopId: string, lat: number, lng: number) => {
-      setRoutes((prev) =>
-        prev.map((route) => {
-          if (route.vehicleId !== routeId) return route;
-          return {
-            ...route,
-            stops: route.stops.map((s) =>
-              s.id === stopId ? { ...s, lat, lng } : s
-            ),
-          };
-        })
-      );
+  const handleEditModeChange = useCallback((value: boolean) => {
+    setIsEditMode(value);
+    if (!value) setPendingPinMove(null);
+  }, []);
+
+  const savePendingPinMove = useCallback(() => {
+    if (!pendingPinMove) return;
+    setRoutes((prev) =>
+      prev.map((route) =>
+        route.vehicleId !== pendingPinMove.vehicleId
+          ? route
+          : {
+              ...route,
+              stops: route.stops.map((s) =>
+                s.id !== pendingPinMove.stopId
+                  ? s
+                  : { ...s, lat: pendingPinMove.lat, lng: pendingPinMove.lng }
+              ),
+            }
+      )
+    );
+    setPendingPinMove(null);
+  }, [pendingPinMove]);
+
+  const handlePendingPinMove = useCallback(
+    (vehicleId: string, stopId: string, lat: number, lng: number) => {
+      setPendingPinMove({ vehicleId, stopId, lat, lng });
     },
-    [setRoutes]
+    []
   );
+
+  const cancelPendingPinMove = useCallback(() => setPendingPinMove(null), []);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden">
@@ -76,29 +91,52 @@ export default function ResultsPage() {
       <header className="flex items-center gap-2 p-4 shrink-0 border-b border-zinc-200 bg-white">
         <button
           type="button"
-          onClick={() => setIsSidebarOpen((prev) => !prev)} // On click, flip the current state of isSidebarOpen (open -> closed or closed -> open)
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50" // Making button a square with 10px height and width, centered, rounded corners, border, white background, text color, and hover effect
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
           aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden> {/* SVG: hamburger icon inside the button */}
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="text-2xl font-semibold text-zinc-800">Results – Route map</h1> {/* Header title */}
+        <h1 className="text-2xl font-semibold text-zinc-800">Results – Route map</h1>
+        {pendingPinMove != null && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cancelPendingPinMove}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={savePendingPinMove}
+              className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </header>
       <div className="flex flex-1 min-h-0">
         <div
-          className={`shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`} // h-full so sidebar has a defined height for internal scrolling; overflow hidden so only the sidebar's scroll area scrolls
+          className={`shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out ${isSidebarOpen ? "w-72" : "w-0"}`}
         >
-          <Sidebar routes={routes} isEditMode={isEditMode} onEditModeChange={setIsEditMode} onUpdateStopNote={updateStopNote} /> {/* Passing the current list of routes and current edit mode state to the sidebar component */}
+          <Sidebar
+            routes={routes}
+            isEditMode={isEditMode}
+            onEditModeChange={handleEditModeChange}
+            onUpdateStopNote={updateStopNote}
+          />
         </div>
-        {/* Map area still uses flex flex-1 min-h-0 so it takes all space below header, and now also features min-h-0 flex flex-col so it gets a clear height from the flex layout*/}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="flex-1 min-h-0 w-full overflow-hidden">
-            <MapComponent // Passing the current list of routes, edit mode state (determine if pins can be dragged yes/no), and the callback function updateStopCoordinates to the Map component (so when user drags a pin, call this function to update stop with new lat/lng)
+            <MapComponent
               routes={routes}
               isEditMode={isEditMode}
-              onUpdateStopCoordinates={updateStopCoordinates}
+              pendingPinMove={pendingPinMove}
+              onPendingPinMove={handlePendingPinMove}
             />
           </div>
         </div>

@@ -15,7 +15,7 @@ export function relativeDayWindowToEpoch([start, end]: [number, number]): [numbe
   return [base + start, base + end]
 }
 
-export type CppDeliveriesOptimizeRequest = {
+export type OptimizationJobRequestPayload = {
   depot: { location: [number, number] }
   vehicles: Array<{
     id: string

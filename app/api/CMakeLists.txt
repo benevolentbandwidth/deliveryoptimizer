@@ -5,11 +5,14 @@ target_sources(
   deliveryoptimizer_api_runtime
   PRIVATE
     src/api_server.cpp
-    src/endpoints/metrics_endpoint.cpp
     src/endpoints/deliveries_optimize_endpoint.cpp
     src/endpoints/health_endpoint.cpp
+    src/endpoints/metrics_endpoint.cpp
+    src/endpoints/optimization_jobs_endpoint.cpp
     src/endpoints/optimize_endpoint.cpp
     src/endpoints/osrm_proxy_endpoint.cpp
+    src/optimization_job_runtime.cpp
+    src/optimization_job_store.cpp
     src/observability.cpp
     src/optimize_request.cpp
     src/request_context.cpp
@@ -27,8 +30,12 @@ target_sources(
       include/deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/health_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/metrics_endpoint.hpp
+      include/deliveryoptimizer/api/endpoints/optimization_jobs_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/optimize_endpoint.hpp
       include/deliveryoptimizer/api/endpoints/osrm_proxy_endpoint.hpp
+      include/deliveryoptimizer/api/internal/json_utils.hpp
+      include/deliveryoptimizer/api/optimization_job_runtime.hpp
+      include/deliveryoptimizer/api/optimization_job_store.hpp
       include/deliveryoptimizer/api/observability.hpp
       include/deliveryoptimizer/api/optimize_request.hpp
       include/deliveryoptimizer/api/solve_admission.hpp
