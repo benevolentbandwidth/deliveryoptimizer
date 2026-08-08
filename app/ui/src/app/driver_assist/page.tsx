@@ -15,14 +15,12 @@ import { WarningIcon } from "./components/icons";
 import {
   clearUploadedRouteFile,
   persistRoute,
+  ROUTE_UPLOAD_ERROR_KEY,
   readSavedRoute,
   readUploadedRouteFile,
 } from "./storage";
 import { styles } from "./styles";
-import {
-  parseRouteUploadFile,
-  ROUTE_UPLOAD_ERROR_KEY,
-} from "@/app/upload-route/routeUploadValidation";
+import { parseRouteUploadFile } from "@/app/upload-route/routeUploadValidation";
 
 function openNavigation(stop: DeliveryStop) {
   // Prefer exact coordinates from the route file; fall back to the address if
