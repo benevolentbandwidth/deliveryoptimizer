@@ -22,6 +22,23 @@ import {
 import { styles } from "./styles";
 import { parseRouteUploadFile } from "@/app/upload-route/routeUploadValidation";
 
+function buildUploadRouteErrorUrl(message: string) {
+  const params = new URLSearchParams({ error: message });
+  return `/upload-route?${params.toString()}`;
+}
+
+function redirectToUploadRouteWithError(
+  router: ReturnType<typeof useRouter>,
+  message: string,
+) {
+  try {
+    sessionStorage.setItem(ROUTE_UPLOAD_ERROR_KEY, message);
+    router.replace("/upload-route");
+  } catch {
+    router.replace(buildUploadRouteErrorUrl(message));
+  }
+}
+
 function openNavigation(stop: DeliveryStop) {
   // Prefer exact coordinates from the route file; fall back to the address if
   // the saved JSON came from an older flow without geocoded locations.
@@ -76,8 +93,7 @@ export default function DriverAssistPwaPage() {
             ? importError.message
             : "Please upload a valid JSON file.";
         clearUploadedRouteFile();
-        sessionStorage.setItem(ROUTE_UPLOAD_ERROR_KEY, message);
-        router.replace("/upload-route");
+        redirectToUploadRouteWithError(router, message);
         return;
       }
     }

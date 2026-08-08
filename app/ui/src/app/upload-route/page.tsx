@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import HiFiUploadPage from "@/app/components/HiFiUploadPage";
 import { createUploadOperation } from "@/app/utils/uploadOperation";
 
@@ -17,6 +17,7 @@ const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
 export default function UploadRoutePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,12 +32,22 @@ export default function UploadRoutePage() {
   }, [activeOperation]);
 
   useEffect(() => {
-    const uploadError = sessionStorage.getItem(ROUTE_UPLOAD_ERROR_KEY);
+    let uploadError = searchParams.get("error");
+    try {
+      uploadError =
+        sessionStorage.getItem(ROUTE_UPLOAD_ERROR_KEY) || uploadError;
+    } catch {
+      // Query params carry the fallback error when sessionStorage is unavailable.
+    }
     if (!uploadError) return;
 
-    sessionStorage.removeItem(ROUTE_UPLOAD_ERROR_KEY);
-    queueMicrotask(() => setError(uploadError));
-  }, []);
+    try {
+      sessionStorage.removeItem(ROUTE_UPLOAD_ERROR_KEY);
+    } catch {
+      // Storage may be blocked in private browsing; the error still renders.
+    }
+    setError(uploadError);
+  }, [searchParams]);
 
   const handleFile = (f: File) => {
     setError(null);
