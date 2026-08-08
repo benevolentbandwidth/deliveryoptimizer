@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import HiFiUploadPage from "@/app/components/HiFiUploadPage";
 import { createUploadOperation } from "@/app/utils/uploadOperation";
@@ -18,6 +18,21 @@ const MAX_FILE_MB = 10;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
 export default function UploadRoutePage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          aria-label="Loading upload route"
+          style={{ minHeight: "100dvh" }}
+        />
+      }
+    >
+      <UploadRouteContent />
+    </Suspense>
+  );
+}
+
+function UploadRouteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isDragging, setIsDragging] = useState(false);
