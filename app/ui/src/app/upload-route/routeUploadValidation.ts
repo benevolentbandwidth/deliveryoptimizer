@@ -3,8 +3,6 @@ import { createPendingDeliveryStop } from "@/lib/driver-route/createDeliveryStop
 import { loadDriverRouteFromText } from "@/lib/driver-route/importSession";
 import type { DriverRoute } from "@/lib/driver-route/types";
 
-export { ROUTE_UPLOAD_ERROR_KEY } from "@/app/driver_assist/storage";
-
 export function parseRouteUploadText(text: string) {
   return loadDriverRouteFromText(text);
 }

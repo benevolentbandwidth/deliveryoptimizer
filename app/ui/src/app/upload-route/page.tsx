@@ -6,11 +6,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import HiFiUploadPage from "@/app/components/HiFiUploadPage";
 import { createUploadOperation } from "@/app/utils/uploadOperation";
-
 import {
-  parseRouteUploadFile,
-  ROUTE_UPLOAD_ERROR_KEY,
-} from "./routeUploadValidation";
+  clearRouteUploadError,
+  readRouteUploadError,
+  storeUploadedRoute,
+} from "@/lib/driver-route/uploadHandoff";
+
+import { parseRouteUploadFile } from "./routeUploadValidation";
 
 const MAX_FILE_MB = 10;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
@@ -32,20 +34,10 @@ export default function UploadRoutePage() {
   }, [activeOperation]);
 
   useEffect(() => {
-    let uploadError = searchParams.get("error");
-    try {
-      uploadError =
-        sessionStorage.getItem(ROUTE_UPLOAD_ERROR_KEY) || uploadError;
-    } catch {
-      // Query params carry the fallback error when sessionStorage is unavailable.
-    }
+    const uploadError = readRouteUploadError() || searchParams.get("error");
     if (!uploadError) return;
 
-    try {
-      sessionStorage.removeItem(ROUTE_UPLOAD_ERROR_KEY);
-    } catch {
-      // Storage may be blocked in private browsing; the error still renders.
-    }
+    clearRouteUploadError();
     setError(uploadError);
   }, [searchParams]);
 
@@ -94,13 +86,10 @@ export default function UploadRoutePage() {
     try {
       const text = await file.text();
       if (!isCurrentOperation()) return;
-      parseRouteUploadFile(file.name, text);
-      sessionStorage.setItem(
-        "routeFile",
-        JSON.stringify({ name: file.name, content: text }),
-      );
+      const uploadedRoute = parseRouteUploadFile(file.name, text);
+      storeUploadedRoute(uploadedRoute);
       if (!isCurrentOperation()) return;
-      router.push("/driver-view");
+      router.push("/driver_assist");
     } catch (err) {
       if (isCurrentOperation()) {
         setError(

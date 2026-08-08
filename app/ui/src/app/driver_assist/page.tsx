@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { DeliveryStop, DriverRoute } from "@/lib/driver-route/types";
+import {
+  clearUploadedRoute,
+  readUploadedRoute,
+  writeRouteUploadError,
+} from "@/lib/driver-route/uploadHandoff";
 
 import DriverFooter from "./components/DriverFooter";
 import ReportIssueDialog, {
@@ -12,15 +17,8 @@ import ReportIssueDialog, {
 import StatBlock from "./components/StatBlock";
 import StopCard from "./components/StopCard";
 import { WarningIcon } from "./components/icons";
-import {
-  clearUploadedRouteFile,
-  persistRoute,
-  ROUTE_UPLOAD_ERROR_KEY,
-  readSavedRoute,
-  readUploadedRouteFile,
-} from "./storage";
+import { persistRoute, readSavedRoute } from "./storage";
 import { styles } from "./styles";
-import { parseRouteUploadFile } from "@/app/upload-route/routeUploadValidation";
 
 function buildUploadRouteErrorUrl(message: string) {
   const params = new URLSearchParams({ error: message });
@@ -31,12 +29,12 @@ function redirectToUploadRouteWithError(
   router: ReturnType<typeof useRouter>,
   message: string,
 ) {
-  try {
-    sessionStorage.setItem(ROUTE_UPLOAD_ERROR_KEY, message);
+  if (writeRouteUploadError(message)) {
     router.replace("/upload-route");
-  } catch {
-    router.replace(buildUploadRouteErrorUrl(message));
+    return;
   }
+
+  router.replace(buildUploadRouteErrorUrl(message));
 }
 
 function openNavigation(stop: DeliveryStop) {
@@ -69,33 +67,26 @@ export default function DriverAssistPwaPage() {
   const [hasCheckedRoute, setHasCheckedRoute] = useState(false);
 
   useEffect(() => {
-    // The upload page hands off the raw JSON through sessionStorage so this
-    // page can import once, save the driver shape, and avoid bouncing back.
-    const uploadedRoute = readUploadedRouteFile();
-
-    if (uploadedRoute) {
-      try {
-        const nextRoute = parseRouteUploadFile(
-          uploadedRoute.name,
-          uploadedRoute.content,
-        );
-        persistRoute(nextRoute);
-        clearUploadedRouteFile();
-        queueMicrotask(() => {
-          setRoute(nextRoute);
-          setOpenId(nextRoute.stops[0]?.id || null);
-          setHasCheckedRoute(true);
-        });
-        return;
-      } catch (importError) {
-        const message =
-          importError instanceof Error
-            ? importError.message
-            : "Please upload a valid JSON file.";
-        clearUploadedRouteFile();
-        redirectToUploadRouteWithError(router, message);
+    // The upload page hands off the parsed driver route through sessionStorage
+    // so this page can save it and avoid bouncing back.
+    try {
+      const uploadedRoute = readUploadedRoute();
+      if (uploadedRoute) {
+        persistRoute(uploadedRoute);
+        clearUploadedRoute();
+        setRoute(uploadedRoute);
+        setOpenId(uploadedRoute.stops[0]?.id || null);
+        setHasCheckedRoute(true);
         return;
       }
+    } catch (importError) {
+      const message =
+        importError instanceof Error
+          ? importError.message
+          : "Please upload a valid JSON file.";
+      clearUploadedRoute();
+      redirectToUploadRouteWithError(router, message);
+      return;
     }
 
     // Reloading the PWA should keep the driver exactly where they left off.
@@ -106,11 +97,9 @@ export default function DriverAssistPwaPage() {
       return;
     }
 
-    queueMicrotask(() => {
-      setRoute(savedRoute);
-      setOpenId(savedRoute.stops[0]?.id || null);
-      setHasCheckedRoute(true);
-    });
+    setRoute(savedRoute);
+    setOpenId(savedRoute.stops[0]?.id || null);
+    setHasCheckedRoute(true);
   }, [router]);
 
   useEffect(() => {
