@@ -37,6 +37,34 @@ function redirectToUploadRouteWithError(
   router.replace(buildUploadRouteErrorUrl(message));
 }
 
+type InitialRouteLoad =
+  | { route: DriverRoute; source: "uploaded" | "saved"; errorMessage?: never }
+  | { route: null; source: "missing"; errorMessage?: never }
+  | { route: null; source: "invalid-upload"; errorMessage: string };
+
+function loadInitialRoute(): InitialRouteLoad {
+  try {
+    const uploadedRoute = readUploadedRoute();
+    if (uploadedRoute) {
+      return { route: uploadedRoute, source: "uploaded" };
+    }
+  } catch (importError) {
+    return {
+      route: null,
+      source: "invalid-upload",
+      errorMessage:
+        importError instanceof Error
+          ? importError.message
+          : "Please upload a valid JSON file.",
+    };
+  }
+
+  const savedRoute = readSavedRoute();
+  return savedRoute
+    ? { route: savedRoute, source: "saved" }
+    : { route: null, source: "missing" };
+}
+
 function openNavigation(stop: DeliveryStop) {
   // Prefer exact coordinates from the route file; fall back to the address if
   // the saved JSON came from an older flow without geocoded locations.
@@ -57,50 +85,36 @@ export default function DriverAssistPwaPage() {
   const remainingRef = useRef<HTMLDivElement>(null);
   const deliveredRef = useRef<HTMLDivElement>(null);
   const reportedRef = useRef<HTMLDivElement>(null);
-  const [route, setRoute] = useState<DriverRoute | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [initialRouteLoad] = useState(loadInitialRoute);
+  const [route, setRoute] = useState<DriverRoute | null>(
+    initialRouteLoad.route,
+  );
+  const [openId, setOpenId] = useState<string | null>(
+    initialRouteLoad.route?.stops[0]?.id || null,
+  );
   const [reportStopId, setReportStopId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState<ReportReason>(
     "Customer unavailable",
   );
   const [reportDetails, setReportDetails] = useState("");
-  const [hasCheckedRoute, setHasCheckedRoute] = useState(false);
 
   useEffect(() => {
-    // The upload page hands off the parsed driver route through sessionStorage
-    // so this page can save it and avoid bouncing back.
-    try {
-      const uploadedRoute = readUploadedRoute();
-      if (uploadedRoute) {
-        persistRoute(uploadedRoute);
-        clearUploadedRoute();
-        setRoute(uploadedRoute);
-        setOpenId(uploadedRoute.stops[0]?.id || null);
-        setHasCheckedRoute(true);
-        return;
-      }
-    } catch (importError) {
-      const message =
-        importError instanceof Error
-          ? importError.message
-          : "Please upload a valid JSON file.";
+    if (initialRouteLoad.source === "invalid-upload") {
       clearUploadedRoute();
-      redirectToUploadRouteWithError(router, message);
+      redirectToUploadRouteWithError(router, initialRouteLoad.errorMessage);
       return;
     }
 
-    // Reloading the PWA should keep the driver exactly where they left off.
-    const savedRoute = readSavedRoute();
-
-    if (!savedRoute) {
+    if (initialRouteLoad.source === "missing") {
       router.replace("/upload-route");
       return;
     }
 
-    setRoute(savedRoute);
-    setOpenId(savedRoute.stops[0]?.id || null);
-    setHasCheckedRoute(true);
-  }, [router]);
+    if (initialRouteLoad.source === "uploaded") {
+      persistRoute(initialRouteLoad.route);
+      clearUploadedRoute();
+    }
+  }, [initialRouteLoad, router]);
 
   useEffect(() => {
     // Persist every delivery status/note change so refreshes do not lose work.
@@ -184,7 +198,7 @@ export default function DriverAssistPwaPage() {
   const reportedStops =
     route?.stops.filter((stop) => stop.status === "failed") || [];
 
-  if (!hasCheckedRoute || !route) {
+  if (!route) {
     // Empty shell prevents the black-and-white upload screen from flashing
     // while local/session storage is being checked.
     return <main style={styles.loadingScreen} aria-label="Loading route" />;
