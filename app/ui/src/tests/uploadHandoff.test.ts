@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   readUploadedRoute,
+  storeUploadedRoute,
   UPLOADED_ROUTE_KEY,
 } from "@/lib/driver-route/uploadHandoff";
 
@@ -41,5 +42,22 @@ describe("uploaded route handoff", () => {
     expect(() => readUploadedRoute()).toThrow(
       'Invalid save file format at "savedAt".',
     );
+  });
+
+  it("does not overwrite the legacy driver-view route file", () => {
+    const legacyRouteFile = JSON.stringify({
+      name: "legacy-route.json",
+      content: "{}",
+    });
+    sessionStore.set("routeFile", legacyRouteFile);
+
+    storeUploadedRoute({
+      driverName: "Driver 1",
+      routeLabel: "Route 1",
+      stops: [],
+    });
+
+    expect(sessionStore.get("routeFile")).toBe(legacyRouteFile);
+    expect(sessionStore.has(UPLOADED_ROUTE_KEY)).toBe(true);
   });
 });

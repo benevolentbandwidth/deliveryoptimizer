@@ -5,7 +5,7 @@ import {
 } from "./importSession";
 import type { DriverRoute } from "./types";
 
-export const UPLOADED_ROUTE_KEY = "routeFile";
+export const UPLOADED_ROUTE_KEY = "driver_assist.uploadedRoute";
 export const ROUTE_UPLOAD_ERROR_KEY = "routeUploadError";
 
 type LegacyUploadedRouteFile = {
