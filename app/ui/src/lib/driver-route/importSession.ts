@@ -94,7 +94,13 @@ export function createPersistedRouteState(
 }
 
 export function parsePersistedRouteState(input: unknown): PersistedRouteState {
-  return persistedRouteStateSchema.parse(input);
+  try {
+    return persistedRouteStateSchema.parse(input);
+  } catch (error) {
+    throw new Error(
+      formatValidationError(error) ?? "Invalid save file format.",
+    );
+  }
 }
 
 function formatValidationError(error: unknown): string | null {

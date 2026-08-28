@@ -34,4 +34,12 @@ describe("uploaded route handoff", () => {
     expect(readUploadedRoute()).toBeNull();
     expect(sessionStore.has(UPLOADED_ROUTE_KEY)).toBe(false);
   });
+
+  it("formats persisted route validation errors for drivers", () => {
+    sessionStore.set(UPLOADED_ROUTE_KEY, JSON.stringify({ version: 1 }));
+
+    expect(() => readUploadedRoute()).toThrow(
+      'Invalid save file format at "savedAt".',
+    );
+  });
 });
