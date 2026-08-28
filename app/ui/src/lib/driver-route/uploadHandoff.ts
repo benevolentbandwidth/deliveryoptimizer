@@ -26,7 +26,14 @@ export function readUploadedRoute(): DriverRoute | null {
   const raw = window.sessionStorage.getItem(UPLOADED_ROUTE_KEY);
   if (!raw) return null;
 
-  const parsed = JSON.parse(raw) as LegacyUploadedRouteFile;
+  let parsed: LegacyUploadedRouteFile;
+  try {
+    parsed = JSON.parse(raw) as LegacyUploadedRouteFile;
+  } catch {
+    clearUploadedRoute();
+    return null;
+  }
+
   if (typeof parsed.name === "string" && typeof parsed.content === "string") {
     return loadDriverRouteFromText(parsed.content);
   }
