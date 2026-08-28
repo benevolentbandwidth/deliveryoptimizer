@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import type { DeliveryStop, DriverRoute } from "@/lib/driver-route/types";
 import {
   clearUploadedRoute,
-  readUploadedRoute,
   writeRouteUploadError,
 } from "@/lib/driver-route/uploadHandoff";
 
@@ -17,7 +16,8 @@ import ReportIssueDialog, {
 import StatBlock from "./components/StatBlock";
 import StopCard from "./components/StopCard";
 import { WarningIcon } from "./components/icons";
-import { persistRoute, readSavedRoute } from "./storage";
+import { loadInitialRoute } from "./initialRoute";
+import { persistRoute } from "./storage";
 import { styles } from "./styles";
 
 function buildUploadRouteErrorUrl(message: string) {
@@ -35,43 +35,6 @@ function redirectToUploadRouteWithError(
   }
 
   router.replace(buildUploadRouteErrorUrl(message));
-}
-
-type InitialRouteLoad =
-  | {
-      route: DriverRoute;
-      source: "uploaded" | "saved" | "saved-after-invalid-upload";
-      errorMessage?: never;
-    }
-  | { route: null; source: "missing"; errorMessage?: never }
-  | { route: null; source: "invalid-upload"; errorMessage: string };
-
-function loadInitialRoute(): InitialRouteLoad {
-  try {
-    const uploadedRoute = readUploadedRoute();
-    if (uploadedRoute) {
-      return { route: uploadedRoute, source: "uploaded" };
-    }
-  } catch (importError) {
-    const savedRoute = readSavedRoute();
-    if (savedRoute) {
-      return { route: savedRoute, source: "saved-after-invalid-upload" };
-    }
-
-    return {
-      route: null,
-      source: "invalid-upload",
-      errorMessage:
-        importError instanceof Error
-          ? importError.message
-          : "Please upload a valid JSON file.",
-    };
-  }
-
-  const savedRoute = readSavedRoute();
-  return savedRoute
-    ? { route: savedRoute, source: "saved" }
-    : { route: null, source: "missing" };
 }
 
 function openNavigation(stop: DeliveryStop) {
