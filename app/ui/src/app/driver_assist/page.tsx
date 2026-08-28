@@ -38,7 +38,11 @@ function redirectToUploadRouteWithError(
 }
 
 type InitialRouteLoad =
-  | { route: DriverRoute; source: "uploaded" | "saved"; errorMessage?: never }
+  | {
+      route: DriverRoute;
+      source: "uploaded" | "saved" | "saved-after-invalid-upload";
+      errorMessage?: never;
+    }
   | { route: null; source: "missing"; errorMessage?: never }
   | { route: null; source: "invalid-upload"; errorMessage: string };
 
@@ -49,6 +53,11 @@ function loadInitialRoute(): InitialRouteLoad {
       return { route: uploadedRoute, source: "uploaded" };
     }
   } catch (importError) {
+    const savedRoute = readSavedRoute();
+    if (savedRoute) {
+      return { route: savedRoute, source: "saved-after-invalid-upload" };
+    }
+
     return {
       route: null,
       source: "invalid-upload",
@@ -99,6 +108,11 @@ export default function DriverAssistPwaPage() {
   const [reportDetails, setReportDetails] = useState("");
 
   useEffect(() => {
+    if (initialRouteLoad.source === "saved-after-invalid-upload") {
+      clearUploadedRoute();
+      return;
+    }
+
     if (initialRouteLoad.source === "invalid-upload") {
       clearUploadedRoute();
       redirectToUploadRouteWithError(router, initialRouteLoad.errorMessage);
