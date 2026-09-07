@@ -1,6 +1,7 @@
 #include "deliveryoptimizer/api/endpoints/deliveries_optimize_endpoint.hpp"
 
 #include "deliveryoptimizer/api/forecast_optimizer.hpp"
+#include "deliveryoptimizer/api/internal/json_utils.hpp"
 #include "deliveryoptimizer/api/observability.hpp"
 #include "deliveryoptimizer/api/optimize_request.hpp"
 #include "deliveryoptimizer/api/solve_coordinator.hpp"
@@ -31,6 +32,7 @@ struct SyncSolveContext {
   std::shared_ptr<deliveryoptimizer::api::SolveCoordinator> coordinator;
   std::optional<deliveryoptimizer::api::OptimizeRequestInput> optimize_request;
   std::shared_ptr<const deliveryoptimizer::api::WeatherForecastOptions> weather_options;
+  std::shared_ptr<const deliveryoptimizer::api::TrafficForecastOptions> traffic_options;
   std::shared_ptr<deliveryoptimizer::api::ObservabilityRegistry> observability;
   deliveryoptimizer::api::SolveLifecycle lifecycle;
   std::function<void(const drogon::HttpResponsePtr&)> response_callback;
@@ -41,6 +43,9 @@ struct SyncSolveContext {
   // std::function and terminate the process.
   std::atomic<bool> responded{false};
   std::optional<Json::Value> forecast;
+  std::optional<deliveryoptimizer::api::CoordinatedSolveResult> traffic_baseline;
+  std::string traffic_payload;
+  deliveryoptimizer::api::WeatherImpactEstimate weather_impact;
   int weather_service_adjustment_seconds{0};
 };
 
@@ -134,6 +139,52 @@ void CompleteAndRespond(const std::shared_ptr<SyncSolveContext>& context,
   });
 }
 
+void FinishWithTraffic(const std::shared_ptr<SyncSolveContext>& context,
+                       deliveryoptimizer::api::CoordinatedSolveResult route_result) {
+  using namespace deliveryoptimizer::api;
+
+  if (!route_result.output.has_value() || !context->forecast.has_value()) {
+    CompleteAndRespond(context, BuildSolveExecutionResponse(BuildSolveExecutionResult(
+                                    *context->optimize_request, std::move(route_result),
+                                    std::move(context->forecast))));
+    return;
+  }
+
+  TrafficPostprocessPlan traffic_plan = PrepareTrafficPostprocessing(
+      *context->traffic_options, *context->optimize_request, context->weather_impact,
+      *route_result.output, *context->forecast);
+  if (!traffic_plan.adjusted_vroom_input.has_value()) {
+    CompleteAndRespond(context, BuildSolveExecutionResponse(BuildSolveExecutionResult(
+                                    *context->optimize_request, std::move(route_result),
+                                    std::move(context->forecast))));
+    return;
+  }
+
+  context->traffic_baseline.emplace(std::move(route_result));
+  context->traffic_payload = internal::RenderJson(*traffic_plan.adjusted_vroom_input);
+  const SolveAdmissionStatus rerun_status = context->coordinator->Submit(
+      SolveRequestSize{
+          .jobs = context->optimize_request->jobs.size(),
+          .vehicles = context->optimize_request->vehicles.size(),
+      },
+      [context] { return std::move(context->traffic_payload); },
+      [context](CoordinatedSolveResult rerun_result) mutable {
+        CoordinatedSolveResult final_result =
+            PreferSuccessfulRerun(std::move(*context->traffic_baseline), std::move(rerun_result));
+        context->traffic_baseline.reset();
+        CompleteAndRespond(context, BuildSolveExecutionResponse(BuildSolveExecutionResult(
+                                        *context->optimize_request, std::move(final_result),
+                                        std::move(context->forecast))));
+      });
+  if (rerun_status != SolveAdmissionStatus::kAccepted) {
+    CoordinatedSolveResult baseline = std::move(*context->traffic_baseline);
+    context->traffic_baseline.reset();
+    CompleteAndRespond(context, BuildSolveExecutionResponse(BuildSolveExecutionResult(
+                                    *context->optimize_request, std::move(baseline),
+                                    std::move(context->forecast))));
+  }
+}
+
 } // namespace
 
 namespace deliveryoptimizer::api {
@@ -143,19 +194,22 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
                                         std::shared_ptr<ObservabilityRegistry> observability) {
   auto weather_options =
       std::make_shared<const WeatherForecastOptions>(ResolveWeatherForecastOptionsFromEnv());
+  auto traffic_options =
+      std::make_shared<const TrafficForecastOptions>(ResolveTrafficForecastOptionsFromEnv());
   auto runner = std::make_shared<ProcessVroomRunner>(ResolveVroomRuntimeConfigFromEnv());
   auto coordinator = std::make_shared<SolveCoordinator>(admission_config, runner,
                                                         SolveCoordinatorOptions{}, observability);
 
   app.registerHandler(
       "/api/v1/deliveries/optimize",
-      [coordinator = std::move(coordinator), weather_options,
+      [coordinator = std::move(coordinator), weather_options, traffic_options,
        observability = std::move(observability)](
           const drogon::HttpRequestPtr& request,
           std::function<void(const drogon::HttpResponsePtr&)>&& callback) {
         auto context = std::make_shared<SyncSolveContext>();
         context->coordinator = coordinator;
         context->weather_options = weather_options;
+        context->traffic_options = traffic_options;
         context->observability = observability;
         context->lifecycle = CreateSolveLifecycle(request);
         context->response_callback = std::move(callback);
@@ -231,11 +285,10 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
               };
               const WeatherImpactEstimate impact = RecalculateWeatherImpact(
                   sync_weather_options, *context->optimize_request, *result.output);
+              context->weather_impact = impact;
               context->forecast = BuildWeatherForecastAnnotation(sync_weather_options, impact);
               if (!impact.should_reoptimize) {
-                CompleteAndRespond(context, BuildSolveExecutionResponse(BuildSolveExecutionResult(
-                                                *context->optimize_request, std::move(result),
-                                                std::move(context->forecast))));
+                FinishWithTraffic(context, std::move(result));
                 return;
               }
 
@@ -254,10 +307,7 @@ void RegisterDeliveriesOptimizeEndpoint(drogon::HttpAppFramework& app,
                                                context->weather_service_adjustment_seconds);
                   },
                   [context](CoordinatedSolveResult rerun_result) mutable {
-                    CompleteAndRespond(context,
-                                       BuildSolveExecutionResponse(BuildSolveExecutionResult(
-                                           *context->optimize_request, std::move(rerun_result),
-                                           std::move(context->forecast))));
+                    FinishWithTraffic(context, std::move(rerun_result));
                   });
               if (rerun_status != SolveAdmissionStatus::kAccepted) {
                 CompleteAndRespond(context, BuildAdmissionRejectionResponse(rerun_status));

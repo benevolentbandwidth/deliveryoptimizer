@@ -12,40 +12,11 @@ export const styles: Record<string, CSSProperties> = {
     minHeight: "100dvh",
     backgroundColor: "#ffffff",
   },
-  uploadScreen: {
-    minHeight: "100dvh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "#ffffff",
-  },
-  hiddenInput: {
-    display: "none",
-  },
   appHeader: {
     fontSize: 14,
     fontWeight: 700,
     color: "#202020",
     margin: 0,
-  },
-  uploadButton: {
-    backgroundColor: "#111827",
-    border: 0,
-    borderRadius: 8,
-    color: "#ffffff",
-    cursor: "pointer",
-    fontSize: 16,
-    fontWeight: 600,
-    padding: "14px 20px",
-  },
-  errorText: {
-    color: "#b91c1c",
-    fontSize: 14,
-    marginTop: 14,
-    maxWidth: 300,
-    textAlign: "center",
   },
   container: {
     width: "100%",
@@ -254,6 +225,7 @@ export const styles: Record<string, CSSProperties> = {
     justifyContent: "center",
     minHeight: 42,
     padding: "0 8px",
+    textDecoration: "none",
   },
   primaryActionButton: {
     alignItems: "center",

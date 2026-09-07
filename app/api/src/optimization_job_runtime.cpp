@@ -2,6 +2,7 @@
 
 #include "deliveryoptimizer/adapters/json_utils.hpp"
 #include "deliveryoptimizer/api/forecast_optimizer.hpp"
+#include "deliveryoptimizer/api/internal/json_utils.hpp"
 #include "deliveryoptimizer/api/optimize_request.hpp"
 #include "deliveryoptimizer/api/solve_execution.hpp"
 
@@ -25,7 +26,8 @@ OptimizationJobRuntime::OptimizationJobRuntime(std::shared_ptr<OptimizationJobSt
                                                OptimizationJobRuntimeOptions options)
     : store_(std::move(store)), runner_(std::move(runner)),
       observability_(std::move(observability)), options_(options),
-      weather_options_(ResolveWeatherForecastOptionsFromEnv()) {
+      weather_options_(ResolveWeatherForecastOptionsFromEnv()),
+      traffic_options_(ResolveTrafficForecastOptionsFromEnv()) {
   if (store_ != nullptr && store_->IsConfigured()) {
     schema_ready_ = store_->EnsureSchema(&schema_status_detail_);
   }
@@ -166,6 +168,17 @@ void OptimizationJobRuntime::WorkerLoop(const std::stop_token stop_token,
         if (impact.should_reoptimize) {
           final_result = ToCoordinatedSolveResult(
               runner_->Run(BuildWeatherAdjustedVroomInputText(parsed_request->input, impact)));
+        }
+        if (final_result.output.has_value()) {
+          TrafficPostprocessPlan traffic_plan = PrepareTrafficPostprocessing(
+              traffic_options_, parsed_request->input, impact, *final_result.output, *forecast);
+          if (traffic_plan.adjusted_vroom_input.has_value()) {
+            CoordinatedSolveResult baseline_result = std::move(final_result);
+            CoordinatedSolveResult rerun_result = ToCoordinatedSolveResult(
+                runner_->Run(internal::RenderJson(*traffic_plan.adjusted_vroom_input)));
+            final_result =
+                PreferSuccessfulRerun(std::move(baseline_result), std::move(rerun_result));
+          }
         }
       }
       const auto solve_result = BuildSolveExecutionResult(

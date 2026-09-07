@@ -67,6 +67,7 @@ private:
   std::shared_ptr<ObservabilityRegistry> observability_;
   OptimizationJobRuntimeOptions options_;
   WeatherForecastOptions weather_options_;
+  TrafficForecastOptions traffic_options_;
   std::deque<WorkerState> worker_states_;
   std::vector<std::jthread> workers_;
   std::jthread heartbeat_thread_;

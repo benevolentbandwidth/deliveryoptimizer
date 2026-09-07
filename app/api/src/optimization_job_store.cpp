@@ -6,6 +6,7 @@
 #include <drogon/orm/Exception.h>
 #include <drogon/utils/Utilities.h>
 
+// Windows SDK defines GetJob as a macro so it is undef before including jsoncpp.
 #ifdef GetJob
 #undef GetJob
 #endif
