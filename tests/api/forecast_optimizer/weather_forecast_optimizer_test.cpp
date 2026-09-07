@@ -390,6 +390,15 @@ TEST(TrafficForecastOptimizerTest, IgnoresMissingTrafficDuration) {
 
   EXPECT_FALSE(deliveryoptimizer::api::ReadTrafficDelay(body).has_value());
 }
+
+TEST(TrafficForecastOptimizerTest, RejectsNonOkGoogleResponseStatus) {
+  Json::Value body{Json::objectValue};
+  body["status"] = "REQUEST_DENIED";
+  body["error_message"] = "The provided API key is invalid.";
+  body["rows"] = Json::Value{Json::arrayValue};
+
+  EXPECT_FALSE(deliveryoptimizer::api::ReadTrafficDelay(body).has_value());
+}
 TEST(TrafficForecastOptimizerTest, AddsTrafficForecastBlock) {
   Json::Value forecast{Json::objectValue};
   const deliveryoptimizer::api::TrafficForecastOptions options{
@@ -525,7 +534,7 @@ TEST(TrafficForecastOptimizerTest, ClampsPastRelativeDeparturesToNow) {
   const auto legs = deliveryoptimizer::api::ReadTrafficLegs(output, before - std::chrono::hours{1});
 
   ASSERT_EQ(legs.size(), 1U);
-  EXPECT_GE(legs[0].departure_time, before);
+  EXPECT_GE(legs[0].departure_time, before + std::chrono::seconds{5});
 }
 
 TEST(TrafficForecastOptimizerTest, IgnoresAbsoluteArrivalWithoutRouteStart) {
@@ -551,7 +560,7 @@ TEST(TrafficForecastOptimizerTest, IgnoresAbsoluteArrivalWithoutRouteStart) {
 
   ASSERT_EQ(legs.size(), 1U);
   EXPECT_GE(legs[0].departure_time, before);
-  EXPECT_LE(legs[0].departure_time, after);
+  EXPECT_LE(legs[0].departure_time, after + std::chrono::seconds{5});
 }
 
 TEST(TrafficForecastOptimizerTest, KeepsBaselineWhenTrafficRerunFails) {

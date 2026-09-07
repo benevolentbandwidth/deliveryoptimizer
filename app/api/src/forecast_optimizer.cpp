@@ -187,8 +187,10 @@ void SetRouteTimes(const std::optional<std::chrono::sys_seconds> planned_start_t
 ReadLegDeparture(const Json::Value& step,
                  const std::optional<std::chrono::sys_seconds> route_start_time) {
   constexpr std::chrono::seconds kMaxRelativeArrivalOffset = std::chrono::days{7};
+  constexpr std::chrono::seconds kMinimumDepartureLeadTime{5};
   const auto now =
       std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
+  const auto minimum_departure = now + kMinimumDepartureLeadTime;
   const int arrival = step["arrival"].isInt() ? step["arrival"].asInt() : 0;
   const int service = step["service"].isInt() ? step["service"].asInt() : 0;
   const std::chrono::seconds offset{std::max(arrival + service, 0)};
@@ -197,15 +199,17 @@ ReadLegDeparture(const Json::Value& step,
         std::chrono::duration_cast<std::chrono::seconds>(route_start_time->time_since_epoch());
     // Large arrivals are Unix timestamps; smaller arrivals are route offsets.
     if (offset >= route_start_seconds - std::chrono::hours{24}) {
-      return std::max(std::chrono::sys_seconds{offset}, now);
+      return std::max(std::chrono::sys_seconds{offset}, minimum_departure);
     }
 
-    return std::max(*route_start_time + std::min(offset, kMaxRelativeArrivalOffset), now);
+    return std::max(*route_start_time + std::min(offset, kMaxRelativeArrivalOffset),
+                    minimum_departure);
   }
 
   // Without a route start, a Unix timestamp in arrival would otherwise be
   // interpreted as a multi-decade relative offset. Ignore implausible offsets.
-  return now + (offset <= kMaxRelativeArrivalOffset ? offset : std::chrono::seconds{0});
+  return std::max(now + (offset <= kMaxRelativeArrivalOffset ? offset : std::chrono::seconds{0}),
+                  minimum_departure);
 }
 
 [[nodiscard]] std::vector<int> BuildEvenTrafficDelays(const std::size_t job_count,
@@ -501,6 +505,13 @@ std::string BuildTrafficPath(const Coordinate& origin, const Coordinate& destina
 }
 
 std::optional<int> ReadTrafficDelay(const Json::Value& body) {
+  const Json::Value& status = body["status"];
+  if (status.isString() && status.asString() != "OK") {
+    LOG_WARN << "Google Distance Matrix request failed with status=" << status.asString()
+             << ", message=" << body["error_message"].asString();
+    return std::nullopt;
+  }
+
   const Json::Value& rows = body["rows"];
   if (!rows.isArray() || rows.empty()) {
     return std::nullopt;
