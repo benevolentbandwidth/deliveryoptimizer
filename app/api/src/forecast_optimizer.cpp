@@ -1,5 +1,6 @@
 #include "deliveryoptimizer/api/forecast_optimizer.hpp"
 
+#include "deliveryoptimizer/adapters/json_utils.hpp"
 #include "deliveryoptimizer/api/optimize_request.hpp"
 
 #include <algorithm>
@@ -763,7 +764,9 @@ Json::Value BuildTrafficAdjustedVroomInput(const OptimizeRequestInput& input,
                                            const WeatherImpactEstimate& weather,
                                            const TrafficImpact& traffic,
                                            const Json::Value& vroom_output) {
-  Json::Value payload = BuildWeatherAdjustedVroomInput(input, weather);
+  Json::Value payload =
+      deliveryoptimizer::adapters::ParseJsonText(BuildWeatherAdjustedVroomInputText(input, weather))
+          .value_or(Json::Value{Json::objectValue});
   if (!traffic.should_reoptimize || input.jobs.empty()) {
     return payload;
   }
