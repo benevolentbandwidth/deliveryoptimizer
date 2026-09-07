@@ -2,16 +2,39 @@
 
 export const dynamic = "force-dynamic";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import HiFiUploadPage from "@/app/components/HiFiUploadPage";
 import { createUploadOperation } from "@/app/utils/uploadOperation";
+import {
+  clearRouteUploadError,
+  readRouteUploadError,
+  storeUploadedRoute,
+} from "@/lib/driver-route/uploadHandoff";
+
+import { parseRouteUploadFile } from "./routeUploadValidation";
 
 const MAX_FILE_MB = 10;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
 export default function UploadRoutePage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          aria-label="Loading upload route"
+          style={{ minHeight: "100dvh" }}
+        />
+      }
+    >
+      <UploadRouteContent />
+    </Suspense>
+  );
+}
+
+function UploadRouteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -25,11 +48,19 @@ export default function UploadRoutePage() {
     };
   }, [activeOperation]);
 
+  useEffect(() => {
+    const uploadError = readRouteUploadError() || searchParams.get("error");
+    if (!uploadError) return;
+
+    clearRouteUploadError();
+    setError(uploadError);
+  }, [searchParams]);
+
   const handleFile = (f: File) => {
     setError(null);
-    // Only .json route files are accepted — CSV is rejected here.
-    if (!f.name.endsWith(".json")) {
-      setError("Only .json route files are accepted.");
+    const fileName = f.name.toLowerCase();
+    if (!fileName.endsWith(".json") && !fileName.endsWith(".csv")) {
+      setError("Only .json or .csv route files are accepted.");
       return;
     }
     if (f.size > MAX_FILE_BYTES) {
@@ -70,12 +101,10 @@ export default function UploadRoutePage() {
     try {
       const text = await file.text();
       if (!isCurrentOperation()) return;
-      sessionStorage.setItem(
-        "routeFile",
-        JSON.stringify({ name: file.name, content: text }),
-      );
+      const uploadedRoute = parseRouteUploadFile(file.name, text);
+      storeUploadedRoute(uploadedRoute);
       if (!isCurrentOperation()) return;
-      router.push("/driver-view");
+      router.push("/driver_assist");
     } catch (err) {
       if (isCurrentOperation()) {
         setError(
@@ -100,9 +129,9 @@ export default function UploadRoutePage() {
   return (
     <HiFiUploadPage
       title="Upload your route"
-      dropzoneText="Drag and drop JSON files here, or"
-      description={`Import delivery details from a JSON file. Maximum file size of ${MAX_FILE_MB} MB.`}
-      accept=".json"
+      dropzoneText="Drag and drop JSON or CSV files here, or"
+      description={`Import delivery details from a JSON or CSV file. Maximum file size of ${MAX_FILE_MB} MB.`}
+      accept=".json,.csv"
       file={file}
       isDragging={isDragging}
       isProcessing={isProcessing}

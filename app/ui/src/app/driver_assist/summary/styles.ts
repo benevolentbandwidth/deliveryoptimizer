@@ -32,15 +32,6 @@ export const summaryStyles: Record<string, CSSProperties> = {
     lineHeight: 1.2,
     margin: 0,
   },
-  warningButton: {
-    alignItems: "center",
-    background: "transparent",
-    border: 0,
-    color: "#4b4b4b",
-    cursor: "pointer",
-    display: "inline-flex",
-    padding: 0,
-  },
   summarySection: {
     marginBottom: 24,
   },

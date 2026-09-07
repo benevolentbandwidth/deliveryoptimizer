@@ -1,12 +1,12 @@
 import { ZodError, z } from "zod";
 
+import { createPendingDeliveryStop } from "./createDeliveryStop";
 import type { DriverRoute, OptimizeRequestLike } from "./types";
+import { transformSessionToDriverRoute } from "./transformSession";
 import {
   migrateSessionSaveFile,
   sessionSaveDataSchema,
 } from "@/lib/validation/session.schema";
-
-const MAX_SESSION_FILE_BYTES = 1_000_000;
 
 const persistedStopSchema = z.object({
   id: z.string(),
@@ -37,27 +37,25 @@ const persistedRouteStateSchema = z.object({
 
 type PersistedRouteState = z.infer<typeof persistedRouteStateSchema>;
 
-// Guard the browser import path before we spend time parsing a file.
-export async function loadSessionFromFile(
-  file: Pick<File, "name" | "size" | "type" | "text">,
-): Promise<OptimizeRequestLike> {
-  const isJson =
-    file.type === "application/json" ||
-    file.name.toLowerCase().endsWith(".json");
+const resultsRouteStopSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  address: z.string().optional(),
+  lat: z.number(),
+  lng: z.number(),
+  sequence: z.number().int().nonnegative(),
+  capacityUsed: z.number().nonnegative().optional(),
+  note: z.string().optional(),
+  addresseeName: z.string().optional(),
+  phoneNumber: z.string().optional(),
+});
 
-  if (!isJson) {
-    throw new Error("Please select a valid .json save file.");
-  }
+const resultsRouteSchema = z.object({
+  vehicleId: z.union([z.string(), z.number()]),
+  driverName: z.string().optional(),
+  stops: z.array(resultsRouteStopSchema).min(1),
+});
 
-  if (file.size > MAX_SESSION_FILE_BYTES) {
-    throw new Error("File is too large to import.");
-  }
-
-  const text = await file.text();
-  return loadSessionFromText(text);
-}
-
-export function loadSessionFromText(text: string): OptimizeRequestLike {
+export function loadDriverRouteFromText(text: string): DriverRoute {
   if (text.length === 0) {
     throw new Error("Invalid file contents.");
   }
@@ -69,18 +67,18 @@ export function loadSessionFromText(text: string): OptimizeRequestLike {
     throw new Error("This file is not valid JSON.");
   }
 
+  const exportedRoute = resultsRouteSchema.safeParse(parsed);
+  if (exportedRoute.success) {
+    return transformResultsRouteToDriverRoute(exportedRoute.data);
+  }
+
   try {
-    // Preferred route-manager save file shape.
-    return migrateSessionSaveFile(parsed).data;
+    return transformSessionToDriverRoute(loadSessionFromParsedJson(parsed));
   } catch (error) {
-    try {
-      // Also accept the same data shape without the version/savedAt envelope.
-      return sessionSaveDataSchema.parse(parsed);
-    } catch {
-      throw new Error(
-        formatValidationError(error) ?? "Invalid save file format.",
-      );
-    }
+    throw new Error(
+      formatValidationError(error) ??
+        "This file is not a recognized route or session JSON file.",
+    );
   }
 }
 
@@ -96,7 +94,13 @@ export function createPersistedRouteState(
 }
 
 export function parsePersistedRouteState(input: unknown): PersistedRouteState {
-  return persistedRouteStateSchema.parse(input);
+  try {
+    return persistedRouteStateSchema.parse(input);
+  } catch (error) {
+    throw new Error(
+      formatValidationError(error) ?? "Invalid save file format.",
+    );
+  }
 }
 
 function formatValidationError(error: unknown): string | null {
@@ -114,4 +118,43 @@ function formatValidationError(error: unknown): string | null {
       : "file";
 
   return `Invalid save file format at "${path}".`;
+}
+
+function loadSessionFromParsedJson(parsed: unknown): OptimizeRequestLike {
+  try {
+    // Preferred route-manager save file shape.
+    return migrateSessionSaveFile(parsed).data;
+  } catch (error) {
+    try {
+      // Also accept the same data shape without the version/savedAt envelope.
+      return sessionSaveDataSchema.parse(parsed);
+    } catch {
+      throw error;
+    }
+  }
+}
+
+function transformResultsRouteToDriverRoute(
+  route: z.infer<typeof resultsRouteSchema>,
+): DriverRoute {
+  const orderedStops = [...route.stops].sort((a, b) => a.sequence - b.sequence);
+  const stops = orderedStops.map((stop, index) =>
+    createPendingDeliveryStop({
+      id: stop.id,
+      index,
+      address: stop.address,
+      customerName: stop.addresseeName,
+      phoneNumber: stop.phoneNumber,
+      packageCount: stop.capacityUsed,
+      notes: stop.note,
+      lat: stop.lat,
+      lng: stop.lng,
+    }),
+  );
+
+  return {
+    driverName: route.driverName || "driver_assist",
+    routeLabel: `Route ${route.vehicleId} - ${stops.length} stops`,
+    stops,
+  };
 }
