@@ -27,4 +27,8 @@ BuildSolveExecutionResult(const OptimizeRequestInput& input, CoordinatedSolveRes
 // not deep-copied (jsoncpp values are not copy-on-write).
 [[nodiscard]] CoordinatedSolveResult ToCoordinatedSolveResult(VroomRunResult&& result);
 
+// Optional forecast reruns must never replace an already-usable route with a failure.
+[[nodiscard]] CoordinatedSolveResult PreferSuccessfulRerun(CoordinatedSolveResult baseline,
+                                                           CoordinatedSolveResult rerun);
+
 } // namespace deliveryoptimizer::api

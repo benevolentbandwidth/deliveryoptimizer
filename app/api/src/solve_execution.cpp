@@ -26,6 +26,13 @@ CoordinatedSolveResult ToCoordinatedSolveResult(VroomRunResult&& result) {
   };
 }
 
+CoordinatedSolveResult PreferSuccessfulRerun(CoordinatedSolveResult baseline,
+                                             CoordinatedSolveResult rerun) {
+  const bool rerun_succeeded =
+      rerun.status == CoordinatedSolveStatus::kSucceeded && rerun.output.has_value();
+  return rerun_succeeded ? std::move(rerun) : std::move(baseline);
+}
+
 SolveExecutionResult BuildSolveExecutionResult(const OptimizeRequestInput& input,
                                                CoordinatedSolveResult result,
                                                std::optional<Json::Value> forecast) {

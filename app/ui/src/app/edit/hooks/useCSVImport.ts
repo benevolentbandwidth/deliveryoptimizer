@@ -156,7 +156,7 @@ function parseJsonToRows(text: string): string[][] {
  * Minimal RFC-4180 CSV parser — handles quoted fields, embedded commas,
  * CRLF and LF line endings.
  */
-function parseCsvToRows(text: string): string[][] {
+export function parseCsvToRows(text: string): string[][] {
   const rows: string[][] = [];
   let currentRow: string[] = [];
   let currentField = "";

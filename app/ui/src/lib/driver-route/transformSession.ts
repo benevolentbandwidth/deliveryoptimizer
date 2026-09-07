@@ -1,4 +1,5 @@
-import type { DeliveryStop, DriverRoute, OptimizeRequestLike } from "./types";
+import { createPendingDeliveryStop } from "./createDeliveryStop";
+import type { DriverRoute, OptimizeRequestLike } from "./types";
 
 export function transformSessionToDriverRoute(
   input: OptimizeRequestLike,
@@ -7,23 +8,20 @@ export function transformSessionToDriverRoute(
   const deliveries = input.deliveries;
   const firstVehicle = input.vehicles[0];
 
-  const stops: DeliveryStop[] = deliveries.map((delivery, index) => {
-    return {
-      id: String(delivery.id),
-      stopNumber: index + 1,
-      address: delivery.address || "No address provided",
-      customerName: delivery.recipientName || `Recipient ${index + 1}`,
+  const stops = deliveries.map((delivery, index) =>
+    createPendingDeliveryStop({
+      id: delivery.id,
+      index,
+      address: delivery.address,
+      customerName: delivery.recipientName,
+      customerNameFallback: `Recipient ${index + 1}`,
       phoneNumber: delivery.phoneNumber,
-      packageCount: delivery.demand?.value ?? 1,
-      notes: delivery.notes || "",
-      // A freshly imported route always starts as work to be done.
-      status: "pending",
-      lat: delivery.location?.lat || 0,
-      lng: delivery.location?.lng || 0,
-      completedAt: undefined,
-      failureReason: undefined,
-    };
-  });
+      packageCount: delivery.demand?.value,
+      notes: delivery.notes,
+      lat: delivery.location?.lat,
+      lng: delivery.location?.lng,
+    }),
+  );
 
   return {
     driverName: firstVehicle?.driverName || "driver_assist",
